@@ -8,7 +8,7 @@ User = get_user_model()
 @admin.register(Church)
 class ChurchAdmin(admin.ModelAdmin):
     list_display = ('contact_id', 'name', 'denomination', 'get_contact_pipeline_stage', 'get_contact_priority')
-    list_filter = ('denomination', 'contact__office') # Filter by fields on Church or related Contact
+    list_filter = ('denomination', 'contact__office_id') # Filter by fields on Church or related Contact
     search_fields = ('name', 'denomination', 'pastor_name', 'contact__email')
     
     fieldsets = (

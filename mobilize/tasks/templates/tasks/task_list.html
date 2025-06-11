@@ -44,6 +44,11 @@
                             </a>
                             <small class="task-status-display">Status: {{ task.get_status_display }}</small> | 
                             <small>Priority: {{ task.get_priority_display }}</small>
+                            {% if task.is_recurring_template %}
+                                <small> | <i class="fas fa-sync-alt text-info"></i> Recurring Template</small>
+                            {% elif task.parent_task %}
+                                <small> | <i class="fas fa-link text-muted"></i> Recurring Instance</small>
+                            {% endif %}
                             {% if task.status == 'completed' and task.completed_at %}
                                 <small class="text-muted task-completed-at-display"> | Completed: {{ task.completed_at|date:"Y-m-d" }}</small>
                             {% else %}

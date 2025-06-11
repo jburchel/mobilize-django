@@ -1,6 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
+from django.contrib import messages
 from datetime import datetime, timedelta
 
 
@@ -74,4 +75,59 @@ def settings(request):
     """
     Settings view for configuring user preferences.
     """
-    return render(request, 'core/settings.html')
+    from mobilize.authentication.models import UserContactSyncSettings
+    from mobilize.authentication.forms import UserContactSyncSettingsForm, UserProfileForm
+    
+    # Get or create contact sync settings
+    sync_settings, created = UserContactSyncSettings.objects.get_or_create(
+        user=request.user,
+        defaults={'sync_preference': 'crm_only'}
+    )
+    
+    if request.method == 'POST':
+        if 'sync_settings' in request.POST:
+            sync_form = UserContactSyncSettingsForm(
+                request.POST, 
+                instance=sync_settings,
+                user=request.user
+            )
+            profile_form = UserProfileForm(instance=request.user)
+            
+            if sync_form.is_valid():
+                sync_form.save()
+                messages.success(request, 'Contact sync settings updated successfully.')
+                return redirect('core:settings')
+        
+        elif 'profile_settings' in request.POST:
+            profile_form = UserProfileForm(request.POST, instance=request.user)
+            sync_form = UserContactSyncSettingsForm(instance=sync_settings, user=request.user)
+            
+            if profile_form.is_valid():
+                profile_form.save()
+                messages.success(request, 'Profile updated successfully.')
+                return redirect('core:settings')
+        
+        else:
+            sync_form = UserContactSyncSettingsForm(instance=sync_settings, user=request.user)
+            profile_form = UserProfileForm(instance=request.user)
+    else:
+        sync_form = UserContactSyncSettingsForm(instance=sync_settings, user=request.user)
+        profile_form = UserProfileForm(instance=request.user)
+    
+    # Check Gmail connection status
+    gmail_connected = False
+    try:
+        from mobilize.communications.gmail_service import GmailService
+        gmail_service = GmailService(request.user)
+        gmail_connected = gmail_service.is_authenticated()
+    except Exception:
+        pass
+    
+    context = {
+        'sync_form': sync_form,
+        'profile_form': profile_form,
+        'sync_settings': sync_settings,
+        'gmail_connected': gmail_connected,
+    }
+    
+    return render(request, 'core/settings.html', context)

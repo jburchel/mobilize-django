@@ -223,12 +223,22 @@ class EmailAttachmentForm(forms.ModelForm):
 
 
 class ComposeEmailForm(forms.Form):
-    """Form for composing and sending emails"""
+    """Form for composing and sending emails via Gmail"""
     
-    to = forms.CharField(widget=forms.Textarea(attrs={'rows': 2}), 
-                         help_text="Separate multiple email addresses with commas")
-    cc = forms.CharField(required=False, widget=forms.Textarea(attrs={'rows': 1}))
-    bcc = forms.CharField(required=False, widget=forms.Textarea(attrs={'rows': 1}))
+    recipients = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 2}), 
+        help_text="Separate multiple email addresses with commas"
+    )
+    cc = forms.CharField(
+        required=False, 
+        widget=forms.Textarea(attrs={'rows': 1}),
+        help_text="Carbon copy recipients (optional)"
+    )
+    bcc = forms.CharField(
+        required=False, 
+        widget=forms.Textarea(attrs={'rows': 1}),
+        help_text="Blind carbon copy recipients (optional)"
+    )
     subject = forms.CharField()
     template = forms.ModelChoiceField(
         queryset=EmailTemplate.objects.filter(is_active=True),
@@ -239,9 +249,22 @@ class ComposeEmailForm(forms.Form):
         queryset=EmailSignature.objects.none(),  # Will be set in __init__
         required=False
     )
-    message = forms.CharField(widget=forms.Textarea(attrs={'rows': 10}))
-    attachments = forms.FileField(widget=forms.ClearableFileInput(attrs={'multiple': True}), 
-                                 required=False)
+    body = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 10}),
+        help_text="Email content"
+    )
+    is_html = forms.BooleanField(
+        required=False, 
+        initial=True,
+        help_text="Send as HTML email"
+    )
+    related_person_id = forms.IntegerField(required=False, widget=forms.HiddenInput())
+    related_church_id = forms.IntegerField(required=False, widget=forms.HiddenInput())
+    attachments = forms.FileField(
+        widget=forms.ClearableFileInput(attrs={'multiple': True}), 
+        required=False,
+        help_text="Attach files (optional)"
+    )
     
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
@@ -259,23 +282,32 @@ class ComposeEmailForm(forms.Form):
         self.helper.form_method = 'post'
         
         self.helper.layout = Layout(
-            Row(
-                Column('to', css_class='col-md-12'),
-                css_class='form-row'
+            Fieldset(
+                'Recipients',
+                'recipients',
+                Row(
+                    Column('cc', css_class='col-md-6'),
+                    Column('bcc', css_class='col-md-6'),
+                    css_class='form-row'
+                ),
             ),
-            Row(
-                Column('cc', css_class='col-md-6'),
-                Column('bcc', css_class='col-md-6'),
-                css_class='form-row'
+            Fieldset(
+                'Email Content',
+                'subject',
+                Row(
+                    Column('template', css_class='col-md-6'),
+                    Column('signature', css_class='col-md-6'),
+                    css_class='form-row'
+                ),
+                'body',
+                Row(
+                    Column('is_html', css_class='col-md-6'),
+                    Column('attachments', css_class='col-md-6'),
+                    css_class='form-row'
+                ),
+                'related_person_id',
+                'related_church_id',
             ),
-            'subject',
-            Row(
-                Column('template', css_class='col-md-6'),
-                Column('signature', css_class='col-md-6'),
-                css_class='form-row'
-            ),
-            'message',
-            'attachments',
             FormActions(
                 Submit('send', 'Send Email', css_class='btn btn-primary'),
                 Submit('save_draft', 'Save Draft', css_class='btn btn-secondary'),

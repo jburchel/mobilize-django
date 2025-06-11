@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from mobilize.contacts.models import Person # Contact model is not directly used here, Person and Church are.
 from mobilize.churches.models import Church
 from mobilize.admin_panel.models import Office
@@ -127,3 +129,110 @@ class Task(models.Model):
         """Return the URL to access a detail record for this task."""
         from django.urls import reverse
         return reverse('tasks:task_detail', args=[str(self.id)])
+    
+    def calculate_next_occurrence(self):
+        """Calculate the next occurrence date based on recurring pattern."""
+        if not self.recurring_pattern or not self.is_recurring_template:
+            return None
+            
+        pattern = self.recurring_pattern
+        frequency = pattern.get('frequency')
+        interval = pattern.get('interval', 1)
+        
+        # Start from next_occurrence_date if set, otherwise from due_date
+        base_date = self.next_occurrence_date or timezone.now()
+        if isinstance(base_date, datetime):
+            base_date = base_date.date()
+        
+        if frequency == 'daily':
+            next_date = base_date + timedelta(days=interval)
+        elif frequency == 'weekly':
+            weekdays = pattern.get('weekdays', [])
+            if weekdays:
+                # Find next occurrence on specified weekdays
+                next_date = base_date + timedelta(days=1)
+                while next_date.weekday() not in weekdays:
+                    next_date += timedelta(days=1)
+            else:
+                next_date = base_date + timedelta(weeks=interval)
+        elif frequency == 'monthly':
+            day_of_month = pattern.get('day_of_month')
+            if day_of_month:
+                next_date = base_date.replace(day=day_of_month) + relativedelta(months=interval)
+            else:
+                next_date = base_date + relativedelta(months=interval)
+        else:
+            return None
+            
+        # Check if we've passed the end date
+        if self.recurrence_end_date and next_date > self.recurrence_end_date:
+            return None
+            
+        return timezone.make_aware(datetime.combine(next_date, datetime.min.time()))
+    
+    def generate_next_occurrence(self):
+        """Generate the next occurrence task instance."""
+        if not self.is_recurring_template:
+            return None
+            
+        next_date = self.calculate_next_occurrence()
+        if not next_date:
+            return None
+            
+        # Create new task instance
+        occurrence = Task.objects.create(
+            title=self.title,
+            description=self.description,
+            due_date=next_date.date(),
+            due_time=self.due_time,
+            due_time_details=self.due_time_details,
+            reminder_time=self.reminder_time,
+            reminder_option=self.reminder_option,
+            priority=self.priority,
+            status='pending',
+            category=self.category,
+            type=self.type,
+            person=self.person,
+            church=self.church,
+            contact=self.contact,
+            created_by=self.created_by,
+            assigned_to=self.assigned_to,
+            office=self.office,
+            parent_task=self,
+            is_recurring_template=False,
+            google_calendar_sync_enabled=self.google_calendar_sync_enabled,
+        )
+        
+        # Update next occurrence date on template
+        self.next_occurrence_date = self.calculate_next_occurrence()
+        self.save(update_fields=['next_occurrence_date'])
+        
+        return occurrence
+    
+    @classmethod
+    def generate_pending_occurrences(cls, days_ahead=7):
+        """Generate all pending recurring task occurrences for the next N days."""
+        cutoff_date = timezone.now() + timedelta(days=days_ahead)
+        
+        # Find all recurring templates that need new occurrences
+        templates = cls.objects.filter(
+            is_recurring_template=True,
+            next_occurrence_date__lte=cutoff_date
+        ).exclude(
+            recurrence_end_date__lt=timezone.now().date()
+        )
+        
+        generated_count = 0
+        for template in templates:
+            while (template.next_occurrence_date and 
+                   template.next_occurrence_date <= cutoff_date and 
+                   (not template.recurrence_end_date or 
+                    template.next_occurrence_date.date() <= template.recurrence_end_date)):
+                
+                occurrence = template.generate_next_occurrence()
+                if occurrence:
+                    generated_count += 1
+                else:
+                    break
+                    
+        return generated_count

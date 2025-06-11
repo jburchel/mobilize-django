@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Compose Email - Mobilize CRM{% endblock %}
+
+{% block page_title %}Compose Email{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'communications:communication_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Communications
+    </a>
+    {% if not gmail_authenticated %}
+    <a href="{% url 'communications:gmail_auth' %}" class="btn btn-warning">
+        <i class="fab fa-google"></i> Connect Gmail
+    </a>
+    {% else %}
+    <button type="button" class="btn btn-success disabled">
+        <i class="fas fa-check"></i> Gmail Connected
+    </button>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+{% if not gmail_authenticated %}
+<div class="alert alert-warning" role="alert">
+    <h6><i class="fas fa-exclamation-triangle"></i> Gmail Not Connected</h6>
+    <p class="mb-2">You need to connect your Gmail account to send emails through this system.</p>
+    <a href="{% url 'communications:gmail_auth' %}" class="btn btn-warning btn-sm">
+        <i class="fab fa-google"></i> Connect Gmail Now
+    </a>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-envelope"></i> Compose New Email
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data" id="emailForm">
+            {% csrf_token %}
+            {% crispy form %}
+        </form>
+    </div>
+</div>
+
+<!-- Email Templates Modal -->
+<div class="modal fade" id="templateModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Email Template</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    {% for template in email_templates %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card template-card" data-template-id="{{ template.id }}">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ template.name }}</h6>
+                                <p class="card-text">{{ template.category|default:"General" }}</p>
+                                <small class="text-muted">{{ template.subject|truncatechars:50 }}</small>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-sm btn-primary use-template-btn" 
+                                            data-template-id="{{ template.id }}">
+                                        Use Template
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-info preview-template-btn" 
+                                            data-template-id="{{ template.id }}">
+                                        Preview
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12">
+                        <p class="text-muted">No email templates available.</p>
+                        <a href="{% url 'communications:email_template_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Email Template
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Template Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="template-preview-content"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="use-previewed-template">Use This Template</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Template selection functionality
+    const templateSelect = document.getElementById('id_template');
+    const subjectField = document.getElementById('id_subject');
+    const bodyField = document.getElementById('id_body');
+    
+    // Show template modal when template button is clicked
+    if (document.getElementById('template-modal-btn')) {
+        document.getElementById('template-modal-btn').addEventListener('click', function() {
+            new bootstrap.Modal(document.getElementById('templateModal')).show();
+        });
+    }
+    
+    // Handle template selection from dropdown
+    if (templateSelect) {
+        templateSelect.addEventListener('change', function() {
+            if (this.value) {
+                loadTemplate(this.value);
+            }
+        });
+    }
+    
+    // Handle use template buttons
+    document.querySelectorAll('.use-template-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const templateId = this.dataset.templateId;
+            loadTemplate(templateId);
+            bootstrap.Modal.getInstance(document.getElementById('templateModal')).hide();
+        });
+    });
+    
+    // Handle preview template buttons
+    document.querySelectorAll('.preview-template-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const templateId = this.dataset.templateId;
+            previewTemplate(templateId);
+        });
+    });
+    
+    // Handle use previewed template
+    document.getElementById('use-previewed-template').addEventListener('click', function() {
+        const templateId = this.dataset.templateId;
+        if (templateId) {
+            loadTemplate(templateId);
+            bootstrap.Modal.getInstance(document.getElementById('previewModal')).hide();
+        }
+    });
+    
+    function loadTemplate(templateId) {
+        fetch(`/communications/templates/${templateId}/preview/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.subject) {
+                    subjectField.value = data.subject;
+                }
+                if (data.content) {
+                    bodyField.value = data.content;
+                }
+                
+                // Update template dropdown if it exists
+                if (templateSelect) {
+                    templateSelect.value = templateId;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading template:', error);
+                alert('Failed to load template. Please try again.');
+            });
+    }
+    
+    function previewTemplate(templateId) {
+        fetch(`/communications/templates/${templateId}/preview/`)
+            .then(response => response.json())
+            .then(data => {
+                const previewContent = document.getElementById('template-preview-content');
+                previewContent.innerHTML = `
+                    <h6>Subject:</h6>
+                    <p class="bg-light p-2">${data.subject || 'No subject'}</p>
+                    <h6>Content:</h6>
+                    <div class="bg-light p-3" style="max-height: 400px; overflow-y: auto;">
+                        ${data.content || 'No content'}
+                    </div>
+                `;
+                
+                // Store template ID for use button
+                document.getElementById('use-previewed-template').dataset.templateId = templateId;
+                
+                new bootstrap.Modal(document.getElementById('previewModal')).show();
+            })
+            .catch(error => {
+                console.error('Error previewing template:', error);
+                alert('Failed to preview template. Please try again.');
+            });
+    }
+    
+    // Form validation
+    document.getElementById('emailForm').addEventListener('submit', function(e) {
+        const recipients = document.getElementById('id_recipients').value.trim();
+        const subject = document.getElementById('id_subject').value.trim();
+        const body = document.getElementById('id_body').value.trim();
+        
+        if (!recipients) {
+            e.preventDefault();
+            alert('Please enter at least one recipient email address.');
+            return false;
+        }
+        
+        if (!subject) {
+            e.preventDefault();
+            alert('Please enter a subject for your email.');
+            return false;
+        }
+        
+        if (!body) {
+            e.preventDefault();
+            alert('Please enter email content.');
+            return false;
+        }
+        
+        // Show sending indicator
+        const submitBtn = document.querySelector('input[name="send"]');
+        if (submitBtn) {
+            submitBtn.value = 'Sending...';
+            submitBtn.disabled = true;
+        }
+    });
+    
+    // Auto-resize textarea
+    const bodyTextarea = document.getElementById('id_body');
+    if (bodyTextarea) {
+        bodyTextarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+    }
+});
+</script>
+{% endblock %}

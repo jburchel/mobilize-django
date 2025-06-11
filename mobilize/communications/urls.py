@@ -29,4 +29,17 @@ urlpatterns = [
     path('compose/', views.ComposeEmailView.as_view(), name='compose_email'),
     path('send-email/', views.send_email, name='send_email'),
     path('preview-template/<int:template_id>/', views.preview_email_template, name='preview_template'),
+    
+    # Gmail integration
+    path('gmail/auth/', views.GmailAuthView.as_view(), name='gmail_auth'),
+    path('gmail/callback/', views.GmailCallbackView.as_view(), name='gmail_callback'),
+    path('gmail/compose/', views.GmailComposeView.as_view(), name='gmail_compose'),
+    path('gmail/sync/', views.GmailSyncView.as_view(), name='gmail_sync'),
+    path('gmail/status/', views.gmail_status, name='gmail_status'),
+    path('gmail/disconnect/', views.gmail_disconnect, name='gmail_disconnect'),
+    
+    # Google Contacts sync
+    path('contacts/sync/', views.ContactSyncView.as_view(), name='contact_sync'),
+    path('contacts/sync/status/', views.contact_sync_status, name='contact_sync_status'),
+    path('contacts/sync/settings/', views.ContactSyncSettingsView.as_view(), name='contact_sync_settings'),
 ]

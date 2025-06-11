@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ task.title }} - Mobilize CRM{% endblock %}
+
+{% block page_title %}Task Details{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'tasks:task_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Tasks
+    </a>
+    <a href="{% url 'tasks:task_edit' task.pk %}" class="btn btn-primary">
+        <i class="fas fa-edit"></i> Edit Task
+    </a>
+    {% if not task.is_completed %}
+    <form method="post" action="{% url 'tasks:task_complete' task.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">
+            <i class="fas fa-check"></i> Mark Complete
+        </button>
+    </form>
+    {% endif %}
+    <a href="{% url 'tasks:task_delete' task.pk %}" class="btn btn-danger">
+        <i class="fas fa-trash"></i> Delete
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Task Information -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ task.title }}</h5>
+                <div class="d-flex gap-2">
+                    <span class="badge bg-{% if task.priority == 'high' %}danger{% elif task.priority == 'medium' %}warning{% else %}secondary{% endif %}">
+                        {{ task.get_priority_display }}
+                    </span>
+                    <span class="badge bg-{% if task.status == 'completed' %}success{% elif task.status == 'in_progress' %}info{% else %}secondary{% endif %}">
+                        {{ task.get_status_display }}
+                    </span>
+                    {% if task.is_recurring_template %}
+                    <span class="badge bg-info">
+                        <i class="fas fa-sync-alt"></i> Recurring Template
+                    </span>
+                    {% elif task.parent_task %}
+                    <span class="badge bg-light text-dark">
+                        <i class="fas fa-link"></i> Recurring Instance
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                {% if task.description %}
+                <p class="card-text">{{ task.description }}</p>
+                {% endif %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Due Date</h6>
+                        <p>
+                            {% if task.due_date %}
+                                {{ task.due_date|date:"F j, Y" }}
+                                {% if task.due_time %}
+                                    at {{ task.due_time }}
+                                {% endif %}
+                                {% if task.is_overdue %}
+                                    <span class="badge bg-danger ms-2">Overdue</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">No due date set</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Category</h6>
+                        <p>{{ task.category|default:"No category" }}</p>
+                    </div>
+                </div>
+
+                {% if task.assigned_to %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Assigned To</h6>
+                        <p>{{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Created By</h6>
+                        <p>{{ task.created_by.get_full_name|default:task.created_by.username }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if task.person or task.church %}
+                <div class="row">
+                    {% if task.person %}
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Related Person</h6>
+                        <p>
+                            <a href="{% url 'contacts:person_detail' task.person.pk %}">
+                                {{ task.person.first_name }} {{ task.person.last_name }}
+                            </a>
+                        </p>
+                    </div>
+                    {% endif %}
+                    {% if task.church %}
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Related Church</h6>
+                        <p>
+                            <a href="{% url 'churches:church_detail' task.church.pk %}">
+                                {{ task.church.name }}
+                            </a>
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if task.completion_notes %}
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-muted">Completion Notes</h6>
+                        <p>{{ task.completion_notes }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recurring Task Information -->
+        {% if task.is_recurring_template or task.parent_task %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-sync-alt"></i> Recurring Task Information
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if task.is_recurring_template %}
+                    <h6 class="text-muted">Recurrence Pattern</h6>
+                    {% if task.recurring_pattern %}
+                        <p>
+                            Repeats 
+                            {% with pattern=task.recurring_pattern %}
+                                {% if pattern.frequency == 'daily' %}
+                                    every 
+                                    {% if pattern.interval == 1 %}day{% else %}{{ pattern.interval }} days{% endif %}
+                                {% elif pattern.frequency == 'weekly' %}
+                                    every 
+                                    {% if pattern.interval == 1 %}week{% else %}{{ pattern.interval }} weeks{% endif %}
+                                    {% if pattern.weekdays %}
+                                        on 
+                                        {% for day in pattern.weekdays %}
+                                            {% if day == 0 %}Monday{% elif day == 1 %}Tuesday{% elif day == 2 %}Wednesday{% elif day == 3 %}Thursday{% elif day == 4 %}Friday{% elif day == 5 %}Saturday{% elif day == 6 %}Sunday{% endif %}{% if not forloop.last %}, {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                {% elif pattern.frequency == 'monthly' %}
+                                    every 
+                                    {% if pattern.interval == 1 %}month{% else %}{{ pattern.interval }} months{% endif %}
+                                    {% if pattern.day_of_month %}
+                                        on day {{ pattern.day_of_month }}
+                                    {% endif %}
+                                {% endif %}
+                            {% endwith %}
+                            {% if task.recurrence_end_date %}
+                                until {{ task.recurrence_end_date|date:"F j, Y" }}
+                            {% else %}
+                                indefinitely
+                            {% endif %}
+                        </p>
+                    {% endif %}
+
+                    {% if task.next_occurrence_date %}
+                    <h6 class="text-muted mt-3">Next Occurrence</h6>
+                    <p>{{ task.next_occurrence_date|date:"F j, Y" }}</p>
+                    {% endif %}
+
+                    <h6 class="text-muted mt-3">Generated Instances</h6>
+                    {% if task.occurrences.exists %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Due Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for occurrence in task.occurrences.all %}
+                                    <tr>
+                                        <td>{{ occurrence.due_date|date:"M j, Y" }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if occurrence.status == 'completed' %}success{% elif occurrence.status == 'in_progress' %}info{% else %}secondary{% endif %}">
+                                                {{ occurrence.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'tasks:task_detail' occurrence.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No instances generated yet.</p>
+                    {% endif %}
+
+                {% elif task.parent_task %}
+                    <h6 class="text-muted">Parent Template</h6>
+                    <p>
+                        <a href="{% url 'tasks:task_detail' task.parent_task.pk %}">
+                            {{ task.parent_task.title }}
+                        </a>
+                    </p>
+                    
+                    <h6 class="text-muted mt-3">Other Instances</h6>
+                    {% with siblings=task.parent_task.occurrences.all %}
+                        {% if siblings %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Due Date</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for sibling in siblings %}
+                                        <tr {% if sibling.pk == task.pk %}class="table-active"{% endif %}>
+                                            <td>{{ sibling.due_date|date:"M j, Y" }}</td>
+                                            <td>
+                                                <span class="badge bg-{% if sibling.status == 'completed' %}success{% elif sibling.status == 'in_progress' %}info{% else %}secondary{% endif %}">
+                                                    {{ sibling.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if sibling.pk != task.pk %}
+                                                    <a href="{% url 'tasks:task_detail' sibling.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                                                {% else %}
+                                                    <span class="text-muted">Current</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Task Metadata -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Task Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">Created</small>
+                    <div>{{ task.created_at|date:"M j, Y g:i A" }}</div>
+                </div>
+                
+                {% if task.updated_at != task.created_at %}
+                <div class="mb-3">
+                    <small class="text-muted">Last Updated</small>
+                    <div>{{ task.updated_at|date:"M j, Y g:i A" }}</div>
+                </div>
+                {% endif %}
+
+                {% if task.completed_at %}
+                <div class="mb-3">
+                    <small class="text-muted">Completed</small>
+                    <div>{{ task.completed_at|date:"M j, Y g:i A" }}</div>
+                </div>
+                {% endif %}
+
+                {% if task.reminder_option and task.reminder_option != 'none' %}
+                <div class="mb-3">
+                    <small class="text-muted">Reminder</small>
+                    <div>{{ task.get_reminder_option_display }}</div>
+                </div>
+                {% endif %}
+
+                {% if task.office %}
+                <div class="mb-3">
+                    <small class="text-muted">Office</small>
+                    <div>{{ task.office.name }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

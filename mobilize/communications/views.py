@@ -7,9 +7,13 @@ from django.contrib.auth.decorators import login_required
 from django.core.mail import EmailMultiAlternatives
 from django.utils.html import strip_tags
 from django.conf import settings
+from django.contrib import messages
+from django.views import View
 
 from .models import EmailTemplate, EmailSignature, Communication, EmailAttachment
 from .forms import EmailTemplateForm, EmailSignatureForm, CommunicationForm, ComposeEmailForm
+from .gmail_service import GmailService
+from .google_contacts_service import GoogleContactsService
 
 
 # Email Template Views
@@ -276,3 +280,266 @@ def preview_email_template(request, template_id):
         'subject': template.subject,
         'content': template.content
     })
+
+
+# Gmail Integration Views
+class GmailAuthView(LoginRequiredMixin, View):
+    """Initiate Gmail OAuth flow"""
+    
+    def get(self, request):
+        gmail_service = GmailService(request.user)
+        redirect_uri = request.build_absolute_uri(reverse('communications:gmail_callback'))
+        
+        if gmail_service.is_authenticated():
+            messages.info(request, 'Gmail is already connected for your account.')
+            return redirect('communications:communication_list')
+        
+        auth_url = gmail_service.get_authorization_url(redirect_uri)
+        return redirect(auth_url)
+
+
+class GmailCallbackView(LoginRequiredMixin, View):
+    """Handle Gmail OAuth callback"""
+    
+    def get(self, request):
+        code = request.GET.get('code')
+        error = request.GET.get('error')
+        
+        if error:
+            messages.error(request, f'Gmail authorization failed: {error}')
+            return redirect('communications:communication_list')
+        
+        if not code:
+            messages.error(request, 'Authorization code not received.')
+            return redirect('communications:communication_list')
+        
+        try:
+            gmail_service = GmailService(request.user)
+            redirect_uri = request.build_absolute_uri(reverse('communications:gmail_callback'))
+            gmail_service.handle_oauth_callback(code, redirect_uri)
+            
+            messages.success(request, 'Gmail successfully connected! You can now send emails through Gmail.')
+            return redirect('communications:communication_list')
+            
+        except Exception as e:
+            messages.error(request, f'Failed to connect Gmail: {str(e)}')
+            return redirect('communications:communication_list')
+
+
+class GmailComposeView(LoginRequiredMixin, FormView):
+    """Compose and send email via Gmail"""
+    template_name = 'communications/gmail_compose.html'
+    form_class = ComposeEmailForm
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        gmail_service = GmailService(self.request.user)
+        
+        context['gmail_authenticated'] = gmail_service.is_authenticated()
+        context['email_templates'] = EmailTemplate.objects.filter(is_active=True)
+        context['email_signatures'] = EmailSignature.objects.filter(user=self.request.user)
+        
+        # Pre-populate recipient if specified
+        contact_type = self.request.GET.get('contact_type')
+        contact_id = self.request.GET.get('contact_id')
+        
+        if contact_type and contact_id:
+            context['preselected_contact'] = {
+                'type': contact_type,
+                'id': contact_id
+            }
+        
+        return context
+    
+    def form_valid(self, form):
+        gmail_service = GmailService(self.request.user)
+        
+        if not gmail_service.is_authenticated():
+            messages.error(self.request, 'Gmail is not connected. Please authorize Gmail access first.')
+            return redirect('communications:gmail_auth')
+        
+        # Extract form data
+        to_emails = [email.strip() for email in form.cleaned_data['recipients'].split(',')]
+        cc_emails = [email.strip() for email in form.cleaned_data.get('cc', '').split(',') if email.strip()]
+        bcc_emails = [email.strip() for email in form.cleaned_data.get('bcc', '').split(',') if email.strip()]
+        subject = form.cleaned_data['subject']
+        body = form.cleaned_data['body']
+        is_html = form.cleaned_data.get('is_html', True)
+        template_id = form.cleaned_data.get('template')
+        signature_id = form.cleaned_data.get('signature')
+        
+        # Send email
+        result = gmail_service.send_email(
+            to_emails=to_emails,
+            cc_emails=cc_emails if cc_emails != [''] else None,
+            bcc_emails=bcc_emails if bcc_emails != [''] else None,
+            subject=subject,
+            body=body,
+            is_html=is_html,
+            template_id=template_id.id if template_id else None,
+            signature_id=signature_id.id if signature_id else None,
+            related_person_id=form.cleaned_data.get('related_person_id'),
+            related_church_id=form.cleaned_data.get('related_church_id')
+        )
+        
+        if result['success']:
+            messages.success(
+                self.request, 
+                f'Email sent successfully to {", ".join(to_emails)}'
+            )
+            return redirect('communications:communication_list')
+        else:
+            messages.error(self.request, f'Failed to send email: {result["error"]}')
+            return self.form_invalid(form)
+
+
+class GmailSyncView(LoginRequiredMixin, View):
+    """Sync Gmail messages to communications"""
+    
+    def post(self, request):
+        gmail_service = GmailService(request.user)
+        
+        if not gmail_service.is_authenticated():
+            return JsonResponse({
+                'success': False, 
+                'error': 'Gmail not authenticated'
+            }, status=400)
+        
+        days_back = int(request.POST.get('days_back', 7))
+        result = gmail_service.sync_emails_to_communications(days_back)
+        
+        if result['success']:
+            messages.success(
+                request, 
+                f'Synced {result["synced_count"]} emails from the last {days_back} days.'
+            )
+        else:
+            messages.error(request, f'Sync failed: {result["error"]}')
+        
+        return JsonResponse(result)
+
+
+@login_required
+def gmail_status(request):
+    """Check Gmail authentication status"""
+    gmail_service = GmailService(request.user)
+    return JsonResponse({
+        'authenticated': gmail_service.is_authenticated(),
+        'user_email': request.user.email
+    })
+
+
+@login_required
+def gmail_disconnect(request):
+    """Disconnect Gmail for user"""
+    if request.method == 'POST':
+        try:
+            from mobilize.authentication.models import GoogleToken
+            GoogleToken.objects.filter(user=request.user).delete()
+            messages.success(request, 'Gmail disconnected successfully.')
+        except Exception as e:
+            messages.error(request, f'Error disconnecting Gmail: {str(e)}')
+    
+    return redirect('communications:communication_list')
+
+
+# Google Contacts Sync Views
+class ContactSyncView(LoginRequiredMixin, View):
+    """Sync Google contacts based on user preferences"""
+    
+    def post(self, request):
+        contacts_service = GoogleContactsService(request.user)
+        
+        if not contacts_service.is_authenticated():
+            return JsonResponse({
+                'success': False, 
+                'error': 'Google Contacts not authenticated. Please connect Gmail first.'
+            }, status=400)
+        
+        # Perform sync based on user preferences
+        result = contacts_service.sync_contacts_based_on_preference()
+        
+        if result['success']:
+            messages.success(request, result['message'])
+        else:
+            messages.error(request, f'Contact sync failed: {result["error"]}')
+        
+        return JsonResponse(result)
+
+
+@login_required
+def contact_sync_status(request):
+    """Get contact sync status for user"""
+    try:
+        from mobilize.authentication.models import UserContactSyncSettings
+        
+        sync_settings = UserContactSyncSettings.objects.filter(user=request.user).first()
+        contacts_service = GoogleContactsService(request.user)
+        
+        status = {
+            'authenticated': contacts_service.is_authenticated(),
+            'sync_preference': sync_settings.sync_preference if sync_settings else 'crm_only',
+            'auto_sync_enabled': sync_settings.auto_sync_enabled if sync_settings else False,
+            'last_sync_at': sync_settings.last_sync_at.isoformat() if sync_settings and sync_settings.last_sync_at else None,
+            'has_errors': bool(sync_settings.sync_errors) if sync_settings else False,
+            'should_sync_now': sync_settings.should_sync_now() if sync_settings else False,
+        }
+        
+        return JsonResponse(status)
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+class ContactSyncSettingsView(LoginRequiredMixin, View):
+    """Handle contact sync settings updates"""
+    
+    def post(self, request):
+        try:
+            from mobilize.authentication.models import UserContactSyncSettings
+            
+            sync_preference = request.POST.get('sync_preference')
+            auto_sync_enabled = request.POST.get('auto_sync_enabled') == 'true'
+            sync_frequency_hours = int(request.POST.get('sync_frequency_hours', 24))
+            
+            # Validate sync preference
+            valid_preferences = [choice[0] for choice in UserContactSyncSettings.SYNC_CHOICES]
+            if sync_preference not in valid_preferences:
+                return JsonResponse({'success': False, 'error': 'Invalid sync preference'}, status=400)
+            
+            # Get or create settings
+            settings, created = UserContactSyncSettings.objects.get_or_create(
+                user=request.user,
+                defaults={
+                    'sync_preference': sync_preference,
+                    'auto_sync_enabled': auto_sync_enabled,
+                    'sync_frequency_hours': sync_frequency_hours,
+                }
+            )
+            
+            if not created:
+                settings.sync_preference = sync_preference
+                settings.auto_sync_enabled = auto_sync_enabled
+                settings.sync_frequency_hours = sync_frequency_hours
+                settings.save()
+            
+            message = f'Contact sync settings updated: {settings.get_sync_preference_display()}'
+            messages.success(request, message)
+            
+            return JsonResponse({
+                'success': True,
+                'message': message,
+                'settings': {
+                    'sync_preference': settings.sync_preference,
+                    'auto_sync_enabled': settings.auto_sync_enabled,
+                    'sync_frequency_hours': settings.sync_frequency_hours,
+                }
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)

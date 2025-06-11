@@ -8,7 +8,8 @@ from django.utils import timezone
 from django.contrib import messages
 from datetime import timedelta
 
-from .models import GoogleToken
+from .models import GoogleToken, UserContactSyncSettings
+from .forms import ContactSyncPreferenceForm
 
 
 def login_view(request):
@@ -153,6 +154,11 @@ def google_auth_callback(request):
             if len(name_parts) > 1:
                 user.last_name = name_parts[1]
             user.save()
+        
+        # Mark as new user for contact sync preference setup
+        new_user = True
+    else:
+        new_user = False
     
     # Log the user in
     login(request, user)
@@ -173,4 +179,63 @@ def google_auth_callback(request):
         }
     )
     
+    # Store OAuth info in session for contact sync setup
+    request.session['oauth_completed'] = True
+    request.session['new_user'] = new_user
+    
+    # For new users, redirect to contact sync preference setup
+    if new_user:
+        return redirect('authentication:contact_sync_setup')
+    
     return redirect('core:dashboard')
+
+
+@login_required
+def contact_sync_setup(request):
+    """
+    Setup contact sync preferences for new users after Google OAuth.
+    """
+    # Check if user just completed OAuth
+    if not request.session.get('oauth_completed'):
+        return redirect('core:dashboard')
+    
+    # Check if user already has sync settings (shouldn't happen for new users)
+    if UserContactSyncSettings.objects.filter(user=request.user).exists():
+        return redirect('core:dashboard')
+    
+    if request.method == 'POST':
+        form = ContactSyncPreferenceForm(request.POST)
+        
+        if form.is_valid():
+            sync_preference = form.cleaned_data['sync_preference']
+            
+            # Create user's contact sync settings
+            UserContactSyncSettings.objects.create(
+                user=request.user,
+                sync_preference=sync_preference,
+                auto_sync_enabled=True if sync_preference != 'disabled' else False,
+                sync_frequency_hours=24
+            )
+            
+            # Clear session flags
+            request.session.pop('oauth_completed', None)
+            request.session.pop('new_user', None)
+            
+            # Show success message based on choice
+            if sync_preference == 'disabled':
+                messages.info(request, 'Contact sync has been disabled. You can enable it later in Settings.')
+            elif sync_preference == 'crm_only':
+                messages.success(request, 'Contact sync configured to update existing CRM contacts only.')
+            elif sync_preference == 'all_contacts':
+                messages.success(request, 'Contact sync configured to import all your Google contacts.')
+            
+            return redirect('core:dashboard')
+    else:
+        form = ContactSyncPreferenceForm()
+    
+    context = {
+        'form': form,
+        'user_name': request.user.get_full_name() or request.user.username,
+    }
+    
+    return render(request, 'authentication/contact_sync_setup.html', context)

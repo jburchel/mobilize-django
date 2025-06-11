@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Contact Sync Setup - Mobilize CRM{% endblock %}
+
+{% block page_title %}Welcome to Mobilize CRM{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-sync-alt text-info"></i> 
+                    Contact Synchronization Setup
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <h5>Welcome, {{ user_name }}!</h5>
+                    <p class="text-muted">
+                        Let's set up how you'd like to sync your Google contacts with your CRM.
+                        You can change this setting later in your account settings.
+                    </p>
+                </div>
+                
+                <form method="post" id="syncSetupForm">
+                    {% csrf_token %}
+                    {% crispy form %}
+                </form>
+                
+                <div class="mt-4 p-3 bg-light rounded">
+                    <h6><i class="fas fa-info-circle text-info"></i> What happens next?</h6>
+                    <ul class="mb-0">
+                        <li><strong>Disabled:</strong> Your Google contacts remain separate. No sync will occur.</li>
+                        <li><strong>CRM Only:</strong> Only contacts that already exist in your CRM will be updated with Google contact data.</li>
+                        <li><strong>All Contacts:</strong> All your Google contacts will be imported into the CRM as new contacts.</li>
+                    </ul>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <small class="text-muted">
+                        Don't worry - you can always change these settings later in your profile.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle radio button changes to show explanations
+    const radioButtons = document.querySelectorAll('input[name="sync_preference"]');
+    const explanationTexts = document.querySelectorAll('.explanation-text');
+    
+    function updateExplanation() {
+        const selectedValue = document.querySelector('input[name="sync_preference"]:checked')?.value;
+        
+        explanationTexts.forEach(text => {
+            const choice = text.getAttribute('data-choice');
+            if (choice === selectedValue) {
+                text.style.display = 'block';
+            } else {
+                text.style.display = 'none';
+            }
+        });
+    }
+    
+    // Set up event listeners
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', updateExplanation);
+    });
+    
+    // Initial update
+    updateExplanation();
+    
+    // Form submission handling
+    document.getElementById('syncSetupForm').addEventListener('submit', function(e) {
+        const submitButton = document.querySelector('input[type="submit"]');
+        const skipButton = document.querySelector('input[name="skip"]');
+        
+        if (e.submitter === submitButton) {
+            submitButton.disabled = true;
+            submitButton.value = 'Setting up...';
+        } else if (e.submitter === skipButton) {
+            skipButton.disabled = true;
+            skipButton.value = 'Skipping...';
+        }
+    });
+});
+</script>
+{% endblock %}

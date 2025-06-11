@@ -124,3 +124,72 @@ class GoogleToken(models.Model):
     def is_expired(self):
         """Check if the token is expired."""
         return self.expires_at <= timezone.now()
+
+
+class UserContactSyncSettings(models.Model):
+    """
+    User preferences for Google Contacts synchronization.
+    """
+    SYNC_CHOICES = [
+        ('disabled', 'Disabled - No contact sync'),
+        ('crm_only', 'CRM Only - Sync only contacts that exist in CRM'),
+        ('all_contacts', 'All Contacts - Import all Google contacts to CRM'),
+    ]
+    
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='contact_sync_settings'
+    )
+    sync_preference = models.CharField(
+        max_length=20,
+        choices=SYNC_CHOICES,
+        default='crm_only',
+        help_text="Choose how Google contacts should be synchronized"
+    )
+    auto_sync_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable automatic contact synchronization"
+    )
+    sync_frequency_hours = models.PositiveIntegerField(
+        default=24,
+        help_text="How often to sync contacts (in hours)"
+    )
+    last_sync_at = models.DateTimeField(
+        blank=True, 
+        null=True,
+        help_text="When contacts were last synced"
+    )
+    sync_errors = models.JSONField(
+        blank=True, 
+        null=True,
+        help_text="Any errors from the last sync attempt"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'user_contact_sync_settings'
+        verbose_name = 'Contact Sync Settings'
+        verbose_name_plural = 'Contact Sync Settings'
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.get_sync_preference_display()}"
+    
+    def should_sync_now(self):
+        """Check if it's time to sync based on frequency setting."""
+        if not self.auto_sync_enabled or self.sync_preference == 'disabled':
+            return False
+        
+        if not self.last_sync_at:
+            return True
+        
+        from datetime import timedelta
+        sync_interval = timedelta(hours=self.sync_frequency_hours)
+        return timezone.now() - self.last_sync_at >= sync_interval
+    
+    def update_last_sync(self, errors=None):
+        """Update the last sync timestamp and any errors."""
+        self.last_sync_at = timezone.now()
+        self.sync_errors = errors
+        self.save(update_fields=['last_sync_at', 'sync_errors'])
