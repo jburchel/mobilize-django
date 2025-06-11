@@ -1,0 +1,16 @@
+from django.urls import path
+from . import views
+
+app_name = 'contacts'
+
+urlpatterns = [
+    path('', views.person_list, name='person_list'),
+    path('create/', views.person_create, name='person_create'),
+    path('<int:pk>/', views.person_detail, name='person_detail'),
+    path('<int:pk>/edit/', views.person_edit, name='person_edit'),
+    path('<int:pk>/delete/', views.person_delete, name='person_delete'),
+    # Interaction-related URLs have been removed as the ContactInteraction model no longer exists
+    path('import/', views.import_contacts, name='import_contacts'),
+    path('export/', views.export_contacts, name='export_contacts'),
+    path('google-sync/', views.google_sync, name='google_sync'),
+]

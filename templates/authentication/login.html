@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Mobilize CRM</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-blue: #183963;
+            --primary-green: #39A949;
+            --gray: #7F7F7F;
+            --light-gray: #f8f9fa;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-gray);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-container {
+            max-width: 400px;
+            width: 100%;
+            padding: 15px;
+        }
+        
+        .card {
+            border-radius: 0.5rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-header {
+            background-color: var(--primary-blue);
+            color: white;
+            border-radius: 0.5rem 0.5rem 0 0 !important;
+            padding: 1.25rem;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-blue);
+            border-color: var(--primary-blue);
+        }
+        
+        .btn-success {
+            background-color: var(--primary-green);
+            border-color: var(--primary-green);
+        }
+        
+        .btn-google {
+            background-color: #fff;
+            color: #757575;
+            border: 1px solid #ddd;
+        }
+        
+        .btn-google:hover {
+            background-color: #f1f1f1;
+            color: #555;
+        }
+        
+        .btn-google img {
+            width: 18px;
+            margin-right: 10px;
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .divider span {
+            padding: 0 10px;
+            color: #777;
+            font-size: 0.9rem;
+        }
+        
+        .logo {
+            font-family: 'Cronos Pro', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-weight: 600;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .error-message {
+            display: none;
+            color: #dc3545;
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="card">
+            <div class="card-header">
+                <div class="logo">Mobilize CRM</div>
+                <p class="mb-0">Sign in to your account</p>
+            </div>
+            <div class="card-body p-4">
+                <!-- Error message container -->
+                <div class="alert alert-danger error-message" id="error-message" role="alert"></div>
+                
+                <!-- Email/Password Login Form -->
+                <form id="login-form" method="post" action="{% url 'authentication:login' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                        <div class="d-flex justify-content-end mt-1">
+                            <a href="#" class="text-decoration-none small" id="forgot-password">Forgot password?</a>
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Sign In</button>
+                    </div>
+                    {% if messages %}
+                    <div class="mt-3">
+                        {% for message in messages %}
+                            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </form>
+                
+                <!-- Divider -->
+                <div class="divider">
+                    <span>OR</span>
+                </div>
+                
+                <!-- Google Sign In Button -->
+                <div class="d-grid">
+                    <button type="button" class="btn btn-google" id="google-signin">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google logo">
+                        Sign in with Google
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- No Firebase SDK needed -->
+    
+    <script>
+        // Get elements
+        const loginForm = document.getElementById('login-form');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const googleSignInButton = document.getElementById('google-signin');
+        const forgotPasswordLink = document.getElementById('forgot-password');
+        const errorMessageContainer = document.getElementById('error-message');
+        
+        // Form is now handled by Django's built-in authentication
+        
+        // Handle Google Sign-In
+        googleSignInButton.addEventListener('click', function() {
+            // Show loading state
+            googleSignInButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Signing in...';
+            googleSignInButton.disabled = true;
+            
+            // Redirect to Google OAuth URL
+            window.location.href = "{% url 'authentication:google_auth' %}";
+        });
+        
+        // Handle Forgot Password
+        forgotPasswordLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const username = usernameInput.value;
+            
+            if (!username) {
+                showError('Please enter your username first.');
+                return;
+            }
+            
+            // Send password reset request to Django backend
+            // This would need to be implemented on the backend
+            showError('Password reset functionality will be implemented soon.');
+        });
+        
+        // No longer needed - direct OAuth flow
+        
+        // Function to display error messages
+        function showError(message) {
+            errorMessageContainer.textContent = message;
+            errorMessageContainer.style.display = 'block';
+        }
+        
+        // No longer needed - direct OAuth flow
+    </script>
+</body>
+</html>

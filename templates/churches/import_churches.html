@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Import Churches{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Import Churches</h1>
+    <a href="{% url 'churches:church_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Churches
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Upload CSV File</h5>
+    </div>
+    <div class="card-body">
+        {% crispy form %}
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">CSV Format Instructions</h5>
+    </div>
+    <div class="card-body">
+        <p>Your CSV file should include the following columns:</p>
+        
+        <h6 class="mt-3">Required Fields:</h6>
+        <ul>
+            <li><code>name</code> - Church name</li>
+            <li><code>city</code> - City</li>
+            <li><code>state</code> - State/Province</li>
+        </ul>
+        
+        <h6 class="mt-3">Optional Fields:</h6>
+        <ul>
+            <li><code>denomination</code> - Religious denomination</li>
+            <li><code>website</code> - Church website URL</li>
+            <li><code>email</code> - Contact email address</li>
+            <li><code>phone</code> - Contact phone number</li>
+            <li><code>address_line1</code> - Street address line 1</li>
+            <li><code>address_line2</code> - Street address line 2</li>
+            <li><code>postal_code</code> - ZIP/Postal code</li>
+            <li><code>country</code> - Country (defaults to "United States")</li>
+            <li><code>size</code> - Church size (small, medium, large, or mega)</li>
+            <li><code>pipeline_stage</code> - Pipeline stage (new, contacted, meeting_scheduled, proposal, committed, partnership, inactive)</li>
+            <li><code>priority</code> - Priority level (low, medium, high)</li>
+            <li><code>notes</code> - Additional notes</li>
+        </ul>
+        
+        <h6 class="mt-3">Example CSV:</h6>
+        <pre class="bg-light p-3 border rounded">
+name,denomination,city,state,email,phone,pipeline_stage,priority
+"First Baptist Church","Baptist","Springfield","IL","info@firstbaptist.org","555-123-4567","new","medium"
+"Grace Community Church","Non-denominational","Chicago","IL","contact@gcc.org","555-987-6543","contacted","high"
+"St. Mary's Catholic Church","Catholic","Peoria","IL","parish@stmarys.org","555-456-7890","meeting_scheduled","medium"</pre>
+        
+        <div class="mt-4">
+            <a href="#" class="btn btn-outline-primary">
+                <i class="fas fa-download"></i> Download Sample CSV Template
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

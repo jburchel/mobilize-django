@@ -1,0 +1,83 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% load pipeline_extras %}
+
+{% block title %}Pipeline Visualization{% endblock %}
+
+{% block page_title %}Pipeline Visualization{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Dashboard</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Pipeline</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {% if pipeline %}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>{{ pipeline.name }}</h2>
+            <div>
+                <!-- Placeholder for pipeline selection dropdown -->
+                <select class="form-select" onchange="if (this.value) window.location.href=this.value;">
+                    <option value="">Switch Pipeline</option>
+                    {% for p in all_pipelines %}
+                        <option value="{% url 'pipeline:pipeline_visualization' %}" {% if p.id == pipeline.id %}selected{% endif %}>
+                            {{ p.name }}
+                        </option>
+                        {# Note: The URL above needs to be dynamic if you have multiple pipeline views or a way to pass pipeline_id #}
+                        {# For now, it will just reload the default. We'll refine this. #}
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <p>{{ pipeline.description }}</p>
+
+        <div class="row flex-nowrap overflow-auto">
+            {% for item in stages_with_contacts %}
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-header" style="background-color: {{ item.stage.color|default:'#e9ecef' }};">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">{{ item.stage.name }} ({{ item.contacts.count }})</h5>
+                                <small class="text-muted" title="Average time in stage">Avg: {{ item.average_duration|humanize_duration }}</small>
+                            </div>
+                        </div>
+                        <div class="card-body" style="min-height: 300px;">
+                            {% if item.contacts %}
+                                {% for pc in item.contacts %}
+                                    <div class="card mb-2">
+                                        <div class="card-body p-2">
+                                            <p class="card-text mb-1"><strong>{{ pc.contact }}</strong></p>
+                                            <small class="text-muted">Entered: {{ pc.entered_at|date:"M d, Y" }}</small>
+                                            
+                                            <form action="{% url 'pipeline:move_pipeline_contact' %}" method="POST" class="mt-2">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="pipeline_contact_id" value="{{ pc.id }}">
+                                                <div class="input-group input-group-sm">
+                                                    <select name="target_stage_id" class="form-select form-select-sm">
+                                                        <option value="">Move to...</option>
+                                                        {% for stage_option in pipeline.stages.all.order_by %}
+                                                            {% if stage_option != item.stage %}
+                                                                <option value="{{ stage_option.id }}">{{ stage_option.name }}</option>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </select>
+                                                    <button type="submit" class="btn btn-outline-primary btn-sm">Move</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No contacts in this stage.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No pipeline selected or available. Please <a href="{% url 'admin:pipeline_pipeline_add' %}">create a pipeline</a>.</p>
+    {% endif %}
+</div>
+{% endblock %}

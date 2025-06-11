@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ church.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ church.name }}</h1>
+    <div>
+        <a href="{% url 'churches:church_edit' church.pk %}" class="btn btn-primary">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+        <div class="btn-group ms-2">
+            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="{% url 'churches:interaction_create' church.pk %}">
+                    <i class="fas fa-comment-alt me-2"></i> Add Interaction
+                </a></li>
+                <li><a class="dropdown-item" href="{% url 'churches:add_church_contact' church.pk %}">
+                    <i class="fas fa-user-plus me-2"></i> Add Contact
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="{% url 'churches:church_delete' church.pk %}">
+                    <i class="fas fa-trash me-2"></i> Delete Church
+                </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Main Information -->
+    <div class="col-md-8">
+        <!-- Church Information Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Church Information</h5>
+                <a href="{% url 'churches:church_edit' church.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4 fw-bold">Denomination:</div>
+                    <div class="col-md-8">{{ church.denomination|default:"Not specified" }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4 fw-bold">Size:</div>
+                    <div class="col-md-8">{{ church.get_size_display|default:"Not specified" }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4 fw-bold">Website:</div>
+                    <div class="col-md-8">
+                        {% if church.website %}
+                            <a href="{{ church.website }}" target="_blank">{{ church.website }}</a>
+                        {% else %}
+                            Not specified
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4 fw-bold">Email:</div>
+                    <div class="col-md-8">
+                        {% if church.email %}
+                            <a href="mailto:{{ church.email }}">{{ church.email }}</a>
+                        {% else %}
+                            Not specified
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4 fw-bold">Phone:</div>
+                    <div class="col-md-8">
+                        {% if church.phone %}
+                            <a href="tel:{{ church.phone }}">{{ church.phone }}</a>
+                        {% else %}
+                            Not specified
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Address Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Address</h5>
+            </div>
+            <div class="card-body">
+                {% if church.full_address %}
+                    <address>
+                        {% if church.address_line1 %}{{ church.address_line1 }}<br>{% endif %}
+                        {% if church.address_line2 %}{{ church.address_line2 }}<br>{% endif %}
+                        {% if church.city or church.state or church.postal_code %}
+                            {{ church.city }}{% if church.city and church.state %}, {% endif %}
+                            {{ church.state }} {{ church.postal_code }}<br>
+                        {% endif %}
+                        {% if church.country and church.country != 'United States' %}{{ church.country }}{% endif %}
+                    </address>
+                    <a href="https://maps.google.com/?q={{ church.full_address|urlencode }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-map-marker-alt"></i> View on Map
+                    </a>
+                {% else %}
+                    <p>No address information available.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Notes Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Notes</h5>
+            </div>
+            <div class="card-body">
+                {% if church.notes %}
+                    <p>{{ church.notes|linebreaks }}</p>
+                {% else %}
+                    <p class="text-muted">No notes available.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Recent Interactions -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Recent Interactions</h5>
+                <div>
+                    <a href="{% url 'churches:interaction_create' church.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-plus"></i> Add
+                    </a>
+                    <a href="{% url 'churches:interaction_list' church.pk %}" class="btn btn-sm btn-outline-secondary ms-2">
+                        <i class="fas fa-list"></i> View All
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if interactions %}
+                    <div class="list-group">
+                        {% for interaction in interactions %}
+                            <div class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ interaction.subject }}</h6>
+                                    <small class="text-muted">{{ interaction.date|date:"M d, Y" }}</small>
+                                </div>
+                                <p class="mb-1">{{ interaction.content|truncatechars:150 }}</p>
+                                <small class="text-muted">
+                                    <span class="badge bg-secondary">{{ interaction.get_interaction_type_display }}</span>
+                                    {% if interaction.created_by %}
+                                        by {{ interaction.created_by.get_full_name|default:interaction.created_by.username }}
+                                    {% endif %}
+                                </small>
+                                <div class="mt-2">
+                                    <a href="{% url 'churches:interaction_edit' interaction.pk %}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <a href="{% url 'churches:interaction_delete' interaction.pk %}" class="btn btn-sm btn-outline-danger ms-1">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No interactions recorded yet.</p>
+                    <a href="{% url 'churches:interaction_create' church.pk %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Record First Interaction
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <!-- Status Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="fw-bold">Pipeline Stage:</label>
+                    <div>
+                        {% if church.pipeline_stage == 'new' %}
+                            <span class="badge bg-info">New Contact</span>
+                        {% elif church.pipeline_stage == 'contacted' %}
+                            <span class="badge bg-secondary">Contacted</span>
+                        {% elif church.pipeline_stage == 'meeting_scheduled' %}
+                            <span class="badge bg-primary">Meeting Scheduled</span>
+                        {% elif church.pipeline_stage == 'proposal' %}
+                            <span class="badge bg-warning text-dark">Proposal</span>
+                        {% elif church.pipeline_stage == 'committed' %}
+                            <span class="badge bg-success">Committed</span>
+                        {% elif church.pipeline_stage == 'partnership' %}
+                            <span class="badge bg-primary">Partnership</span>
+                        {% elif church.pipeline_stage == 'inactive' %}
+                            <span class="badge bg-danger">Inactive</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold">Priority:</label>
+                    <div>
+                        {% if church.priority == 'high' %}
+                            <span class="badge bg-danger">High</span>
+                        {% elif church.priority == 'medium' %}
+                            <span class="badge bg-warning text-dark">Medium</span>
+                        {% elif church.priority == 'low' %}
+                            <span class="badge bg-success">Low</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold">Assigned To:</label>
+                    <div>
+                        {% if church.assigned_to %}
+                            {{ church.assigned_to.get_full_name|default:church.assigned_to.username }}
+                        {% else %}
+                            <span class="text-muted">Not assigned</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold">Office:</label>
+                    <div>
+                        {% if church.office %}
+                            {{ church.office.name }}
+                        {% else %}
+                            <span class="text-muted">Not assigned</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contacts Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Contacts</h5>
+                <a href="{% url 'churches:add_church_contact' church.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-plus"></i> Add
+                </a>
+            </div>
+            <div class="card-body">
+                {% if contacts %}
+                    <div class="list-group">
+                        {% for contact in contacts %}
+                            <div class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ contact.person.first_name }} {{ contact.person.last_name }}</h6>
+                                    {% if contact.is_primary_contact %}
+                                        <span class="badge bg-primary">Primary</span>
+                                    {% endif %}
+                                </div>
+                                <p class="mb-1">{{ contact.role }}</p>
+                                <small>
+                                    {% if contact.person.email %}
+                                        <a href="mailto:{{ contact.person.email }}">{{ contact.person.email }}</a><br>
+                                    {% endif %}
+                                    {% if contact.person.phone %}
+                                        <a href="tel:{{ contact.person.phone }}">{{ contact.person.phone }}</a>
+                                    {% endif %}
+                                </small>
+                                <div class="mt-2">
+                                    <a href="{% url 'contacts:person_detail' contact.person.pk %}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-user"></i> View Profile
+                                    </a>
+                                    <a href="{% url 'churches:edit_church_contact' contact.pk %}" class="btn btn-sm btn-outline-secondary ms-1">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'churches:delete_church_contact' contact.pk %}" class="btn btn-sm btn-outline-danger ms-1">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No contacts added yet.</p>
+                    <a href="{% url 'churches:add_church_contact' church.pk %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add First Contact
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Metadata Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Metadata</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <small class="text-muted">Created:</small>
+                    <div>{{ church.created_at|date:"M d, Y" }}</div>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">Last Updated:</small>
+                    <div>{{ church.updated_at|date:"M d, Y" }}</div>
+                </div>
+                <div>
+                    <small class="text-muted">Created By:</small>
+                    <div>
+                        {% if church.created_by %}
+                            {{ church.created_by.get_full_name|default:church.created_by.username }}
+                        {% else %}
+                            <span class="text-muted">Unknown</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

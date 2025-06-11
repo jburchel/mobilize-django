@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Churches{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Churches</h1>
+    <div>
+        <a href="{% url 'churches:church_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add Church
+        </a>
+        <div class="btn-group ms-2">
+            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-file-export"></i> Export
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{% url 'churches:export_churches' %}?q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}">Export to CSV</a></li>
+            </ul>
+        </div>
+        <a href="{% url 'churches:import_churches' %}" class="btn btn-outline-secondary ms-2">
+            <i class="fas fa-file-import"></i> Import
+        </a>
+    </div>
+</div>
+
+<!-- Filter Form -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Search churches..." value="{{ query }}">
+                    <button class="btn btn-outline-secondary" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="pipeline_stage" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Pipeline Stages</option>
+                    {% for value, label in pipeline_stages %}
+                        <option value="{{ value }}" {% if value == pipeline_stage %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="priority" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Priorities</option>
+                    {% for value, label in priorities %}
+                        <option value="{{ value }}" {% if value == priority %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if page_obj %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Location</th>
+                    <th>Denomination</th>
+                    <th>Pipeline Stage</th>
+                    <th>Priority</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for church in page_obj %}
+                    <tr>
+                        <td><a href="{% url 'churches:church_detail' church.pk %}">{{ church.name }}</a></td>
+                        <td>{{ church.city }}{% if church.city and church.state %}, {% endif %}{{ church.state }}</td>
+                        <td>{{ church.denomination|default:"-" }}</td>
+                        <td>
+                            {% if church.pipeline_stage == 'new' %}
+                                <span class="badge bg-info">New</span>
+                            {% elif church.pipeline_stage == 'contacted' %}
+                                <span class="badge bg-secondary">Contacted</span>
+                            {% elif church.pipeline_stage == 'meeting_scheduled' %}
+                                <span class="badge bg-primary">Meeting</span>
+                            {% elif church.pipeline_stage == 'proposal' %}
+                                <span class="badge bg-warning text-dark">Proposal</span>
+                            {% elif church.pipeline_stage == 'committed' %}
+                                <span class="badge bg-success">Committed</span>
+                            {% elif church.pipeline_stage == 'partnership' %}
+                                <span class="badge bg-primary">Partnership</span>
+                            {% elif church.pipeline_stage == 'inactive' %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if church.priority == 'high' %}
+                                <span class="badge bg-danger">High</span>
+                            {% elif church.priority == 'medium' %}
+                                <span class="badge bg-warning text-dark">Medium</span>
+                            {% elif church.priority == 'low' %}
+                                <span class="badge bg-success">Low</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{% url 'churches:church_edit' church.pk %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'churches:church_detail' church.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'churches:church_delete' church.pk %}" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for i in page_obj.paginator.page_range %}
+                    {% if page_obj.number == i %}
+                        <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                    {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}">{{ i }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+{% else %}
+    <div class="alert alert-info">
+        <h4 class="alert-heading">No churches found!</h4>
+        <p>No churches match your search criteria. Try adjusting your filters or <a href="{% url 'churches:church_create' %}" class="alert-link">add a new church</a>.</p>
+    </div>
+{% endif %}
+{% endblock %}

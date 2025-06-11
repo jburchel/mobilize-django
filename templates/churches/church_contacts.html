@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ church.name }} - Contacts{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Contacts at {{ church.name }}</h1>
+    <div>
+        <a href="{% url 'churches:add_church_contact' church.pk %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add Contact
+        </a>
+        <a href="{% url 'churches:church_detail' church.pk %}" class="btn btn-secondary ms-2">
+            <i class="fas fa-arrow-left"></i> Back to Church
+        </a>
+    </div>
+</div>
+
+{% if contacts %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for contact in contacts %}
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">{{ contact.person.first_name }} {{ contact.person.last_name }}</h5>
+                        {% if contact.is_primary_contact %}
+                            <span class="badge bg-primary">Primary</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">{{ contact.role }}</h6>
+                        
+                        <div class="mb-3">
+                            {% if contact.person.email %}
+                                <div class="mb-1">
+                                    <i class="fas fa-envelope me-2"></i>
+                                    <a href="mailto:{{ contact.person.email }}">{{ contact.person.email }}</a>
+                                </div>
+                            {% endif %}
+                            
+                            {% if contact.person.phone %}
+                                <div>
+                                    <i class="fas fa-phone me-2"></i>
+                                    <a href="tel:{{ contact.person.phone }}">{{ contact.person.phone }}</a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if contact.notes %}
+                            <div class="mb-3">
+                                <h6>Notes:</h6>
+                                <p class="card-text">{{ contact.notes|linebreaks }}</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn-group w-100">
+                            <a href="{% url 'contacts:person_detail' contact.person.pk %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-user"></i> View Profile
+                            </a>
+                            <a href="{% url 'churches:edit_church_contact' contact.pk %}" class="btn btn-outline-primary">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <a href="{% url 'churches:delete_church_contact' contact.pk %}" class="btn btn-outline-danger">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        <h4 class="alert-heading">No contacts found!</h4>
+        <p>There are no contacts associated with this church yet.</p>
+        <hr>
+        <p class="mb-0">
+            <a href="{% url 'churches:add_church_contact' church.pk %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add First Contact
+            </a>
+        </p>
+    </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,77 @@
+{
+  "alembic_version": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "churches": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "communications": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "contacts": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "email_campaigns": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "email_settings": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "email_signatures": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "email_templates": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "email_tracking": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "google_tokens": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "google_workspace_settings": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "offices": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "people": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "permissions": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "pipeline_contacts": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "pipeline_stage_history": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "pipeline_stages": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "pipelines": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "role_permissions": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "roles": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "sync_history": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "tasks": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "user_offices": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "user_tokens": {
+    "message": "Format is Authorization: Bearer [token]"
+  },
+  "users": {
+    "message": "Format is Authorization: Bearer [token]"
+  }
+}

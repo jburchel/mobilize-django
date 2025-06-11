@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Mobilize CRM{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Key Metrics -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-user me-2"></i> People
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <h2 class="mb-0">{{ people_count }}</h2>
+                <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-church me-2"></i> Churches
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <h2 class="mb-0">{{ churches_count }}</h2>
+                <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-tasks me-2"></i> Pending Tasks
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <h2 class="mb-0">{{ pending_tasks|length }}</h2>
+                <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Pipeline Distribution -->
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-chart-pie me-2"></i> Pipeline Distribution</span>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="pipelineDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        Filter
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="pipelineDropdown">
+                        <li><a class="dropdown-item" href="#">All Contacts</a></li>
+                        <li><a class="dropdown-item" href="#">People Only</a></li>
+                        <li><a class="dropdown-item" href="#">Churches Only</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if pipeline_stages %}
+                    <canvas id="pipelineChart" width="400" height="200"></canvas>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-chart-pie fa-3x mb-3 text-muted"></i>
+                        <p class="text-muted">No pipeline data available</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-history me-2"></i> Recent Activity
+            </div>
+            <div class="card-body p-0">
+                {% if recent_communications %}
+                    <ul class="list-group list-group-flush">
+                        {% for comm in recent_communications %}
+                            <li class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ comm.subject }}</h6>
+                                    <small>{{ comm.sent_at|date:"M d" }}</small>
+                                </div>
+                                <p class="mb-1">{{ comm.content|truncatechars:50 }}</p>
+                                <small>To: {{ comm.recipient_contact.name }}</small>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-history fa-3x mb-3 text-muted"></i>
+                        <p class="text-muted">No recent activity</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Pending Tasks -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-tasks me-2"></i> Pending Tasks</span>
+                <a href="#" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus me-1"></i> New Task
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if pending_tasks %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Due Date</th>
+                                    <th>Priority</th>
+                                    <th>Contact</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in pending_tasks %}
+                                    <tr>
+                                        <td>{{ task.title }}</td>
+                                        <td>{{ task.due_date|date:"M d, Y" }}</td>
+                                        <td>
+                                            {% if task.priority == 'high' %}
+                                                <span class="badge bg-danger">High</span>
+                                            {% elif task.priority == 'medium' %}
+                                                <span class="badge bg-warning text-dark">Medium</span>
+                                            {% else %}
+                                                <span class="badge bg-info text-dark">Low</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ task.contact.name|default:"N/A" }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="#" class="btn btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="#" class="btn btn-outline-success">
+                                                    <i class="fas fa-check"></i>
+                                                </a>
+                                                <a href="#" class="btn btn-outline-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-tasks fa-3x mb-3 text-muted"></i>
+                        <p class="text-muted">No pending tasks</p>
+                        <a href="#" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i> Create Task
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if pipeline data and canvas element exist
+        const pipelineCanvas = document.getElementById('pipelineChart');
+        if (pipelineCanvas) {
+            // Pipeline stage data (will be replaced with real data)
+            const pipelineData = {
+                labels: [
+                    {% for stage in pipeline_stages %}
+                        '{{ stage.pipeline_stage }}',
+                    {% endfor %}
+                ],
+                datasets: [{
+                    label: 'Contacts',
+                    data: [
+                        {% for stage in pipeline_stages %}
+                            {{ stage.count }},
+                        {% endfor %}
+                    ],
+                    backgroundColor: [
+                        '#183963',
+                        '#39A949',
+                        '#7F7F7F',
+                        '#4e73df',
+                        '#1cc88a',
+                        '#36b9cc'
+                    ],
+                    borderWidth: 1
+                }]
+            };
+
+            // Create the pipeline chart if data exists
+            if (pipelineData.labels.length > 0) {
+                new Chart(pipelineCanvas, {
+                    type: 'pie',
+                    data: pipelineData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    });
+</script>
+{% endblock %}
