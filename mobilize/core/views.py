@@ -10,53 +10,151 @@ def dashboard(request):
     """
     Main dashboard view displaying key metrics and pending tasks.
     
+    Data visibility is based on user role:
+    - Super Admin: All data (can toggle to "my only" view)
+    - Office Admin: Office data (can toggle to "my only" view)  
+    - Standard User: Only their people, office churches
+    
     Shows:
     - People count
     - Churches count
     - Recent communications
     - Pending tasks
     - Pipeline stage distribution
-    """
-    # These imports are placed here to avoid circular imports
-    # Will be properly implemented when models are created
+    - Recent activity
+    - Overdue tasks
     """
     from mobilize.contacts.models import Person
     from mobilize.churches.models import Church
     from mobilize.tasks.models import Task
     from mobilize.communications.models import Communication
+    from mobilize.core.permissions import get_data_access_manager
+    from mobilize.core.dashboard_widgets import get_user_dashboard_config, organize_widgets_by_row, get_widget_css_class
+    from django.db.models import Count, Q
+    from datetime import datetime, timedelta
+    
+    # Get data access manager based on user role and view preferences
+    access_manager = get_data_access_manager(request)
+    
+    # Get filtered querysets based on user permissions
+    people_queryset = access_manager.get_people_queryset()
+    churches_queryset = access_manager.get_churches_queryset()
+    tasks_queryset = access_manager.get_tasks_queryset()
+    communications_queryset = access_manager.get_communications_queryset()
     
     # Get counts for dashboard widgets
-    people_count = Person.objects.count()
-    churches_count = Church.objects.count()
+    people_count = people_queryset.count()
+    churches_count = churches_queryset.count()
     
-    # Get pending tasks
-    pending_tasks = Task.objects.filter(
-        status='pending',
-        due_date__lte=datetime.now() + timedelta(days=7)
+    # Get pending tasks for current user (always user-specific)
+    pending_tasks = tasks_queryset.filter(
+        status='pending'
     ).order_by('due_date')[:5]
     
-    # Get recent communications
-    recent_communications = Communication.objects.all().order_by('-sent_at')[:5]
+    # Get overdue tasks
+    overdue_tasks = tasks_queryset.filter(
+        status='pending',
+        due_date__lt=datetime.now().date()
+    ).count()
     
-    # Get pipeline distribution
-    pipeline_stages = Person.objects.values('pipeline_stage').annotate(
+    # Get upcoming tasks (next 7 days)
+    upcoming_tasks = tasks_queryset.filter(
+        status='pending',
+        due_date__range=[datetime.now().date(), datetime.now().date() + timedelta(days=7)]
+    ).count()
+    
+    # Get recent communications (user-specific)
+    recent_communications = communications_queryset.order_by('-date_sent')[:5]
+    
+    # Get pipeline distribution for people (based on access level)
+    pipeline_stages = people_queryset.values('pipeline_stage').annotate(
         count=Count('id')
-    ).order_by('pipeline_stage')
-    """
+    ).exclude(pipeline_stage__isnull=True).exclude(pipeline_stage='').order_by('pipeline_stage')
     
-    # Placeholder data until models are implemented
-    people_count = 0
-    churches_count = 0
-    pending_tasks = []
-    recent_communications = []
-    pipeline_stages = []
+    # Get task statistics (user-specific)
+    completed_this_week = tasks_queryset.filter(
+        status='completed',
+        completed_at__gte=datetime.now() - timedelta(days=7)
+    ).count()
+    
+    # Get activity summary for this week (based on access level)
+    week_start = datetime.now() - timedelta(days=7)
+    recent_people = people_queryset.filter(
+        contact__created_at__gte=week_start.date()
+    ).count()
+    
+    recent_churches = churches_queryset.filter(
+        contact__created_at__gte=week_start.date()
+    ).count()
+    
+    # Prepare priority distribution (user-specific tasks)
+    priority_tasks = tasks_queryset.filter(
+        status='pending'
+    ).values('priority').annotate(count=Count('id')).order_by('priority')
+    
+    # Get activity timeline data (last 7 days)
+    activity_timeline = []
+    for i in range(6, -1, -1):
+        date = datetime.now().date() - timedelta(days=i)
+        
+        people_created = people_queryset.filter(
+            contact__created_at=date
+        ).count()
+        
+        tasks_completed = tasks_queryset.filter(
+            status='completed',
+            completed_at__date=date
+        ).count()
+        
+        communications_sent = communications_queryset.filter(
+            date=date
+        ).count()
+        
+        activity_timeline.append({
+            'date': date.strftime('%m/%d'),
+            'people': people_created,
+            'tasks': tasks_completed,
+            'communications': communications_sent,
+        })
+    
+    # Get church activity summary
+    church_stats = {
+        'total': churches_queryset.count(),
+        'with_contacts': churches_queryset.filter(
+            main_contact_id__isnull=False
+        ).count(),
+        'recent_activity': churches_queryset.filter(
+            contact__updated_at__gte=week_start.date()
+        ).count(),
+    }
+    
+    # Get user's dashboard widget configuration
+    dashboard_config = get_user_dashboard_config(request.user)
+    enabled_widgets = dashboard_config.get_enabled_widgets()
+    widget_rows = organize_widgets_by_row(enabled_widgets)
     
     context = {
         'people_count': people_count,
         'churches_count': churches_count,
         'pending_tasks': pending_tasks,
+        'overdue_tasks': overdue_tasks,
+        'upcoming_tasks': upcoming_tasks,
         'recent_communications': recent_communications,
         'pipeline_stages': pipeline_stages,
+        'completed_this_week': completed_this_week,
+        'recent_people': recent_people,
+        'recent_churches': recent_churches,
+        'priority_tasks': priority_tasks,
+        'activity_timeline': activity_timeline,
+        'church_stats': church_stats,
+        # Add view mode controls
+        'can_toggle_view': access_manager.can_view_all_data(),
+        'current_view_mode': access_manager.view_mode,
+        'view_mode_display': access_manager.get_view_mode_display(),
+        'user_role': getattr(request.user, 'role', 'standard_user'),
+        # Add widget configuration
+        'widget_rows': widget_rows,
+        'get_widget_css_class': get_widget_css_class,
     }
     
     return render(request, 'core/dashboard.html', context)
@@ -131,3 +229,111 @@ def settings(request):
     }
     
     return render(request, 'core/settings.html', context)
+
+
+@login_required
+def reports(request):
+    """
+    Reports view for generating and downloading various reports.
+    """
+    from mobilize.core.permissions import get_data_access_manager
+    
+    # Get data access manager to determine what reports user can access
+    access_manager = get_data_access_manager(request)
+    
+    # Get summary statistics for the reports page
+    people_count = access_manager.get_people_queryset().count()
+    churches_count = access_manager.get_churches_queryset().count()
+    tasks_count = access_manager.get_tasks_queryset().count()
+    communications_count = access_manager.get_communications_queryset().count()
+    
+    context = {
+        'people_count': people_count,
+        'churches_count': churches_count,
+        'tasks_count': tasks_count,
+        'communications_count': communications_count,
+        'can_toggle_view': access_manager.can_view_all_data(),
+        'current_view_mode': access_manager.view_mode,
+        'view_mode_display': access_manager.get_view_mode_display(),
+        'user_role': getattr(request.user, 'role', 'standard_user'),
+    }
+    
+    return render(request, 'core/reports.html', context)
+
+
+@login_required
+def export_report(request, report_type):
+    """
+    Export reports in various formats based on user permissions.
+    
+    Args:
+        report_type: Type of report to export (people, churches, tasks, communications, summary)
+    """
+    from mobilize.core.reports import ReportGenerator
+    
+    # Get format and filters from request
+    format = request.GET.get('format', 'csv')
+    view_mode = request.GET.get('view_mode', 'default')
+    
+    # Create report generator
+    generator = ReportGenerator(request.user, view_mode)
+    
+    try:
+        if report_type == 'people':
+            return generator.generate_people_report(format)
+        elif report_type == 'churches':
+            return generator.generate_churches_report(format)
+        elif report_type == 'tasks':
+            status_filter = request.GET.get('status')
+            return generator.generate_tasks_report(format, status_filter)
+        elif report_type == 'communications':
+            date_range = request.GET.get('date_range')
+            date_range = int(date_range) if date_range else None
+            return generator.generate_communications_report(format, date_range)
+        elif report_type == 'summary':
+            return generator.generate_dashboard_summary(format)
+        else:
+            messages.error(request, f'Unknown report type: {report_type}')
+            return redirect('core:reports')
+            
+    except Exception as e:
+        messages.error(request, f'Error generating report: {str(e)}')
+        return redirect('core:reports')
+
+
+@login_required
+def customize_dashboard(request):
+    """
+    Dashboard customization view for managing widget preferences.
+    """
+    from mobilize.core.dashboard_widgets import get_user_dashboard_config, toggle_widget, reorder_widgets
+    import json
+    
+    dashboard_config = get_user_dashboard_config(request.user)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'toggle_widget':
+            widget_id = request.POST.get('widget_id')
+            enabled = request.POST.get('enabled') == 'true'
+            toggle_widget(request.user, widget_id, enabled)
+            messages.success(request, f'Widget {"enabled" if enabled else "disabled"} successfully.')
+            
+        elif action == 'reorder_widgets':
+            widget_order = json.loads(request.POST.get('widget_order', '[]'))
+            reorder_widgets(request.user, widget_order)
+            messages.success(request, 'Widget order updated successfully.')
+            
+        elif action == 'reset_defaults':
+            dashboard_config.reset_to_defaults()
+            messages.success(request, 'Dashboard reset to default configuration.')
+        
+        return redirect('core:customize_dashboard')
+    
+    context = {
+        'dashboard_config': dashboard_config,
+        'widgets': dashboard_config.get_widget_config(),
+    }
+    
+    return render(request, 'core/customize_dashboard.html', context)

@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+
+{% block title %}Customize Dashboard - Mobilize CRM{% endblock %}
+
+{% block page_title %}
+    Customize Dashboard
+    <a href="{% url 'core:dashboard' %}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-cog me-2"></i> Widget Configuration</span>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAll()">
+                        <i class="fas fa-check-square me-1"></i> Select All
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectNone()">
+                        <i class="fas fa-square me-1"></i> Select None
+                    </button>
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="reset_defaults">
+                        <button type="submit" class="btn btn-sm btn-outline-warning" onclick="return confirm('Reset dashboard to default configuration?')">
+                            <i class="fas fa-undo me-1"></i> Reset Defaults
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    Customize your dashboard by enabling/disabling widgets and reordering them. 
+                    Drag and drop widgets to change their order.
+                </p>
+                
+                <div id="widget-list" class="sortable-list">
+                    {% for widget in widgets %}
+                    <div class="widget-item card mb-3" data-widget-id="{{ widget.id }}">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="drag-handle me-3">
+                                    <i class="fas fa-grip-vertical text-muted"></i>
+                                </div>
+                                <div class="form-check me-3">
+                                    <input class="form-check-input widget-toggle" 
+                                           type="checkbox" 
+                                           id="widget_{{ widget.id }}"
+                                           data-widget-id="{{ widget.id }}"
+                                           {% if widget.enabled %}checked{% endif %}>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ widget.name }}</h6>
+                                    <p class="text-muted mb-0 small">{{ widget.description }}</p>
+                                </div>
+                                <div class="widget-size-info">
+                                    <span class="badge bg-light text-dark">{{ widget.size|title }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="mt-4">
+                    <button type="button" class="btn btn-primary" onclick="saveOrder()">
+                        <i class="fas fa-save me-1"></i> Save Configuration
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i> Widget Information
+            </div>
+            <div class="card-body">
+                <h6>Widget Sizes</h6>
+                <ul class="list-unstyled small">
+                    <li><span class="badge bg-primary me-2">Full</span> Full width (12 columns)</li>
+                    <li><span class="badge bg-success me-2">Two Thirds</span> 8 out of 12 columns</li>
+                    <li><span class="badge bg-warning me-2">Half</span> Half width (6 columns)</li>
+                    <li><span class="badge bg-info me-2">One Third</span> 4 out of 12 columns</li>
+                    <li><span class="badge bg-secondary me-2">Quarter</span> Quarter width (3 columns)</li>
+                </ul>
+                
+                <hr>
+                
+                <h6>Available Widgets</h6>
+                <div class="small">
+                    {% for widget in widgets %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>{{ widget.name }}</span>
+                        <span class="badge {% if widget.enabled %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if widget.enabled %}Enabled{% else %}Disabled{% endif %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <hr>
+                
+                <h6>Tips</h6>
+                <ul class="small text-muted">
+                    <li>Drag widgets by the grip handle to reorder them</li>
+                    <li>Uncheck widgets you don't want to see</li>
+                    <li>Widgets arrange automatically based on their sizes</li>
+                    <li>Changes are saved when you click "Save Configuration"</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+    // Initialize sortable list
+    const sortableList = document.getElementById('widget-list');
+    const sortable = Sortable.create(sortableList, {
+        handle: '.drag-handle',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag'
+    });
+
+    // Handle widget toggle
+    document.querySelectorAll('.widget-toggle').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const widgetId = this.dataset.widgetId;
+            const enabled = this.checked;
+            
+            // Send AJAX request to toggle widget
+            fetch('{% url "core:customize_dashboard" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: `action=toggle_widget&widget_id=${widgetId}&enabled=${enabled}`
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Update the widget item appearance
+                    const widgetItem = this.closest('.widget-item');
+                    if (enabled) {
+                        widgetItem.style.opacity = '1';
+                    } else {
+                        widgetItem.style.opacity = '0.6';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error toggling widget:', error);
+                // Revert checkbox state on error
+                this.checked = !this.checked;
+            });
+        });
+    });
+
+    function selectAll() {
+        document.querySelectorAll('.widget-toggle').forEach(checkbox => {
+            if (!checkbox.checked) {
+                checkbox.click();
+            }
+        });
+    }
+
+    function selectNone() {
+        document.querySelectorAll('.widget-toggle').forEach(checkbox => {
+            if (checkbox.checked) {
+                checkbox.click();
+            }
+        });
+    }
+
+    function saveOrder() {
+        const widgetOrder = Array.from(sortableList.children).map(item => 
+            item.dataset.widgetId
+        );
+        
+        fetch('{% url "core:customize_dashboard" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: `action=reorder_widgets&widget_order=${JSON.stringify(widgetOrder)}`
+        })
+        .then(response => {
+            if (response.ok) {
+                // Show success message
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success alert-dismissible fade show';
+                alert.innerHTML = `
+                    <i class="fas fa-check me-2"></i>Widget order saved successfully!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.querySelector('.card-body').insertBefore(alert, document.querySelector('.card-body').firstChild);
+                
+                // Auto-dismiss after 3 seconds
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.remove();
+                    }
+                }, 3000);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving order:', error);
+            alert('Failed to save widget order. Please try again.');
+        });
+    }
+
+    // Set initial opacity for disabled widgets
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.widget-toggle').forEach(checkbox => {
+            const widgetItem = checkbox.closest('.widget-item');
+            if (!checkbox.checked) {
+                widgetItem.style.opacity = '0.6';
+            }
+        });
+    });
+</script>
+
+<style>
+.widget-item {
+    cursor: move;
+    transition: opacity 0.3s ease;
+}
+
+.widget-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.drag-handle {
+    cursor: grab;
+    padding: 10px 5px;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+}
+
+.sortable-chosen {
+    background: #f8f9fa;
+}
+
+.sortable-drag {
+    transform: rotate(5deg);
+}
+
+.sortable-list {
+    min-height: 50px;
+}
+</style>
+{% endblock %}

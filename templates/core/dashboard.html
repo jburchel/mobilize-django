@@ -2,49 +2,164 @@
 
 {% block title %}Dashboard - Mobilize CRM{% endblock %}
 
-{% block page_title %}Dashboard{% endblock %}
+{% block page_title %}
+    Dashboard
+    <a href="{% url 'core:customize_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-cog me-1"></i> Customize
+    </a>
+{% endblock %}
 
 {% block content %}
-<div class="row">
-    <!-- Key Metrics -->
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-header">
-                <i class="fas fa-user me-2"></i> People
+<!-- View Mode Toggle for Admins -->
+{% if can_toggle_view %}
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body py-2">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-eye me-2 text-muted"></i>
+                        <span class="text-muted me-3">View Mode:</span>
+                        <span class="badge bg-primary">{{ view_mode_display }}</span>
+                    </div>
+                    <div class="btn-group" role="group" aria-label="View mode toggle">
+                        <a href="?view_mode=default" 
+                           class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            {% if user_role == 'super_admin' %}
+                                <i class="fas fa-globe me-1"></i> All Offices
+                            {% else %}
+                                <i class="fas fa-building me-1"></i> My Office
+                            {% endif %}
+                        </a>
+                        <a href="?view_mode=my_only" 
+                           class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-user me-1"></i> My Contacts Only
+                        </a>
+                    </div>
+                </div>
             </div>
-            <div class="card-body d-flex align-items-center justify-content-between">
-                <h2 class="mb-0">{{ people_count }}</h2>
-                <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+<div class="row">
+    <!-- Key Metrics Row 1 -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card h-100 border-left-primary">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-users me-2"></i> People
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h2 class="mb-1">{{ people_count }}</h2>
+                        <small class="text-success">+{{ recent_people }} this week</small>
+                    </div>
+                    <a href="{% url 'contacts:person_list' %}" class="btn btn-sm btn-primary">View All</a>
+                </div>
             </div>
         </div>
     </div>
     
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-header">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card h-100 border-left-success">
+            <div class="card-header bg-success text-white">
                 <i class="fas fa-church me-2"></i> Churches
             </div>
-            <div class="card-body d-flex align-items-center justify-content-between">
-                <h2 class="mb-0">{{ churches_count }}</h2>
-                <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h2 class="mb-1">{{ churches_count }}</h2>
+                        <small class="text-success">+{{ recent_churches }} this week</small>
+                    </div>
+                    <a href="{% url 'churches:church_list' %}" class="btn btn-sm btn-success">View All</a>
+                </div>
             </div>
         </div>
     </div>
     
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-header">
-                <i class="fas fa-tasks me-2"></i> Pending Tasks
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card h-100 border-left-warning">
+            <div class="card-header bg-warning text-dark">
+                <i class="fas fa-tasks me-2"></i> My Tasks
             </div>
-            <div class="card-body d-flex align-items-center justify-content-between">
-                <h2 class="mb-0">{{ pending_tasks|length }}</h2>
-                <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h2 class="mb-1">{{ pending_tasks|length }}</h2>
+                        <small class="text-warning">{{ upcoming_tasks }} due this week</small>
+                    </div>
+                    <a href="{% url 'tasks:task_list' %}" class="btn btn-sm btn-warning">View All</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card h-100 border-left-danger">
+            <div class="card-header bg-danger text-white">
+                <i class="fas fa-exclamation-triangle me-2"></i> Overdue
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h2 class="mb-1">{{ overdue_tasks }}</h2>
+                        <small class="text-danger">Tasks past due</small>
+                    </div>
+                    <a href="{% url 'tasks:task_list' %}?status=overdue" class="btn btn-sm btn-danger">View All</a>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
+<!-- Activity Summary Row -->
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-2"></i> Weekly Summary
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h4 class="text-success">{{ completed_this_week }}</h4>
+                            <p class="text-muted mb-0">Tasks Completed</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h4 class="text-info">{{ recent_communications|length }}</h4>
+                            <p class="text-muted mb-0">Communications</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-2"></i> Task Priorities
+            </div>
+            <div class="card-body">
+                {% if priority_tasks %}
+                    <canvas id="priorityChart" width="400" height="200"></canvas>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-chart-pie fa-2x mb-2 text-muted"></i>
+                        <p class="text-muted mb-0">No task data available</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analytics and Charts Row -->
+<div class="row mb-4">
     <!-- Pipeline Distribution -->
     <div class="col-lg-8 mb-4">
         <div class="card h-100">
@@ -100,6 +215,20 @@
                         <p class="text-muted">No recent activity</p>
                     </div>
                 {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Activity Timeline Chart -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-line me-2"></i> Activity Timeline (Last 7 Days)
+            </div>
+            <div class="card-body">
+                <canvas id="activityChart" height="100"></canvas>
             </div>
         </div>
     </div>
@@ -183,11 +312,11 @@
         // Check if pipeline data and canvas element exist
         const pipelineCanvas = document.getElementById('pipelineChart');
         if (pipelineCanvas) {
-            // Pipeline stage data (will be replaced with real data)
+            // Pipeline stage data
             const pipelineData = {
                 labels: [
                     {% for stage in pipeline_stages %}
-                        '{{ stage.pipeline_stage }}',
+                        '{{ stage.pipeline_stage|title }}',
                     {% endfor %}
                 ],
                 datasets: [{
@@ -225,6 +354,119 @@
                     }
                 });
             }
+        }
+
+        // Priority chart
+        const priorityCanvas = document.getElementById('priorityChart');
+        if (priorityCanvas) {
+            const priorityData = {
+                labels: [
+                    {% for priority in priority_tasks %}
+                        '{{ priority.priority|title|default:"No Priority" }}',
+                    {% endfor %}
+                ],
+                datasets: [{
+                    label: 'Tasks',
+                    data: [
+                        {% for priority in priority_tasks %}
+                            {{ priority.count }},
+                        {% endfor %}
+                    ],
+                    backgroundColor: [
+                        '#dc3545', // High - Red
+                        '#ffc107', // Medium - Yellow
+                        '#17a2b8', // Low - Blue
+                        '#6c757d'  // No priority - Gray
+                    ],
+                    borderWidth: 1
+                }]
+            };
+
+            // Create the priority chart if data exists
+            if (priorityData.labels.length > 0) {
+                new Chart(priorityCanvas, {
+                    type: 'doughnut',
+                    data: priorityData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Activity timeline chart
+        const activityCanvas = document.getElementById('activityChart');
+        if (activityCanvas) {
+            const activityData = {
+                labels: [
+                    {% for activity in activity_timeline %}
+                        '{{ activity.date }}',
+                    {% endfor %}
+                ],
+                datasets: [
+                    {
+                        label: 'People Added',
+                        data: [
+                            {% for activity in activity_timeline %}
+                                {{ activity.people }},
+                            {% endfor %}
+                        ],
+                        borderColor: '#183963',
+                        backgroundColor: 'rgba(24, 57, 99, 0.1)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Tasks Completed',
+                        data: [
+                            {% for activity in activity_timeline %}
+                                {{ activity.tasks }},
+                            {% endfor %}
+                        ],
+                        borderColor: '#39A949',
+                        backgroundColor: 'rgba(57, 169, 73, 0.1)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Communications',
+                        data: [
+                            {% for activity in activity_timeline %}
+                                {{ activity.communications }},
+                            {% endfor %}
+                        ],
+                        borderColor: '#ffc107',
+                        backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                        tension: 0.4
+                    }
+                ]
+            };
+
+            new Chart(activityCanvas, {
+                type: 'line',
+                data: activityData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
         }
     });
 </script>

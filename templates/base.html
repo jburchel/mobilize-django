@@ -87,6 +87,32 @@
             font-size: 1.5rem;
         }
         
+        /* Dashboard card border styles */
+        .border-left-primary {
+            border-left: 4px solid var(--primary-blue) !important;
+        }
+        
+        .border-left-success {
+            border-left: 4px solid var(--primary-green) !important;
+        }
+        
+        .border-left-warning {
+            border-left: 4px solid #ffc107 !important;
+        }
+        
+        .border-left-danger {
+            border-left: 4px solid #dc3545 !important;
+        }
+        
+        /* Dashboard metric cards */
+        .card-metric {
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .card-metric:hover {
+            transform: translateY(-2px);
+        }
+        
         /* Mobile responsive sidebar */
         @media (max-width: 768px) {
             .sidebar {
@@ -152,7 +178,7 @@
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="nav-link">
+                            <a href="{% url 'core:reports' %}" class="nav-link {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
                                 <i class="fas fa-chart-bar"></i> Reports
                             </a>
                         </li>
