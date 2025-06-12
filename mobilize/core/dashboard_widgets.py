@@ -69,62 +69,6 @@ DEFAULT_WIDGETS = [
 ]
 
 
-class DashboardPreference(models.Model):
-    """
-    Model to store user dashboard preferences.
-    """
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='dashboard_preferences'
-    )
-    widget_config = models.JSONField(default=dict)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        db_table = 'dashboard_preferences'
-    
-    def get_widget_config(self):
-        """
-        Get the user's widget configuration, falling back to defaults.
-        
-        Returns:
-            List of widget configurations
-        """
-        if self.widget_config:
-            return self.widget_config.get('widgets', DEFAULT_WIDGETS)
-        return DEFAULT_WIDGETS
-    
-    def set_widget_config(self, widgets):
-        """
-        Set the user's widget configuration.
-        
-        Args:
-            widgets: List of widget configurations
-        """
-        self.widget_config = {'widgets': widgets}
-        self.save()
-    
-    def get_enabled_widgets(self):
-        """
-        Get only enabled widgets, sorted by order.
-        
-        Returns:
-            List of enabled widget configurations
-        """
-        widgets = self.get_widget_config()
-        enabled_widgets = [w for w in widgets if w.get('enabled', True)]
-        return sorted(enabled_widgets, key=lambda x: x.get('order', 999))
-    
-    def reset_to_defaults(self):
-        """
-        Reset widget configuration to defaults.
-        """
-        self.widget_config = {'widgets': DEFAULT_WIDGETS}
-        self.save()
-
-
 def get_user_dashboard_config(user):
     """
     Get dashboard configuration for a user.
@@ -135,6 +79,8 @@ def get_user_dashboard_config(user):
     Returns:
         DashboardPreference instance
     """
+    from mobilize.core.models import DashboardPreference
+    
     try:
         return DashboardPreference.objects.get(user=user)
     except DashboardPreference.DoesNotExist:

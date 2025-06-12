@@ -23,8 +23,8 @@ class PersonModelTest(TestCase):
             'status': 'Active',
             'title': 'Ms.',
             'birthday': '1990-01-01',
-            'spouse_name': 'John Smith',
-            'children': 'Alice, Bob',
+            'spouse_first_name': 'John',
+            'spouse_last_name': 'Smith',
             'facebook': 'janesmith',
             'twitter': '@janesmith',
             'linkedin': 'jane-smith',
@@ -53,16 +53,16 @@ class PersonModelTest(TestCase):
             'status': 'Active',
             'title': 'Ms.',
             'birthday': '1990-01-01',
-            'spouse_name': 'John Smith',
-            'children': 'Alice, Bob',
+            'spouse_first_name': 'John',
+            'spouse_last_name': 'Smith',
             'facebook': 'janesmith',
             'twitter': '@janesmith',
             'linkedin': 'jane-smith',
             'instagram': 'janesmith',
             'assigned_to': 'Manager',
             'source': 'Referral',
-            'created_at': '2025-06-05T12:00:00',
-            'updated_at': '2025-06-05T12:00:00',
+            'created_at': '2025-06-05',
+            'updated_at': '2025-06-05',
         }
 
     def test_person_creation(self):
@@ -73,8 +73,8 @@ class PersonModelTest(TestCase):
         self.assertEqual(self.person.phone, '123-456-7890')
         self.assertEqual(self.person.title, 'Ms.')
         self.assertEqual(str(self.person.birthday), '1990-01-01')
-        self.assertEqual(self.person.spouse_name, 'John Smith')
-        self.assertEqual(self.person.children, 'Alice, Bob')
+        self.assertEqual(self.person.spouse_first_name, 'John')
+        self.assertEqual(self.person.spouse_last_name, 'Smith')
         self.assertEqual(self.person.facebook, 'janesmith')
         self.assertEqual(self.person.twitter, '@janesmith')
         self.assertEqual(self.person.linkedin, 'jane-smith')

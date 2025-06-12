@@ -50,7 +50,7 @@ class DataAccessManager:
                 # Office admin viewing all people in their office(s)
                 user_offices = self._get_user_offices()
                 return Person.objects.filter(
-                    Q(contact__office_id__in=user_offices) |
+                    Q(office_id__in=user_offices) |
                     Q(assigned_to=str(self.user.id))
                 ).distinct()
                 
@@ -74,7 +74,7 @@ class DataAccessManager:
         elif self.user_role in ['office_admin', 'standard_user', 'limited_user']:
             # Office admin and standard users see churches in their office(s)
             user_offices = self._get_user_offices()
-            return Church.objects.filter(contact__office_id__in=user_offices)
+            return Church.objects.filter(office_id__in=user_offices)
             
         else:
             return Church.objects.none()

@@ -167,20 +167,20 @@ class ReportGenerator:
             'Priority', 'Assigned To', 'Church', 'Status', 'Last Contact', 'Created Date'
         ])
         
-        for person in queryset.select_related('contact'):
+        for person in queryset:
             writer.writerow([
                 person.id,
                 person.first_name or '',
                 person.last_name or '',
-                person.contact.email or '',
-                person.contact.phone or '',
+                person.email or '',
+                person.phone or '',
                 person.pipeline_stage or '',
                 person.priority or '',
                 person.assigned_to or '',
                 person.church_id or '',
                 person.status or '',
                 person.last_contact.strftime('%Y-%m-%d') if person.last_contact else '',
-                person.contact.created_at.strftime('%Y-%m-%d') if person.contact.created_at else '',
+                person.created_at.strftime('%Y-%m-%d') if person.created_at else '',
             ])
         
         return response
@@ -196,9 +196,9 @@ class ReportGenerator:
             'Pastor Name', 'Pastor Email', 'Pastor Phone', 'Address', 'Created Date'
         ])
         
-        for church in queryset.select_related('contact'):
+        for church in queryset:
             writer.writerow([
-                church.contact_id,
+                church.id,
                 church.name or '',
                 church.denomination or '',
                 church.website or '',
@@ -206,8 +206,8 @@ class ReportGenerator:
                 church.pastor_name or '',
                 church.pastor_email or '',
                 church.pastor_phone or '',
-                church.contact.full_address or '',
-                church.contact.created_at.strftime('%Y-%m-%d') if church.contact.created_at else '',
+                church.street_address or '',
+                church.created_at.strftime('%Y-%m-%d') if church.created_at else '',
             ])
         
         return response

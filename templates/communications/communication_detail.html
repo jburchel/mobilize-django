@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Communication Detail{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Communication Details</h4>
+                    <div class="card-tools">
+                        <a href="{% url 'communications:communication_list' %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                        <a href="{% url 'communications:communication_update' communication.pk %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th>Subject:</th>
+                                    <td>{{ communication.subject|default:"N/A" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Type:</th>
+                                    <td>{{ communication.type|default:"N/A" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Direction:</th>
+                                    <td>
+                                        <span class="badge badge-{% if communication.direction == 'inbound' %}success{% else %}primary{% endif %}">
+                                            {{ communication.direction|default:"N/A" }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Contact:</th>
+                                    <td>
+                                        {% if communication.person %}
+                                            <a href="{% url 'contacts:person_detail' communication.person.pk %}">
+                                                {{ communication.person.first_name }} {{ communication.person.last_name }}
+                                            </a>
+                                        {% elif communication.church %}
+                                            <a href="{% url 'churches:church_detail' communication.church.pk %}">
+                                                {{ communication.church.name }}
+                                            </a>
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th>Date:</th>
+                                    <td>{{ communication.date|default:"N/A" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Date Sent:</th>
+                                    <td>{{ communication.date_sent|default:"N/A" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Created:</th>
+                                    <td>{{ communication.created_at }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Updated:</th>
+                                    <td>{{ communication.updated_at }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {% if communication.message %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h5>Message:</h5>
+                            <div class="card">
+                                <div class="card-body">
+                                    {{ communication.message|linebreaks }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if communication.gmail_message_id %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h5>Gmail Information:</h5>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Message ID:</th>
+                                    <td><code>{{ communication.gmail_message_id }}</code></td>
+                                </tr>
+                                {% if communication.gmail_thread_id %}
+                                <tr>
+                                    <th>Thread ID:</th>
+                                    <td><code>{{ communication.gmail_thread_id }}</code></td>
+                                </tr>
+                                {% endif %}
+                                {% if communication.email_status %}
+                                <tr>
+                                    <th>Status:</th>
+                                    <td>{{ communication.email_status }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

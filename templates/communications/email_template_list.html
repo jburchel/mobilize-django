@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Email Templates{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Email Templates</h4>
+                    <div class="card-tools">
+                        <a href="{% url 'communications:email_template_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Template
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if email_templates %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Subject</th>
+                                        <th>Category</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for template in email_templates %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'communications:email_template_detail' template.pk %}">
+                                                {{ template.name }}
+                                            </a>
+                                        </td>
+                                        <td>{{ template.subject }}</td>
+                                        <td>
+                                            {% if template.category %}
+                                                <span class="badge badge-info">{{ template.category }}</span>
+                                            {% else %}
+                                                <span class="text-muted">No category</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if template.is_active %}
+                                                <span class="badge badge-success">Active</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ template.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'communications:email_template_detail' template.pk %}" 
+                                                   class="btn btn-sm btn-info" title="View">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'communications:email_template_update' template.pk %}" 
+                                                   class="btn btn-sm btn-primary" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'communications:email_template_delete' template.pk %}" 
+                                                   class="btn btn-sm btn-danger" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if is_paginated %}
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1">&laquo; First</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                    </li>
+                                {% endif %}
+
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                    </span>
+                                </li>
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-envelope-open-text fa-3x text-muted mb-3"></i>
+                            <h4 class="text-muted">No Email Templates</h4>
+                            <p class="text-muted">Create your first email template to get started.</p>
+                            <a href="{% url 'communications:email_template_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create Template
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

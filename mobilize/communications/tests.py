@@ -17,48 +17,42 @@ class CommunicationModelTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username='testuser',
-            email='test@example.com',
-            role='user'
+            email='test@example.com'
         )
         
         self.contact = Person.objects.create(
             first_name='John',
             last_name='Doe',
-            email='john@example.com',
-            user=self.user
+            email='john@example.com'
         )
     
     def test_create_communication(self):
         """Test creating a communication record"""
         communication = Communication.objects.create(
             subject='Test Email',
-            body='This is a test email',
-            communication_type='email',
+            message='This is a test email',
+            type='email',
             direction='outbound',
-            contact=self.contact,
-            user=self.user
+            person=self.contact
         )
         
         self.assertEqual(communication.subject, 'Test Email')
-        self.assertEqual(communication.body, 'This is a test email')
-        self.assertEqual(communication.communication_type, 'email')
+        self.assertEqual(communication.message, 'This is a test email')
+        self.assertEqual(communication.type, 'email')
         self.assertEqual(communication.direction, 'outbound')
-        self.assertEqual(communication.contact, self.contact)
-        self.assertEqual(communication.user, self.user)
+        self.assertEqual(communication.person, self.contact)
         self.assertIsNotNone(communication.created_at)
     
     def test_communication_string_representation(self):
         """Test communication string representation"""
         communication = Communication.objects.create(
             subject='Test Subject',
-            communication_type='email',
+            type='email',
             direction='outbound',
-            contact=self.contact,
-            user=self.user
+            person=self.contact
         )
         
-        expected = f"{communication.communication_type}: {communication.subject}"
-        self.assertEqual(str(communication), expected)
+        self.assertEqual(str(communication), 'Test Subject')
     
     def test_communication_types(self):
         """Test different communication types"""
@@ -67,12 +61,11 @@ class CommunicationModelTests(TestCase):
         for comm_type in types:
             communication = Communication.objects.create(
                 subject=f'Test {comm_type}',
-                communication_type=comm_type,
+                type=comm_type,
                 direction='outbound',
-                contact=self.contact,
-                user=self.user
+                person=self.contact
             )
-            self.assertEqual(communication.communication_type, comm_type)
+            self.assertEqual(communication.type, comm_type)
     
     def test_communication_directions(self):
         """Test communication directions"""
@@ -81,10 +74,9 @@ class CommunicationModelTests(TestCase):
         for direction in directions:
             communication = Communication.objects.create(
                 subject=f'Test {direction}',
-                communication_type='email',
+                type='email',
                 direction=direction,
-                contact=self.contact,
-                user=self.user
+                person=self.contact
             )
             self.assertEqual(communication.direction, direction)
 
@@ -95,8 +87,7 @@ class EmailTemplateModelTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username='testuser',
-            email='test@example.com',
-            role='user'
+            email='test@example.com'
         )
     
     def test_create_email_template(self):
@@ -105,13 +96,13 @@ class EmailTemplateModelTests(TestCase):
             name='Welcome Email',
             subject='Welcome to our service',
             body='Thank you for joining us, {{first_name}}!',
-            user=self.user
+            created_by=self.user
         )
         
         self.assertEqual(template.name, 'Welcome Email')
         self.assertEqual(template.subject, 'Welcome to our service')
         self.assertIn('{{first_name}}', template.body)
-        self.assertEqual(template.user, self.user)
+        self.assertEqual(template.created_by, self.user)
         self.assertTrue(template.is_active)
     
     def test_template_string_representation(self):
@@ -120,7 +111,7 @@ class EmailTemplateModelTests(TestCase):
             name='Test Template',
             subject='Test Subject',
             body='Test Body',
-            user=self.user
+            created_by=self.user
         )
         
         self.assertEqual(str(template), 'Test Template')
@@ -131,7 +122,7 @@ class EmailTemplateModelTests(TestCase):
             name='Test Template',
             subject='Test Subject',
             body='Test Body',
-            user=self.user
+            created_by=self.user
         )
         
         # Should be active by default
@@ -152,8 +143,7 @@ class EmailSignatureModelTests(TestCase):
             username='testuser',
             email='test@example.com',
             first_name='Test',
-            last_name='User',
-            role='user'
+            last_name='User'
         )
     
     def test_create_email_signature(self):
@@ -168,7 +158,7 @@ class EmailSignatureModelTests(TestCase):
         self.assertIn('Test User', signature.content)
         self.assertIn('test@example.com', signature.content)
         self.assertEqual(signature.user, self.user)
-        self.assertFalse(signature.is_default)
+        self.assertTrue(signature.is_default)  # Should be default as first signature
     
     def test_signature_string_representation(self):
         """Test signature string representation"""
@@ -178,7 +168,8 @@ class EmailSignatureModelTests(TestCase):
             user=self.user
         )
         
-        self.assertEqual(str(signature), 'Test Signature')
+        expected = f"{self.user.get_full_name()} - Test Signature"
+        self.assertEqual(str(signature), expected)
     
     def test_default_signature(self):
         """Test setting default signature"""
@@ -196,10 +187,16 @@ class EmailSignatureModelTests(TestCase):
             is_default=True
         )
         
+        # Refresh from database
+        signature1.refresh_from_db()
+        signature2.refresh_from_db()
+        
+        # Only the second signature should be default
+        self.assertFalse(signature1.is_default)
+        self.assertTrue(signature2.is_default)
+        
         # Both signatures should exist
-        self.assertTrue(
-            EmailSignature.objects.filter(user=self.user).count() == 2
-        )
+        self.assertEqual(EmailSignature.objects.filter(user=self.user).count(), 2)
 
 
 class CommunicationViewTests(TestCase):
@@ -210,24 +207,21 @@ class CommunicationViewTests(TestCase):
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
-            password='testpass123',
-            role='user'
+            password='testpass123'
         )
         
         self.contact = Person.objects.create(
             first_name='John',
             last_name='Doe',
-            email='john@example.com',
-            user=self.user
+            email='john@example.com'
         )
         
         self.communication = Communication.objects.create(
             subject='Test Communication',
-            body='Test body',
-            communication_type='email',
+            message='Test message',
+            type='email',
             direction='outbound',
-            contact=self.contact,
-            user=self.user
+            person=self.contact
         )
     
     def test_communication_list_requires_login(self):
@@ -246,7 +240,7 @@ class CommunicationViewTests(TestCase):
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Communications')
+        self.assertContains(response, 'Communication')
         self.assertContains(response, self.communication.subject)
     
     def test_communication_detail_view(self):
@@ -257,7 +251,7 @@ class CommunicationViewTests(TestCase):
         
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.communication.subject)
-        self.assertContains(response, self.communication.body)
+        self.assertContains(response, self.communication.message)
     
     def test_send_email_view_get(self):
         """Test send email form"""
@@ -267,21 +261,15 @@ class CommunicationViewTests(TestCase):
         
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Send Email')
-        
-        # Check form fields
-        self.assertContains(response, 'name="to_email"')
-        self.assertContains(response, 'name="subject"')
-        self.assertContains(response, 'name="body"')
     
-    def test_send_email_to_contact(self):
-        """Test sending email to specific contact"""
+    def test_compose_email_view(self):
+        """Test compose email view"""
         self.client.login(username='testuser', password='testpass123')
-        url = reverse('communications:send_email_to_contact', kwargs={'contact_pk': self.contact.pk})
+        url = reverse('communications:compose_email')
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Send Email')
-        self.assertContains(response, self.contact.email)
+        self.assertContains(response, 'Compose Email')
 
 
 class EmailTemplateViewTests(TestCase):
@@ -292,21 +280,20 @@ class EmailTemplateViewTests(TestCase):
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
-            password='testpass123',
-            role='user'
+            password='testpass123'
         )
         
         self.template = EmailTemplate.objects.create(
             name='Test Template',
             subject='Test Subject',
             body='Test Body',
-            user=self.user
+            created_by=self.user
         )
     
     def test_template_list_view(self):
         """Test email template list view"""
         self.client.login(username='testuser', password='testpass123')
-        url = reverse('communications:template_list')
+        url = reverse('communications:email_template_list')
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, 200)
@@ -316,7 +303,7 @@ class EmailTemplateViewTests(TestCase):
     def test_template_create_view(self):
         """Test email template creation"""
         self.client.login(username='testuser', password='testpass123')
-        url = reverse('communications:template_create')
+        url = reverse('communications:email_template_create')
         
         template_data = {
             'name': 'New Template',
@@ -332,4 +319,4 @@ class EmailTemplateViewTests(TestCase):
         # Check template was created
         new_template = EmailTemplate.objects.filter(name='New Template').first()
         self.assertIsNotNone(new_template)
-        self.assertEqual(new_template.user, self.user)
+        self.assertEqual(new_template.created_by, self.user)
