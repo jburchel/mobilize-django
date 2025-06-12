@@ -25,7 +25,7 @@ class ActivityLog(models.Model):
         ('other', 'Other'),
     )
     
-    action_type = models.CharField(max_length=50, choices=ACTION_CHOICES)
+    action_type = models.CharField(max_length=50, choices=ACTION_CHOICES, default='other')
     ip_address = models.GenericIPAddressField(blank=True, null=True)
     user_agent = models.TextField(blank=True, null=True)
     

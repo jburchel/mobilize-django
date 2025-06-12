@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add User to {{ office.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'admin_panel:office_list' %}">Offices</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'admin_panel:office_detail' office.pk %}">{{ office.name }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'admin_panel:office_users' office.pk %}">Users</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Add User</li>
+                </ol>
+            </nav>
+            
+            <h1 class="h3 text-dark mb-0">Add User to {{ office.name }}</h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">User Assignment</h5>
+                </div>
+                <div class="card-body">
+                    {% if available_users %}
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="user_id" class="form-label">Select User <span class="text-danger">*</span></label>
+                            <select class="form-select" id="user_id" name="user_id" required>
+                                <option value="">Choose a user...</option>
+                                {% for user in available_users %}
+                                <option value="{{ user.pk }}">
+                                    {{ user.get_full_name|default:user.username }} ({{ user.email }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Select a user to assign to this office</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="role" class="form-label">Role <span class="text-danger">*</span></label>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="standard_user">Standard User</option>
+                                <option value="office_admin">Office Admin</option>
+                                <option value="limited_user">Limited User</option>
+                            </select>
+                            <div class="form-text">
+                                <strong>Standard User:</strong> Can manage their own contacts and view office data<br>
+                                <strong>Office Admin:</strong> Can manage all office data and users<br>
+                                <strong>Limited User:</strong> Read-only access to their assigned contacts
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_primary" name="is_primary">
+                                <label class="form-check-label" for="is_primary">
+                                    Set as primary office for this user
+                                </label>
+                                <div class="form-text">
+                                    If checked, this will become the user's main office and any previous primary office will be updated.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Add User to Office
+                            </button>
+                            <a href="{% url 'admin_panel:office_users' office.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Available Users</h4>
+                        <p class="text-muted">All users are already assigned to this office.</p>
+                        <a href="{% url 'admin_panel:office_users' office.pk %}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Users
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Help -->
+        <div class="col-lg-4">
+            <div class="card bg-light border-0">
+                <div class="card-body">
+                    <h6 class="card-title">Mobilizer Roles Explained</h6>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-primary mb-1">Regional Admin</h6>
+                        <small class="text-muted">
+                            Can manage all regional office data, assign mobilizers, and view cross-office reports (if super admin grants access).
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-success mb-1">Standard Mobilizer</h6>
+                        <small class="text-muted">
+                            Can manage their own contacts, view regional churches, and access all CRM features within their permissions.
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-secondary mb-1">Limited Mobilizer</h6>
+                        <small class="text-muted">
+                            Read-only access to contacts assigned to them. Cannot create or modify data.
+                        </small>
+                    </div>
+
+                    <hr>
+                    
+                    <h6 class="card-title">Primary Regional Office</h6>
+                    <small class="text-muted">
+                        A mobilizer's primary regional office determines their default dashboard view and is used for reporting purposes. 
+                        Mobilizers can be assigned to multiple regional offices, but only one can be primary.
+                    </small>
+                </div>
+            </div>
+
+            {% if office %}
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">{{ office.name }}</h6>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h6 class="text-primary mb-1">{{ office.user_count }}</h6>
+                            <small class="text-muted">Current Users</small>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-success mb-1">{{ office.admin_count }}</h6>
+                            <small class="text-muted">Admins</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add some interactivity to role selection
+    const roleSelect = document.getElementById('role');
+    const isPrimaryCheck = document.getElementById('is_primary');
+    
+    roleSelect.addEventListener('change', function() {
+        // Suggest making office admin the primary office
+        if (this.value === 'office_admin' && !isPrimaryCheck.checked) {
+            isPrimaryCheck.checked = true;
+        }
+    });
+});
+</script>
+{% endblock %}

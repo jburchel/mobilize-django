@@ -42,4 +42,13 @@ urlpatterns = [
     path('contacts/sync/', views.ContactSyncView.as_view(), name='contact_sync'),
     path('contacts/sync/status/', views.contact_sync_status, name='contact_sync_status'),
     path('contacts/sync/settings/', views.ContactSyncSettingsView.as_view(), name='contact_sync_settings'),
+    
+    # Google Calendar integration
+    path('calendar/', views.CalendarListView.as_view(), name='calendar_list'),
+    path('calendar/auth/', views.CalendarAuthView.as_view(), name='calendar_auth'),
+    path('calendar/callback/', views.CalendarCallbackView.as_view(), name='calendar_callback'),
+    path('calendar/create-event/', views.CalendarEventCreateView.as_view(), name='calendar_event_create'),
+    path('calendar/sync/', views.CalendarSyncView.as_view(), name='calendar_sync'),
+    path('calendar/status/', views.calendar_status, name='calendar_status'),
+    path('calendar/disconnect/', views.calendar_disconnect, name='calendar_disconnect'),
 ]

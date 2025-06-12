@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% comment %}
+Form Layout Template
+For pages that contain forms (create, edit forms)
+Provides consistent layout for form sections, validation, and actions
+{% endcomment %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/form_layout.css' %}">
+{% endblock %}
+
+{% block page_title %}
+    {{ page_title|default:"Form" }}
+    {% if object %}
+        <small class="text-muted">{{ object|truncatechars:30 }}</small>
+    {% endif %}
+{% endblock %}
+
+{% block page_actions %}
+    {% block form_actions %}
+        {% if cancel_url %}
+            <a href="{{ cancel_url }}" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-1"></i> Cancel
+            </a>
+        {% endif %}
+        {% if delete_url and object %}
+            <button type="button" class="btn btn-outline-danger ms-2" 
+                    data-bs-toggle="modal" data-bs-target="#deleteModal">
+                <i class="fas fa-trash me-1"></i> Delete
+            </button>
+        {% endif %}
+    {% endblock %}
+{% endblock %}
+
+{% block content %}
+    <!-- Breadcrumbs -->
+    {% if breadcrumbs %}
+        {% include 'partials/breadcrumb.html' with items=breadcrumbs %}
+    {% endif %}
+
+    <!-- Form Container -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-6">
+            
+            <!-- Form Card -->
+            <div class="card shadow-sm">
+                {% if form_title %}
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            {% if form_icon %}
+                                <i class="{{ form_icon }} me-2"></i>
+                            {% endif %}
+                            {{ form_title }}
+                        </h5>
+                        {% if form_subtitle %}
+                            <small class="text-muted">{{ form_subtitle }}</small>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                
+                <div class="card-body">
+                    <!-- Form Errors -->
+                    {% if form.non_field_errors or form.errors %}
+                        {% include 'partials/alert.html' with type="danger" message="Please correct the errors below." %}
+                    {% endif %}
+                    
+                    <!-- Main Form -->
+                    <form method="post" 
+                          {% if form_enctype %}enctype="{{ form_enctype }}"{% endif %}
+                          {% if form_id %}id="{{ form_id }}"{% endif %}
+                          novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Form Sections -->
+                        {% block form_content %}
+                            {% if form_sections %}
+                                {% for section in form_sections %}
+                                    <div class="form-section mb-4">
+                                        {% if section.title %}
+                                            <h6 class="form-section-title">
+                                                {% if section.icon %}
+                                                    <i class="{{ section.icon }} me-2"></i>
+                                                {% endif %}
+                                                {{ section.title }}
+                                            </h6>
+                                            {% if section.description %}
+                                                <p class="text-muted small mb-3">{{ section.description }}</p>
+                                            {% endif %}
+                                            <hr class="mb-3">
+                                        {% endif %}
+                                        
+                                        <div class="row">
+                                            {% for field in section.fields %}
+                                                <div class="col-md-{{ section.field_width|default:'12' }}">
+                                                    {% include 'partials/form_field.html' with field=field %}
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <!-- Default form rendering -->
+                                {% for field in form %}
+                                    {% if not field.is_hidden %}
+                                        {% include 'partials/form_field.html' with field=field %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                <!-- Hidden fields -->
+                                {% for field in form.hidden_fields %}
+                                    {{ field }}
+                                {% endfor %}
+                            {% endif %}
+                        {% endblock %}
+                        
+                        <!-- Form Actions -->
+                        <div class="form-actions mt-4 pt-3 border-top">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    {% if cancel_url %}
+                                        <a href="{{ cancel_url }}" class="btn btn-outline-secondary">
+                                            <i class="fas fa-times me-1"></i> Cancel
+                                        </a>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    {% if save_and_continue %}
+                                        <button type="submit" name="save_and_continue" class="btn btn-outline-primary me-2">
+                                            <i class="fas fa-save me-1"></i> Save & Continue
+                                        </button>
+                                    {% endif %}
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-1"></i> 
+                                        {% if object %}Update{% else %}Save{% endif %} {{ item_name|default:"Item" }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Additional Information -->
+            {% block form_sidebar %}
+            {% endblock %}
+            
+            <!-- Help Text -->
+            {% if help_text %}
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h6><i class="fas fa-question-circle me-2"></i> Help</h6>
+                        <div class="text-muted">{{ help_text|safe }}</div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar Content -->
+        <div class="col-lg-4 col-xl-3">
+            {% block sidebar %}
+                <!-- Form Information -->
+                {% if object %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-info-circle me-2"></i> Information
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5">Created:</dt>
+                                <dd class="col-sm-7">{{ object.created_at|date:"M d, Y" }}</dd>
+                                
+                                {% if object.updated_at %}
+                                    <dt class="col-sm-5">Updated:</dt>
+                                    <dd class="col-sm-7">{{ object.updated_at|date:"M d, Y" }}</dd>
+                                {% endif %}
+                                
+                                {% if object.created_by %}
+                                    <dt class="col-sm-5">Created by:</dt>
+                                    <dd class="col-sm-7">{{ object.created_by.get_full_name|default:object.created_by.username }}</dd>
+                                {% endif %}
+                            </dl>
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <!-- Quick Actions -->
+                {% if quick_actions %}
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-bolt me-2"></i> Quick Actions
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% for action in quick_actions %}
+                                <a href="{{ action.url }}" class="btn btn-outline-primary btn-sm d-block mb-2">
+                                    <i class="{{ action.icon }} me-1"></i> {{ action.title }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <!-- Related Items -->
+                {% if related_items %}
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-link me-2"></i> Related Items
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% for item in related_items %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <a href="{{ item.url }}" class="text-decoration-none">
+                                        <small>{{ item.title }}</small>
+                                    </a>
+                                    <span class="badge bg-secondary">{{ item.count }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endblock %}
+        </div>
+    </div>
+
+    <!-- Modals -->
+    {% block modals %}
+        {% if delete_url and object %}
+            {% include 'partials/confirm_dialog.html' with title="Delete Item" message="Are you sure you want to delete this item? This action cannot be undone." action_url=delete_url modal_id="deleteModal" %}
+        {% endif %}
+    {% endblock %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form[method="post"]');
+    
+    if (form) {
+        // Form validation
+        form.addEventListener('submit', function(e) {
+            // Remove previous validation states
+            form.querySelectorAll('.is-invalid').forEach(el => {
+                el.classList.remove('is-invalid');
+            });
+            
+            let isValid = true;
+            
+            // Check required fields
+            form.querySelectorAll('[required]').forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    isValid = false;
+                }
+            });
+            
+            // Check email fields
+            form.querySelectorAll('input[type="email"]').forEach(field => {
+                if (field.value && !isValidEmail(field.value)) {
+                    field.classList.add('is-invalid');
+                    isValid = false;
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+                // Scroll to first error
+                const firstError = form.querySelector('.is-invalid');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstError.focus();
+                }
+            }
+        });
+        
+        // Real-time validation
+        form.querySelectorAll('input, textarea, select').forEach(field => {
+            field.addEventListener('blur', function() {
+                validateField(this);
+            });
+            
+            field.addEventListener('input', function() {
+                if (this.classList.contains('is-invalid')) {
+                    validateField(this);
+                }
+            });
+        });
+    }
+    
+    // Auto-save functionality (if enabled)
+    {% if auto_save %}
+    let autoSaveTimeout;
+    form.addEventListener('input', function() {
+        clearTimeout(autoSaveTimeout);
+        autoSaveTimeout = setTimeout(function() {
+            autoSave();
+        }, 3000); // Auto-save after 3 seconds of inactivity
+    });
+    {% endif %}
+});
+
+function validateField(field) {
+    let isValid = true;
+    
+    // Required field validation
+    if (field.hasAttribute('required') && !field.value.trim()) {
+        isValid = false;
+    }
+    
+    // Email validation
+    if (field.type === 'email' && field.value && !isValidEmail(field.value)) {
+        isValid = false;
+    }
+    
+    // Custom validation
+    {% block custom_validation %}
+    {% endblock %}
+    
+    // Update field state
+    if (isValid) {
+        field.classList.remove('is-invalid');
+        field.classList.add('is-valid');
+    } else {
+        field.classList.remove('is-valid');
+        field.classList.add('is-invalid');
+    }
+    
+    return isValid;
+}
+
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+{% if auto_save %}
+function autoSave() {
+    const form = document.querySelector('form[method="post"]');
+    const formData = new FormData(form);
+    formData.append('auto_save', 'true');
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show auto-save indicator
+            showAutoSaveIndicator();
+        }
+    })
+    .catch(error => {
+        console.error('Auto-save error:', error);
+    });
+}
+
+function showAutoSaveIndicator() {
+    // Create or update auto-save indicator
+    let indicator = document.getElementById('autoSaveIndicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'autoSaveIndicator';
+        indicator.className = 'alert alert-success alert-dismissible fade show position-fixed';
+        indicator.style.cssText = 'top: 20px; right: 20px; z-index: 1060; min-width: 200px;';
+        document.body.appendChild(indicator);
+    }
+    
+    indicator.innerHTML = `
+        <i class="fas fa-check me-2"></i> Auto-saved
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+        if (indicator) {
+            indicator.remove();
+        }
+    }, 3000);
+}
+{% endif %}
+</script>
+{% endblock %}

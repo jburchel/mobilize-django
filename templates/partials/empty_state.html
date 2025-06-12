@@ -1,0 +1,162 @@
+{% comment %}
+Reusable empty state component
+Usage: {% include 'partials/empty_state.html' with icon="fas fa-users" title="No contacts yet" message="Get started by adding your first contact." %}
+
+Parameters:
+- icon: Font Awesome icon class (required)
+- title: Main heading (required)
+- message: Description text (optional)
+- action_text: Text for action button (optional)
+- action_url: URL for action button (optional)
+- action_modal: Modal ID to trigger instead of URL (optional)
+- size: 'sm', 'lg' for different sizes (default: 'md')
+- illustration: Use custom illustration instead of icon (optional)
+{% endcomment %}
+
+<div class="empty-state text-center py-5 {% if size == 'sm' %}py-3{% elif size == 'lg' %}py-6{% endif %}">
+    <!-- Icon or Illustration -->
+    <div class="empty-state-icon mb-4">
+        {% if illustration %}
+            <img src="{{ illustration }}" alt="Empty state illustration" class="img-fluid" style="max-width: 200px;">
+        {% else %}
+            <i class="{{ icon|default:'fas fa-inbox' }} fa-4x text-muted {% if size == 'lg' %}fa-5x{% elif size == 'sm' %}fa-3x{% endif %}"></i>
+        {% endif %}
+    </div>
+    
+    <!-- Title -->
+    <h4 class="empty-state-title {% if size == 'lg' %}h2{% elif size == 'sm' %}h5{% endif %} text-muted mb-3">
+        {{ title|default:"No data available" }}
+    </h4>
+    
+    <!-- Message -->
+    {% if message %}
+        <p class="empty-state-message text-muted mb-4 {% if size == 'lg' %}lead{% elif size == 'sm' %}small{% endif %}">
+            {{ message }}
+        </p>
+    {% endif %}
+    
+    <!-- Action Button -->
+    {% if action_text %}
+        <div class="empty-state-action">
+            {% if action_modal %}
+                <button type="button" class="btn btn-primary {% if size == 'lg' %}btn-lg{% elif size == 'sm' %}btn-sm{% endif %}" 
+                        data-bs-toggle="modal" data-bs-target="#{{ action_modal }}">
+                    {% if action_icon %}
+                        <i class="{{ action_icon }} me-2"></i>
+                    {% else %}
+                        <i class="fas fa-plus me-2"></i>
+                    {% endif %}
+                    {{ action_text }}
+                </button>
+            {% elif action_url %}
+                <a href="{{ action_url }}" class="btn btn-primary {% if size == 'lg' %}btn-lg{% elif size == 'sm' %}btn-sm{% endif %}">
+                    {% if action_icon %}
+                        <i class="{{ action_icon }} me-2"></i>
+                    {% else %}
+                        <i class="fas fa-plus me-2"></i>
+                    {% endif %}
+                    {{ action_text }}
+                </a>
+            {% else %}
+                <button type="button" class="btn btn-primary {% if size == 'lg' %}btn-lg{% elif size == 'sm' %}btn-sm{% endif %}">
+                    {% if action_icon %}
+                        <i class="{{ action_icon }} me-2"></i>
+                    {% else %}
+                        <i class="fas fa-plus me-2"></i>
+                    {% endif %}
+                    {{ action_text }}
+                </button>
+            {% endif %}
+        </div>
+    {% endif %}
+    
+    <!-- Secondary Action -->
+    {% if secondary_action_text %}
+        <div class="empty-state-secondary-action mt-3">
+            {% if secondary_action_url %}
+                <a href="{{ secondary_action_url }}" class="btn btn-outline-secondary btn-sm">
+                    {% if secondary_action_icon %}
+                        <i class="{{ secondary_action_icon }} me-2"></i>
+                    {% endif %}
+                    {{ secondary_action_text }}
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.empty-state {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.empty-state-icon {
+    opacity: 0.6;
+}
+
+.empty-state-title {
+    font-weight: 600;
+}
+
+.empty-state-message {
+    max-width: 400px;
+    margin: 0 auto 1.5rem;
+    line-height: 1.6;
+}
+
+/* Animation for empty state */
+.empty-state {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Different styles for different contexts */
+.empty-state.error {
+    color: var(--danger);
+}
+
+.empty-state.error .empty-state-icon i {
+    color: var(--danger);
+}
+
+.empty-state.loading .empty-state-icon {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .empty-state {
+        padding-left: var(--space-md);
+        padding-right: var(--space-md);
+    }
+    
+    .empty-state-icon i {
+        font-size: 3rem !important;
+    }
+    
+    .empty-state-title {
+        font-size: 1.25rem;
+    }
+    
+    .empty-state-message {
+        font-size: 0.9rem;
+    }
+}
+</style>

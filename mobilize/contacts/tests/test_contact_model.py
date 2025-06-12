@@ -40,8 +40,8 @@ class ContactModelTest(TestCase):
             'user_id': 1,  # Integer in contacts table
             'notes': 'Test notes',
             'type': 'Person',
-            'created_at': '2025-06-05T12:00:00',
-            'updated_at': '2025-06-05T12:00:00',
+            'created_at': '2025-06-05',
+            'updated_at': '2025-06-05',
         }
 
     def test_contact_creation(self):

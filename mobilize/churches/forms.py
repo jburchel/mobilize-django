@@ -16,6 +16,7 @@ class ChurchForm(forms.ModelForm):
         model = Church
         fields = [
             'name', # Renamed from church_name
+            'location',  # Added location field
             # Website
             'website',
             # Church-specific fields
@@ -31,19 +32,21 @@ class ChurchForm(forms.ModelForm):
             'pastor_email', # Renamed from senior_pastor_email
             # Missions Pastor Information
             'missions_pastor_first_name', 'missions_pastor_last_name',
-            'missions_pastor_phone', # Was mission_pastor_phone
-            'missions_pastor_email', # Was mission_pastor_email
+            'mission_pastor_phone', # Corrected field name
+            'mission_pastor_email', # Corrected field name
             # Primary Contact Information
             'primary_contact_first_name', 'primary_contact_last_name',
             'primary_contact_phone', 'primary_contact_email',
             'main_contact_id',
             # Pipeline and Status
-            'virtuous', 'date_closed', # church_pipeline, priority, assigned_to are on Contact model
+            'church_pipeline', 'priority', 'assigned_to',
+            'virtuous', 'date_closed',
             # Source information
             'source', 'referred_by',
             # Church-specific notes and information
             'info_given', 'reason_closed',
-            # owner_id and office_id are on Contact model
+            # Ownership fields
+            'owner_id', 'office_id'
         ]
         widgets = {
             'info_given': forms.Textarea(attrs={'rows': 3}),
@@ -67,6 +70,7 @@ class ChurchForm(forms.ModelForm):
         self.helper.layout = Layout(
             HTML('<h3 class="mb-4">Basic Information</h3>'),
             'name',
+            'location',
             'denomination',
             Row(
                 Column('website', css_class='form-group col-md-6 mb-3'),
@@ -110,8 +114,8 @@ class ChurchForm(forms.ModelForm):
                 css_class='form-row'
             ),
             Row(
-                Column('missions_pastor_phone', css_class='form-group col-md-6 mb-3'),
-                Column('missions_pastor_email', css_class='form-group col-md-6 mb-3'),
+                Column('mission_pastor_phone', css_class='form-group col-md-6 mb-3'),
+                Column('mission_pastor_email', css_class='form-group col-md-6 mb-3'),
                 css_class='form-row'
             ),
             HTML('<h3 class="mb-4 mt-4">Primary Contact Information</h3>'),
@@ -128,7 +132,12 @@ class ChurchForm(forms.ModelForm):
             'main_contact_id',
             HTML('<h3 class="mb-4 mt-4">Pipeline & Status</h3>'),
             Row(
-                # church_pipeline, priority, assigned_to are on Contact model
+                Column('church_pipeline', css_class='form-group col-md-6 mb-3'),
+                Column('priority', css_class='form-group col-md-6 mb-3'),
+                css_class='form-row'
+            ),
+            Row(
+                Column('assigned_to', css_class='form-group col-md-6 mb-3'),
                 Column('virtuous', css_class='form-group col-md-6 mb-3'),
                 css_class='form-row'
             ),
@@ -143,9 +152,13 @@ class ChurchForm(forms.ModelForm):
                 css_class='form-row'
             ),
             HTML('<h3 class="mb-4 mt-4">Additional Information</h3>'),
-            # notes, owner_id, office_id are on Contact model
             'info_given',
             'reason_closed',
+            Row(
+                Column('owner_id', css_class='form-group col-md-6 mb-3'),
+                Column('office_id', css_class='form-group col-md-6 mb-3'),
+                css_class='form-row'
+            ),
             Div(
                 Submit('submit', 'Save', css_class='btn btn-primary'),
                 HTML('<a href="{% url \'churches:church_list\' %}" class="btn btn-secondary ms-2">Cancel</a>'),

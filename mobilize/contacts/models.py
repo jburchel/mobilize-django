@@ -137,7 +137,8 @@ class Person(Contact):
     assigned_to = models.CharField(max_length=255, blank=True, null=True)
     
     # Note: In Supabase, people.user_id is character varying while Contact.user_id is integer
-    # We'll handle this type conversion in the SupabaseMapper rather than creating field conflicts
+    # Using people_user_id to avoid field clash with Contact.user_id
+    people_user_id = models.CharField(max_length=255, blank=True, null=True, db_column='user_id')  # Firebase UID
     
     # Source information
     source = models.CharField(max_length=255, blank=True, null=True)

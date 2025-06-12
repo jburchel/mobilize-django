@@ -1,0 +1,94 @@
+{% comment %}
+Reusable breadcrumb component
+Usage: {% include 'partials/breadcrumb.html' with items=breadcrumb_items %}
+
+Parameters:
+- items: List of breadcrumb items with 'title' and optional 'url' properties
+- separator: Custom separator (default uses Bootstrap default)
+- home_url: URL for home icon (optional)
+- show_home: Show home icon (default: True)
+{% endcomment %}
+
+<nav aria-label="breadcrumb" class="breadcrumb-nav">
+    <ol class="breadcrumb">
+        {% if show_home|default:True %}
+            <li class="breadcrumb-item">
+                <a href="{{ home_url|default:'/' }}" class="text-decoration-none">
+                    <i class="fas fa-home"></i>
+                    <span class="d-none d-md-inline ms-1">Home</span>
+                </a>
+            </li>
+        {% endif %}
+        
+        {% for item in items %}
+            {% if item.url and not forloop.last %}
+                <li class="breadcrumb-item">
+                    <a href="{{ item.url }}" class="text-decoration-none">
+                        {% if item.icon %}
+                            <i class="{{ item.icon }} me-1"></i>
+                        {% endif %}
+                        {{ item.title }}
+                    </a>
+                </li>
+            {% else %}
+                <li class="breadcrumb-item {% if forloop.last %}active{% endif %}" 
+                    {% if forloop.last %}aria-current="page"{% endif %}>
+                    {% if item.icon %}
+                        <i class="{{ item.icon }} me-1"></i>
+                    {% endif %}
+                    {{ item.title }}
+                </li>
+            {% endif %}
+        {% endfor %}
+    </ol>
+</nav>
+
+<style>
+.breadcrumb-nav {
+    margin-bottom: var(--space-md);
+}
+
+.breadcrumb {
+    background-color: transparent;
+    padding: var(--space-sm) 0;
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+.breadcrumb-item {
+    color: var(--gray);
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "{% if separator %}{{ separator }}{% else %}/{% endif %}";
+    color: var(--gray);
+}
+
+.breadcrumb-item a {
+    color: var(--primary-blue);
+    transition: color 0.2s ease-in-out;
+}
+
+.breadcrumb-item a:hover {
+    color: var(--blue-medium);
+}
+
+.breadcrumb-item.active {
+    color: var(--black);
+    font-weight: 500;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .breadcrumb {
+        font-size: 0.8rem;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    .breadcrumb-item {
+        flex-shrink: 0;
+    }
+}
+</style>

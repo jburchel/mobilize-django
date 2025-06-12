@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cross-Office Report - Mobilize CRM{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/css/dashboard.css' %}">
+<style>
+    .metric-card {
+        transition: transform 0.2s ease-in-out;
+    }
+    .metric-card:hover {
+        transform: translateY(-2px);
+    }
+    .office-status {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+    }
+    .status-active {
+        background-color: #28a745;
+    }
+    .status-inactive {
+        background-color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'admin_panel:office_list' %}">Offices</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Cross-Office Report</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 text-dark mb-0">Global Office Analytics</h1>
+                <div>
+                    <button class="btn btn-outline-primary btn-sm" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i>Print Report
+                    </button>
+                    <a href="{% url 'admin_panel:office_list' %}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Offices
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overall Statistics -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card metric-card border-left-primary h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Offices
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ total_stats.total_offices }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-building fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card metric-card border-left-success h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Active Offices
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ total_stats.active_offices }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card metric-card border-left-warning h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Total Users
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ total_stats.total_users }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card metric-card border-left-info h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Contacts
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ total_stats.total_people|add:total_stats.total_churches }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-address-book fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Office Breakdown -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Regional Office Performance Overview</h5>
+                    <small class="text-muted">Last updated: {{ "now"|date:"M d, Y H:i" }}</small>
+                </div>
+                <div class="card-body">
+                    {% if office_data %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Office</th>
+                                    <th>Status</th>
+                                    <th>Users</th>
+                                    <th>Admins</th>
+                                    <th>People</th>
+                                    <th>Churches</th>
+                                    <th>Total Contacts</th>
+                                    <th>Pending Tasks</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for data in office_data %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="office-status {% if data.office.is_active %}status-active{% else %}status-inactive{% endif %}"></span>
+                                            <div>
+                                                <strong>{{ data.office.name }}</strong>
+                                                {% if data.office.code %}
+                                                <br><small class="text-muted">{{ data.office.code }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if data.office.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ data.office.user_count_db }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ data.office.admin_count_db }}</span>
+                                    </td>
+                                    <td>{{ data.people_count }}</td>
+                                    <td>{{ data.churches_count }}</td>
+                                    <td>
+                                        <strong>{{ data.total_contacts }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if data.pending_tasks > 0 %}
+                                            <span class="badge bg-warning">{{ data.pending_tasks }}</span>
+                                        {% else %}
+                                            <span class="badge bg-success">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'admin_panel:office_detail' data.office.pk %}" 
+                                               class="btn btn-outline-primary btn-sm" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'admin_panel:office_users' data.office.pk %}" 
+                                               class="btn btn-outline-info btn-sm" title="Manage Users">
+                                                <i class="fas fa-users"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Offices Found</h4>
+                        <p class="text-muted">There are no offices to display in the report.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row mt-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">System Overview</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 border-end">
+                            <h4 class="text-primary">{{ total_stats.total_people }}</h4>
+                            <small class="text-muted">Total People</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success">{{ total_stats.total_churches }}</h4>
+                            <small class="text-muted">Total Churches</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <h4 class="text-warning">{{ total_stats.total_tasks }}</h4>
+                        <small class="text-muted">Total Tasks</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Top Performing Regional Offices</h6>
+                </div>
+                <div class="card-body">
+                    {% for data in office_data|slice:":3" %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <strong>{{ data.office.name }}</strong>
+                            <br><small class="text-muted">{{ data.total_contacts }} contacts</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-primary">{{ data.office.user_count_db }} users</span>
+                        </div>
+                    </div>
+                    {% if not forloop.last %}<hr>{% endif %}
+                    {% empty %}
+                    <p class="text-muted text-center">No office data available</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add print-friendly styles
+    const printStyles = `
+        @media print {
+            .sidebar { display: none !important; }
+            .btn { display: none !important; }
+            .card { break-inside: avoid; }
+            body { background: white !important; }
+        }
+    `;
+    const style = document.createElement('style');
+    style.textContent = printStyles;
+    document.head.appendChild(style);
+    
+    // Add tooltips to status indicators
+    const statusIndicators = document.querySelectorAll('.office-status');
+    statusIndicators.forEach(indicator => {
+        const isActive = indicator.classList.contains('status-active');
+        indicator.title = isActive ? 'Active Office' : 'Inactive Office';
+    });
+});
+</script>
+{% endblock %}

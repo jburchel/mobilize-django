@@ -1,0 +1,41 @@
+{% comment %}
+Reusable page header component
+Usage: {% include 'partials/page_header.html' with title="Dashboard" subtitle="Welcome back!" actions="<button>Add New</button>" %}
+
+Parameters:
+- title: Page title (required)
+- subtitle: Page subtitle (optional)
+- actions: HTML content for action buttons (optional)
+- breadcrumbs: List of breadcrumb items (optional)
+{% endcomment %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ title }}</h1>
+        {% if subtitle %}
+            <p class="text-muted mb-0">{{ subtitle }}</p>
+        {% endif %}
+        {% if breadcrumbs %}
+            <nav aria-label="breadcrumb" class="mt-2">
+                <ol class="breadcrumb mb-0">
+                    {% for crumb in breadcrumbs %}
+                        {% if crumb.url and not forloop.last %}
+                            <li class="breadcrumb-item">
+                                <a href="{{ crumb.url }}">{{ crumb.title }}</a>
+                            </li>
+                        {% else %}
+                            <li class="breadcrumb-item {% if forloop.last %}active{% endif %}" {% if forloop.last %}aria-current="page"{% endif %}>
+                                {{ crumb.title }}
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </nav>
+        {% endif %}
+    </div>
+    {% if actions %}
+        <div class="page-actions">
+            {{ actions|safe }}
+        </div>
+    {% endif %}
+</div>

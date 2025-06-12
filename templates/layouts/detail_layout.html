@@ -1,0 +1,476 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% comment %}
+Detail Layout Template
+For pages that display detailed view of individual items
+Provides consistent layout for item information, actions, and related data
+{% endcomment %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/detail_layout.css' %}">
+{% endblock %}
+
+{% block page_title %}
+    {{ object|default:page_title }}
+    {% if object.status %}
+        <span class="badge bg-{{ object.status|lower }}">{{ object.get_status_display|default:object.status }}</span>
+    {% endif %}
+{% endblock %}
+
+{% block page_actions %}
+    {% block detail_actions %}
+        {% if edit_url %}
+            <a href="{{ edit_url }}" class="btn btn-primary">
+                <i class="fas fa-edit me-1"></i> Edit
+            </a>
+        {% endif %}
+        {% if duplicate_url %}
+            <a href="{{ duplicate_url }}" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-copy me-1"></i> Duplicate
+            </a>
+        {% endif %}
+        {% if share_url %}
+            <button type="button" class="btn btn-outline-info ms-2" onclick="shareItem()">
+                <i class="fas fa-share me-1"></i> Share
+            </button>
+        {% endif %}
+        {% if delete_url %}
+            <button type="button" class="btn btn-outline-danger ms-2" 
+                    data-bs-toggle="modal" data-bs-target="#deleteModal">
+                <i class="fas fa-trash me-1"></i> Delete
+            </button>
+        {% endif %}
+    {% endblock %}
+{% endblock %}
+
+{% block content %}
+    <!-- Breadcrumbs -->
+    {% if breadcrumbs %}
+        {% include 'partials/breadcrumb.html' with items=breadcrumbs %}
+    {% endif %}
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Overview Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        {% if detail_icon %}
+                            <i class="{{ detail_icon }} me-2"></i>
+                        {% endif %}
+                        {{ detail_title|default:"Overview" }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% block main_content %}
+                        {% if detail_sections %}
+                            {% for section in detail_sections %}
+                                <div class="detail-section mb-4">
+                                    {% if section.title %}
+                                        <h6 class="section-title">
+                                            {% if section.icon %}
+                                                <i class="{{ section.icon }} me-2"></i>
+                                            {% endif %}
+                                            {{ section.title }}
+                                        </h6>
+                                        <hr class="mb-3">
+                                    {% endif %}
+                                    
+                                    <div class="row">
+                                        {% for field in section.fields %}
+                                            <div class="col-md-{{ field.width|default:'6' }} mb-3">
+                                                <dt class="text-muted small">{{ field.label }}</dt>
+                                                <dd class="mb-0">
+                                                    {% if field.type == 'link' %}
+                                                        <a href="{{ field.url }}">{{ field.value|default:'-' }}</a>
+                                                    {% elif field.type == 'email' %}
+                                                        <a href="mailto:{{ field.value }}">{{ field.value|default:'-' }}</a>
+                                                    {% elif field.type == 'phone' %}
+                                                        <a href="tel:{{ field.value }}">{{ field.value|default:'-' }}</a>
+                                                    {% elif field.type == 'badge' %}
+                                                        <span class="badge bg-{{ field.color|default:'secondary' }}">{{ field.value|default:'-' }}</span>
+                                                    {% elif field.type == 'date' %}
+                                                        {{ field.value|date:"M d, Y"|default:'-' }}
+                                                    {% elif field.type == 'datetime' %}
+                                                        {{ field.value|date:"M d, Y g:i A"|default:'-' }}
+                                                    {% elif field.type == 'currency' %}
+                                                        ${{ field.value|floatformat:2|default:'0.00' }}
+                                                    {% elif field.type == 'list' %}
+                                                        {% if field.value %}
+                                                            <ul class="list-unstyled mb-0">
+                                                                {% for item in field.value %}
+                                                                    <li><i class="fas fa-check-circle text-success me-1"></i> {{ item }}</li>
+                                                                {% endfor %}
+                                                            </ul>
+                                                        {% else %}
+                                                            -
+                                                        {% endif %}
+                                                    {% else %}
+                                                        {{ field.value|default:'-' }}
+                                                    {% endif %}
+                                                </dd>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endblock %}
+                </div>
+            </div>
+
+            <!-- Related Data Tabs -->
+            {% if related_tabs %}
+                <div class="card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" id="relatedTabs" role="tablist">
+                            {% for tab in related_tabs %}
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link {% if forloop.first %}active{% endif %}" 
+                                            id="{{ tab.id }}-tab" 
+                                            data-bs-toggle="tab" 
+                                            data-bs-target="#{{ tab.id }}" 
+                                            type="button" 
+                                            role="tab" 
+                                            aria-controls="{{ tab.id }}" 
+                                            aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                                        {% if tab.icon %}
+                                            <i class="{{ tab.icon }} me-1"></i>
+                                        {% endif %}
+                                        {{ tab.title }}
+                                        {% if tab.count %}
+                                            <span class="badge bg-secondary ms-1">{{ tab.count }}</span>
+                                        {% endif %}
+                                    </button>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content" id="relatedTabsContent">
+                            {% for tab in related_tabs %}
+                                <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" 
+                                     id="{{ tab.id }}" 
+                                     role="tabpanel" 
+                                     aria-labelledby="{{ tab.id }}-tab">
+                                    {% if tab.template %}
+                                        {% include tab.template with data=tab.data %}
+                                    {% else %}
+                                        {{ tab.content|safe }}
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            {% block sidebar %}
+                <!-- Item Status -->
+                {% if object.status or status_info %}
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-info-circle me-2"></i> Status
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if object.status %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Current Status:</span>
+                                    <span class="badge bg-{{ object.status|lower }}">{{ object.get_status_display|default:object.status }}</span>
+                                </div>
+                            {% endif %}
+                            {% if status_info %}
+                                {% for info in status_info %}
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span>{{ info.label }}:</span>
+                                        <span>{{ info.value }}</span>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Quick Actions -->
+                {% if quick_actions %}
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-bolt me-2"></i> Quick Actions
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% for action in quick_actions %}
+                                {% if action.modal %}
+                                    <button type="button" class="btn btn-outline-primary btn-sm d-block mb-2 w-100" 
+                                            data-bs-toggle="modal" data-bs-target="#{{ action.modal }}">
+                                        <i class="{{ action.icon }} me-1"></i> {{ action.title }}
+                                    </button>
+                                {% else %}
+                                    <a href="{{ action.url }}" class="btn btn-outline-primary btn-sm d-block mb-2">
+                                        <i class="{{ action.icon }} me-1"></i> {{ action.title }}
+                                    </a>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Recent Activity -->
+                {% if recent_activity %}
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-history me-2"></i> Recent Activity
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline">
+                                {% for activity in recent_activity %}
+                                    <div class="timeline-item">
+                                        <div class="timeline-marker bg-{{ activity.type|default:'primary' }}">
+                                            <i class="{{ activity.icon|default:'fas fa-circle' }}"></i>
+                                        </div>
+                                        <div class="timeline-content">
+                                            <h6 class="timeline-title">{{ activity.title }}</h6>
+                                            <p class="timeline-text">{{ activity.description }}</p>
+                                            <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Related Items -->
+                {% if related_items %}
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-link me-2"></i> Related Items
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% for item in related_items %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <a href="{{ item.url }}" class="text-decoration-none">
+                                        <i class="{{ item.icon|default:'fas fa-external-link-alt' }} me-1"></i>
+                                        {{ item.title }}
+                                    </a>
+                                    {% if item.count %}
+                                        <span class="badge bg-secondary">{{ item.count }}</span>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Metadata -->
+                {% if object %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-clock me-2"></i> Metadata
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                {% if object.created_at %}
+                                    <dt class="col-sm-5">Created:</dt>
+                                    <dd class="col-sm-7">{{ object.created_at|date:"M d, Y" }}</dd>
+                                {% endif %}
+                                
+                                {% if object.updated_at %}
+                                    <dt class="col-sm-5">Updated:</dt>
+                                    <dd class="col-sm-7">{{ object.updated_at|date:"M d, Y" }}</dd>
+                                {% endif %}
+                                
+                                {% if object.created_by %}
+                                    <dt class="col-sm-5">Created by:</dt>
+                                    <dd class="col-sm-7">{{ object.created_by.get_full_name|default:object.created_by.username }}</dd>
+                                {% endif %}
+                                
+                                {% if object.id %}
+                                    <dt class="col-sm-5">ID:</dt>
+                                    <dd class="col-sm-7"><code>{{ object.id }}</code></dd>
+                                {% endif %}
+                            </dl>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endblock %}
+        </div>
+    </div>
+
+    <!-- Modals -->
+    {% block modals %}
+        {% if delete_url %}
+            {% include 'partials/confirm_dialog.html' with title="Delete Item" message="Are you sure you want to delete this item? This action cannot be undone." action_url=delete_url modal_id="deleteModal" %}
+        {% endif %}
+    {% endblock %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Tab change event handler
+    const tabTriggerList = [].slice.call(document.querySelectorAll('#relatedTabs button'));
+    tabTriggerList.forEach(function (tabTriggerEl) {
+        tabTriggerEl.addEventListener('shown.bs.tab', function (event) {
+            // Load tab content if needed
+            const target = document.querySelector(event.target.getAttribute('data-bs-target'));
+            if (target && target.dataset.loadUrl && !target.dataset.loaded) {
+                loadTabContent(target, target.dataset.loadUrl);
+            }
+        });
+    });
+});
+
+function shareItem() {
+    const url = window.location.href;
+    const title = document.title;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: title,
+            url: url
+        }).catch(console.error);
+    } else {
+        // Fallback: copy to clipboard
+        navigator.clipboard.writeText(url).then(function() {
+            // Show success message
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            alert.style.cssText = 'top: 20px; right: 20px; z-index: 1060; min-width: 250px;';
+            alert.innerHTML = `
+                <i class="fas fa-check me-2"></i> Link copied to clipboard!
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alert);
+            
+            setTimeout(() => alert.remove(), 3000);
+        });
+    }
+}
+
+function loadTabContent(container, url) {
+    // Show loading state
+    container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+    
+    fetch(url)
+        .then(response => response.text())
+        .then(html => {
+            container.innerHTML = html;
+            container.dataset.loaded = 'true';
+        })
+        .catch(error => {
+            console.error('Error loading tab content:', error);
+            container.innerHTML = '<div class="alert alert-danger">Error loading content. Please try again.</div>';
+        });
+}
+
+// Print functionality
+function printDetail() {
+    window.print();
+}
+
+// Export functionality
+function exportDetail(format) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('export', format);
+    window.location.href = url.toString();
+}
+</script>
+
+<style>
+/* Timeline styles */
+.timeline {
+    position: relative;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--light-gray);
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 40px;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: white;
+}
+
+.timeline-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.timeline-text {
+    font-size: 13px;
+    margin-bottom: 4px;
+    color: var(--gray);
+}
+
+/* Detail sections */
+.detail-section .section-title {
+    color: var(--primary-blue);
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .timeline {
+        margin-left: 10px;
+    }
+    
+    .timeline::before {
+        left: 10px;
+    }
+    
+    .timeline-item {
+        padding-left: 30px;
+    }
+    
+    .timeline-marker {
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+    }
+}
+</style>
+{% endblock %}

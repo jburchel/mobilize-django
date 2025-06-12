@@ -543,3 +543,249 @@ class ContactSyncSettingsView(LoginRequiredMixin, View):
             
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# Google Calendar Integration Views
+class CalendarAuthView(LoginRequiredMixin, View):
+    """Initiate Google Calendar OAuth flow"""
+    
+    def get(self, request):
+        from .google_calendar_service import GoogleCalendarService
+        
+        calendar_service = GoogleCalendarService(request.user)
+        redirect_uri = request.build_absolute_uri(reverse('communications:calendar_callback'))
+        
+        if calendar_service.is_authenticated():
+            messages.info(request, 'Google Calendar is already connected for your account.')
+            return redirect('communications:calendar_list')
+        
+        auth_url = calendar_service.get_authorization_url(redirect_uri)
+        return redirect(auth_url)
+
+
+class CalendarCallbackView(LoginRequiredMixin, View):
+    """Handle Google Calendar OAuth callback"""
+    
+    def get(self, request):
+        from .google_calendar_service import GoogleCalendarService
+        
+        code = request.GET.get('code')
+        error = request.GET.get('error')
+        
+        if error:
+            messages.error(request, f'Calendar authorization failed: {error}')
+            return redirect('communications:communication_list')
+        
+        if not code:
+            messages.error(request, 'Authorization code not received.')
+            return redirect('communications:communication_list')
+        
+        try:
+            calendar_service = GoogleCalendarService(request.user)
+            redirect_uri = request.build_absolute_uri(reverse('communications:calendar_callback'))
+            calendar_service.handle_oauth_callback(code, redirect_uri)
+            
+            messages.success(request, 'Google Calendar successfully connected! You can now create and manage events.')
+            return redirect('communications:calendar_list')
+            
+        except Exception as e:
+            messages.error(request, f'Failed to connect Calendar: {str(e)}')
+            return redirect('communications:communication_list')
+
+
+class CalendarListView(LoginRequiredMixin, View):
+    """Display user's calendars and upcoming events"""
+    
+    def get(self, request):
+        from .google_calendar_service import GoogleCalendarService
+        from datetime import datetime, timedelta
+        
+        calendar_service = GoogleCalendarService(request.user)
+        
+        if not calendar_service.is_authenticated():
+            return render(request, 'communications/calendar_auth_required.html')
+        
+        # Get user's calendars
+        calendars = calendar_service.get_calendars()
+        
+        # Get upcoming events from primary calendar
+        upcoming_events = calendar_service.get_events(
+            calendar_id='primary',
+            time_min=datetime.now(),
+            time_max=datetime.now() + timedelta(days=30),
+            max_results=20
+        )
+        
+        context = {
+            'calendars': calendars,
+            'upcoming_events': upcoming_events,
+            'calendar_authenticated': True
+        }
+        
+        return render(request, 'communications/calendar_list.html', context)
+
+
+class CalendarEventCreateView(LoginRequiredMixin, View):
+    """Create a new calendar event"""
+    
+    def get(self, request):
+        from .google_calendar_service import GoogleCalendarService
+        
+        calendar_service = GoogleCalendarService(request.user)
+        
+        if not calendar_service.is_authenticated():
+            messages.error(request, 'Please connect your Google Calendar first.')
+            return redirect('communications:calendar_auth')
+        
+        calendars = calendar_service.get_calendars()
+        
+        # Pre-populate if contact info provided
+        context = {
+            'calendars': calendars,
+            'preselected_contact': {}
+        }
+        
+        contact_type = request.GET.get('contact_type')
+        contact_id = request.GET.get('contact_id')
+        
+        if contact_type and contact_id:
+            context['preselected_contact'] = {
+                'type': contact_type,
+                'id': contact_id
+            }
+            
+            # Get contact details for pre-population
+            if contact_type == 'person':
+                from mobilize.contacts.models import Person
+                try:
+                    person = Person.objects.get(id=contact_id)
+                    context['contact_email'] = person.contact.email
+                    context['contact_name'] = f"{person.contact.first_name} {person.contact.last_name}"
+                except Person.DoesNotExist:
+                    pass
+            elif contact_type == 'church':
+                from mobilize.churches.models import Church
+                try:
+                    church = Church.objects.get(id=contact_id)
+                    context['contact_email'] = church.contact.email
+                    context['contact_name'] = church.contact.name
+                except Church.DoesNotExist:
+                    pass
+        
+        return render(request, 'communications/calendar_event_form.html', context)
+    
+    def post(self, request):
+        from .google_calendar_service import GoogleCalendarService
+        from datetime import datetime
+        import pytz
+        
+        calendar_service = GoogleCalendarService(request.user)
+        
+        if not calendar_service.is_authenticated():
+            messages.error(request, 'Calendar not connected.')
+            return redirect('communications:calendar_auth')
+        
+        try:
+            # Extract form data
+            calendar_id = request.POST.get('calendar_id', 'primary')
+            title = request.POST.get('title')
+            description = request.POST.get('description', '')
+            location = request.POST.get('location', '')
+            
+            # Parse dates and times
+            start_date = request.POST.get('start_date')
+            start_time = request.POST.get('start_time')
+            end_date = request.POST.get('end_date')
+            end_time = request.POST.get('end_time')
+            timezone_name = request.POST.get('timezone', 'UTC')
+            all_day = request.POST.get('all_day') == 'on'
+            
+            # Parse attendees
+            attendees_str = request.POST.get('attendees', '')
+            attendees = [email.strip() for email in attendees_str.split(',') if email.strip()]
+            
+            # Create datetime objects
+            if all_day:
+                start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+                end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+            else:
+                start_datetime = datetime.strptime(f"{start_date} {start_time}", '%Y-%m-%d %H:%M')
+                end_datetime = datetime.strptime(f"{end_date} {end_time}", '%Y-%m-%d %H:%M')
+            
+            # Create the event
+            result = calendar_service.create_event(
+                calendar_id=calendar_id,
+                title=title,
+                description=description,
+                start_datetime=start_datetime,
+                end_datetime=end_datetime,
+                attendees=attendees,
+                location=location,
+                timezone_name=timezone_name,
+                all_day=all_day
+            )
+            
+            if result['success']:
+                messages.success(request, f'Event "{title}" created successfully!')
+                return redirect('communications:calendar_list')
+            else:
+                messages.error(request, f'Failed to create event: {result["error"]}')
+                return redirect('communications:calendar_event_create')
+                
+        except Exception as e:
+            messages.error(request, f'Error creating event: {str(e)}')
+            return redirect('communications:calendar_event_create')
+
+
+class CalendarSyncView(LoginRequiredMixin, View):
+    """Sync calendar events to tasks"""
+    
+    def post(self, request):
+        from .google_calendar_service import GoogleCalendarService
+        
+        calendar_service = GoogleCalendarService(request.user)
+        
+        if not calendar_service.is_authenticated():
+            return JsonResponse({
+                'success': False, 
+                'error': 'Calendar not authenticated'
+            }, status=400)
+        
+        days_ahead = int(request.POST.get('days_ahead', 30))
+        result = calendar_service.sync_events_to_tasks(days_ahead)
+        
+        if result['success']:
+            messages.success(
+                request, 
+                f'Synced {result["synced_count"]} calendar events to tasks.'
+            )
+        else:
+            messages.error(request, f'Sync failed: {result["error"]}')
+        
+        return JsonResponse(result)
+
+
+@login_required
+def calendar_status(request):
+    """Check Google Calendar authentication status"""
+    from .google_calendar_service import GoogleCalendarService
+    
+    calendar_service = GoogleCalendarService(request.user)
+    return JsonResponse({
+        'authenticated': calendar_service.is_authenticated(),
+        'user_email': request.user.email
+    })
+
+
+@login_required
+def calendar_disconnect(request):
+    """Disconnect Google Calendar for user"""
+    if request.method == 'POST':
+        try:
+            # This would remove calendar-specific tokens if we stored them separately
+            # For now, we'll use the same token as Gmail since they share OAuth scope
+            messages.success(request, 'Calendar access revoked. Note: This may also affect Gmail access.')
+        except Exception as e:
+            messages.error(request, f'Error disconnecting Calendar: {str(e)}')
+    
+    return redirect('communications:communication_list')

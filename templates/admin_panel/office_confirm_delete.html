@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete {{ object.name }} - Mobilize CRM{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'admin_panel:office_list' %}">Offices</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'admin_panel:office_detail' object.pk %}">{{ object.name }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Delete</li>
+                </ol>
+            </nav>
+            
+            <h1 class="h3 text-dark mb-0">Delete Office</h1>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger" role="alert">
+                        <strong>Warning:</strong> This action cannot be undone!
+                    </div>
+
+                    <p class="mb-4">
+                        Are you sure you want to delete the office <strong>"{{ object.name }}"</strong>?
+                    </p>
+
+                    <!-- Office Information -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title">Office Details</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-2"><strong>Name:</strong> {{ object.name }}</p>
+                                    <p class="mb-2"><strong>Code:</strong> {{ object.code }}</p>
+                                    {% if object.city and object.state %}
+                                    <p class="mb-2"><strong>Location:</strong> {{ object.city }}, {{ object.state }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-2"><strong>Users:</strong> {{ object.user_count }}</p>
+                                    <p class="mb-2"><strong>Admins:</strong> {{ object.admin_count }}</p>
+                                    <p class="mb-2"><strong>Status:</strong> 
+                                        {% if object.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Impact Warning -->
+                    {% if object.user_count > 0 %}
+                    <div class="alert alert-warning" role="alert">
+                        <h6 class="alert-heading">Impact Assessment</h6>
+                        <p class="mb-2">Deleting this office will affect:</p>
+                        <ul class="mb-0">
+                            <li><strong>{{ object.user_count }} user assignment{{ object.user_count|pluralize }}</strong> - Users will lose access to this office</li>
+                            <li><strong>Contacts and churches</strong> assigned to this office may become inaccessible</li>
+                            <li><strong>Historical data</strong> associated with this office will remain but may be orphaned</li>
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Recommendations -->
+                    <div class="card bg-light border-0 mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title">Recommendations</h6>
+                            <p class="small mb-2">Before deleting this office, consider:</p>
+                            <ul class="small mb-0">
+                                <li>Reassigning users to other offices</li>
+                                <li>Transferring contacts and churches to another office</li>
+                                <li>Downloading any important reports or data</li>
+                                <li>Marking the office as inactive instead of deleting it</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Confirmation Form -->
+                    <form method="post" id="deleteForm">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                                <label class="form-check-label" for="confirmDelete">
+                                    I understand that this action cannot be undone and I want to permanently delete this office.
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger" id="deleteButton" disabled>
+                                <i class="fas fa-trash me-2"></i>Delete Office Permanently
+                            </button>
+                            <a href="{% url 'admin_panel:office_detail' object.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <a href="{% url 'admin_panel:office_update' object.pk %}" class="btn btn-outline-warning">
+                                <i class="fas fa-edit me-2"></i>Edit Instead
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmCheckbox = document.getElementById('confirmDelete');
+    const deleteButton = document.getElementById('deleteButton');
+    const deleteForm = document.getElementById('deleteForm');
+    
+    // Enable/disable delete button based on checkbox
+    confirmCheckbox.addEventListener('change', function() {
+        deleteButton.disabled = !this.checked;
+        if (this.checked) {
+            deleteButton.classList.remove('btn-danger');
+            deleteButton.classList.add('btn-danger');
+        }
+    });
+    
+    // Double confirmation on form submit
+    deleteForm.addEventListener('submit', function(e) {
+        if (!confirm('Are you absolutely sure you want to delete "{{ object.name }}"? This action cannot be undone.')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

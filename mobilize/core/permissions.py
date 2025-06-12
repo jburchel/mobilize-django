@@ -103,7 +103,7 @@ class DataAccessManager:
         from mobilize.communications.models import Communication
         
         # All users only see their own communications
-        return Communication.objects.filter(user_id=str(self.user.firebase_uid))
+        return Communication.objects.filter(user_id=str(self.user.id))
     
     def _get_user_offices(self):
         """
@@ -116,7 +116,7 @@ class DataAccessManager:
         
         try:
             user_offices = UserOffice.objects.filter(
-                user_id=str(self.user.firebase_uid)
+                user_id=str(self.user.id)
             ).values_list('office_id', flat=True)
             return list(user_offices)
         except:

@@ -1,0 +1,36 @@
+{% comment %}
+Reusable metric card component
+Usage: {% include 'partials/metric_card.html' with title="People" value="150" subtitle="+12 this week" icon="fas fa-users" color="primary" href="/people/" %}
+
+Parameters:
+- title: Card title
+- value: Main metric value
+- subtitle: Additional information (optional)
+- icon: Font Awesome icon class
+- color: Bootstrap color class (primary, success, warning, danger, info)
+- href: Link URL (optional)
+- button_text: Button text (default: "View All")
+{% endcomment %}
+
+<div class="col-lg-3 col-md-6 mb-4">
+    <div class="card h-100 border-left-{{ color|default:'primary' }} card-metric">
+        <div class="card-header bg-{{ color|default:'primary' }} text-white">
+            <i class="{{ icon|default:'fas fa-chart-bar' }} me-2"></i> {{ title }}
+        </div>
+        <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h2 class="mb-1 display-6">{{ value|default:'0' }}</h2>
+                    {% if subtitle %}
+                        <small class="text-{{ color|default:'primary' }}">{{ subtitle }}</small>
+                    {% endif %}
+                </div>
+                {% if href %}
+                    <a href="{{ href }}" class="btn btn-sm btn-{{ color|default:'primary' }}">
+                        {{ button_text|default:'View All' }}
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

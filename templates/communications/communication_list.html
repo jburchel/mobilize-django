@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Communications - Mobilize CRM{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/css/dashboard.css' %}">
+<style>
+    .communication-card {
+        transition: transform 0.2s ease-in-out;
+        border-left: 4px solid transparent;
+    }
+    .communication-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+    .communication-card.email {
+        border-left-color: #007bff;
+    }
+    .communication-card.phone {
+        border-left-color: #28a745;
+    }
+    .communication-card.meeting {
+        border-left-color: #ffc107;
+    }
+    .direction-badge.inbound {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+    .direction-badge.outbound {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .status-badge {
+        font-size: 0.75rem;
+    }
+    .filter-section {
+        background: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 text-dark mb-1">Communications</h1>
+                    <p class="text-muted mb-0">Manage all your email communications and history</p>
+                </div>
+                <div>
+                    <a href="{% url 'communications:gmail_compose' %}" class="btn btn-primary me-2">
+                        <i class="fas fa-paper-plane me-2"></i>Compose Email
+                    </a>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-cog me-2"></i>Tools
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'communications:email_template_list' %}">
+                                <i class="fas fa-file-alt me-2"></i>Email Templates
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'communications:email_signature_list' %}">
+                                <i class="fas fa-signature me-2"></i>Email Signatures
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="syncGmail()">
+                                <i class="fas fa-sync me-2"></i>Sync Gmail
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="checkGmailStatus()">
+                                <i class="fas fa-info-circle me-2"></i>Gmail Status
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="filter-section p-3">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="type" class="form-label">Type</label>
+                        <select class="form-select" name="type" id="type">
+                            <option value="">All Types</option>
+                            <option value="email" {% if request.GET.type == 'email' %}selected{% endif %}>Email</option>
+                            <option value="phone" {% if request.GET.type == 'phone' %}selected{% endif %}>Phone</option>
+                            <option value="meeting" {% if request.GET.type == 'meeting' %}selected{% endif %}>Meeting</option>
+                            <option value="note" {% if request.GET.type == 'note' %}selected{% endif %}>Note</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="direction" class="form-label">Direction</label>
+                        <select class="form-select" name="direction" id="direction">
+                            <option value="">All Directions</option>
+                            <option value="inbound" {% if request.GET.direction == 'inbound' %}selected{% endif %}>Inbound</option>
+                            <option value="outbound" {% if request.GET.direction == 'outbound' %}selected{% endif %}>Outbound</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date_from" class="form-label">From Date</label>
+                        <input type="date" class="form-control" name="date_from" id="date_from" value="{{ request.GET.date_from }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="search" class="form-label">Search</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="search" id="search" 
+                                placeholder="Search subject, sender..." value="{{ request.GET.search }}">
+                            <button class="btn btn-outline-secondary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Communications List -->
+    <div class="row">
+        <div class="col-12">
+            {% if communications %}
+            <div class="row">
+                {% for communication in communications %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card communication-card {{ communication.type }} h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                {% if communication.type == 'email' %}
+                                    <i class="fas fa-envelope text-primary me-2"></i>
+                                {% elif communication.type == 'phone' %}
+                                    <i class="fas fa-phone text-success me-2"></i>
+                                {% elif communication.type == 'meeting' %}
+                                    <i class="fas fa-calendar text-warning me-2"></i>
+                                {% else %}
+                                    <i class="fas fa-sticky-note text-info me-2"></i>
+                                {% endif %}
+                                <span class="badge direction-badge {{ communication.direction }}">
+                                    {{ communication.direction|title }}
+                                </span>
+                            </div>
+                            <small class="text-muted">{{ communication.date|date:"M d, Y" }}</small>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title mb-2">{{ communication.subject|default:"No Subject"|truncatechars:40 }}</h6>
+                            
+                            <div class="mb-2">
+                                {% if communication.sender %}
+                                <small class="text-muted">
+                                    <i class="fas fa-user me-1"></i>{{ communication.sender|truncatechars:25 }}
+                                </small>
+                                {% endif %}
+                            </div>
+                            
+                            {% if communication.message %}
+                            <p class="card-text text-muted small">
+                                {{ communication.message|truncatechars:100 }}
+                            </p>
+                            {% endif %}
+                            
+                            {% if communication.person %}
+                            <div class="mb-2">
+                                <span class="badge bg-light text-dark">
+                                    <i class="fas fa-user me-1"></i>{{ communication.person.contact.first_name }} {{ communication.person.contact.last_name }}
+                                </span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if communication.church %}
+                            <div class="mb-2">
+                                <span class="badge bg-light text-dark">
+                                    <i class="fas fa-church me-1"></i>{{ communication.church.contact.name }}
+                                </span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if communication.email_status %}
+                            <div class="mb-2">
+                                <span class="badge status-badge 
+                                    {% if communication.email_status == 'sent' %}bg-success
+                                    {% elif communication.email_status == 'delivered' %}bg-info
+                                    {% elif communication.email_status == 'failed' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ communication.email_status|title }}
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    {% if communication.date_sent %}
+                                        {{ communication.date_sent|timesince }} ago
+                                    {% else %}
+                                        {{ communication.created_at|timesince }} ago
+                                    {% endif %}
+                                </small>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'communications:communication_detail' communication.pk %}" 
+                                       class="btn btn-outline-primary btn-sm" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if communication.type == 'email' and communication.direction == 'inbound' %}
+                                    <a href="{% url 'communications:gmail_compose' %}?reply_to={{ communication.pk }}" 
+                                       class="btn btn-outline-success btn-sm" title="Reply">
+                                        <i class="fas fa-reply"></i>
+                                    </a>
+                                    {% endif %}
+                                    <a href="{% url 'communications:communication_update' communication.pk %}" 
+                                       class="btn btn-outline-info btn-sm" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Communications pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.direction %}&direction={{ request.GET.direction }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.direction %}&direction={{ request.GET.direction }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.direction %}&direction={{ request.GET.direction }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-5">
+                <i class="fas fa-envelope fa-4x text-muted mb-4"></i>
+                <h4 class="text-muted">No Communications Found</h4>
+                <p class="text-muted mb-4">Start by composing your first email or sync your Gmail account.</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="{% url 'communications:gmail_compose' %}" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-2"></i>Compose Email
+                    </a>
+                    <button class="btn btn-outline-info" onclick="syncGmail()">
+                        <i class="fas fa-sync me-2"></i>Sync Gmail
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Status Toast -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="statusToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Status</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="statusToastBody">
+            <!-- Toast content will be inserted here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize toast
+    const statusToast = new bootstrap.Toast(document.getElementById('statusToast'));
+    
+    // Auto-submit search form on input
+    const searchInput = document.getElementById('search');
+    let searchTimeout;
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            this.closest('form').submit();
+        }, 500);
+    });
+});
+
+function showToast(message, type = 'info') {
+    const toastBody = document.getElementById('statusToastBody');
+    const toast = bootstrap.Toast.getOrCreateInstance(document.getElementById('statusToast'));
+    
+    toastBody.innerHTML = message;
+    toast.show();
+}
+
+function syncGmail() {
+    showToast('Syncing Gmail messages...', 'info');
+    
+    fetch('{% url "communications:gmail_sync" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'days_back=7'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`Successfully synced ${data.synced_count} emails.`, 'success');
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            showToast(`Sync failed: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Error syncing Gmail. Please try again.', 'error');
+        console.error('Error:', error);
+    });
+}
+
+function checkGmailStatus() {
+    fetch('{% url "communications:gmail_status" %}')
+    .then(response => response.json())
+    .then(data => {
+        if (data.authenticated) {
+            showToast(`Gmail connected for ${data.user_email}`, 'success');
+        } else {
+            showToast('Gmail not connected. Please authorize Gmail access.', 'warning');
+        }
+    })
+    .catch(error => {
+        showToast('Error checking Gmail status.', 'error');
+        console.error('Error:', error);
+    });
+}
+</script>
+{% endblock %}

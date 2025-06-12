@@ -1,0 +1,164 @@
+{% comment %}
+Reusable modal component
+Usage: {% include 'partials/modal.html' with modal_id="confirmModal" title="Confirm Action" body="Are you sure?" %}
+
+Parameters:
+- modal_id: Unique modal ID (required)
+- title: Modal title (required)
+- body: Modal body content (optional)
+- size: 'sm', 'lg', 'xl' for modal size (optional)
+- centered: Center modal vertically (default: False)
+- static_backdrop: Prevent closing on backdrop click (default: False)
+- footer_buttons: HTML for footer buttons (optional)
+- form_action: If provided, wraps content in form with this action (optional)
+- form_method: Form method if form_action provided (default: 'POST')
+{% endcomment %}
+
+<div class="modal fade" id="{{ modal_id }}" tabindex="-1" aria-labelledby="{{ modal_id }}Label" aria-hidden="true"
+     {% if static_backdrop %}data-bs-backdrop="static" data-bs-keyboard="false"{% endif %}>
+    <div class="modal-dialog{% if size %} modal-{{ size }}{% endif %}{% if centered %} modal-dialog-centered{% endif %}">
+        <div class="modal-content">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h5 class="modal-title" id="{{ modal_id }}Label">
+                    <i class="{% if icon %}{{ icon }}{% else %}fas fa-window-maximize{% endif %} me-2"></i>
+                    {{ title }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <!-- Form wrapper if form_action provided -->
+            {% if form_action %}
+                <form action="{{ form_action }}" method="{{ form_method|default:'POST' }}" 
+                      {% if form_enctype %}enctype="{{ form_enctype }}"{% endif %}>
+                    {% csrf_token %}
+            {% endif %}
+            
+            <!-- Modal Body -->
+            <div class="modal-body">
+                {% if body %}
+                    {{ body|safe }}
+                {% else %}
+                    <!-- Slot for custom content -->
+                    {% block modal_content %}
+                    {% endblock %}
+                {% endif %}
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                {% if footer_buttons %}
+                    {{ footer_buttons|safe }}
+                {% else %}
+                    <!-- Default buttons -->
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </button>
+                    {% if form_action %}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check me-1"></i> Confirm
+                        </button>
+                    {% else %}
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                            <i class="fas fa-check me-1"></i> OK
+                        </button>
+                    {% endif %}
+                {% endif %}
+            </div>
+            
+            <!-- Close form wrapper -->
+            {% if form_action %}
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal JavaScript functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('{{ modal_id }}');
+    if (modal) {
+        // Initialize Bootstrap modal
+        const bsModal = new bootstrap.Modal(modal);
+        
+        // Custom modal events
+        modal.addEventListener('show.bs.modal', function (event) {
+            // Focus on first input when modal opens
+            setTimeout(() => {
+                const firstInput = modal.querySelector('input:not([type="hidden"]), textarea, select');
+                if (firstInput) {
+                    firstInput.focus();
+                }
+            }, 150);
+        });
+        
+        modal.addEventListener('hidden.bs.modal', function (event) {
+            // Clear form data when modal closes (if applicable)
+            const form = modal.querySelector('form');
+            if (form && form.hasAttribute('data-clear-on-close')) {
+                form.reset();
+                // Clear any error states
+                form.querySelectorAll('.is-invalid').forEach(el => {
+                    el.classList.remove('is-invalid');
+                });
+                form.querySelectorAll('.invalid-feedback').forEach(el => {
+                    el.style.display = 'none';
+                });
+            }
+        });
+        
+        // Add global reference for programmatic access
+        window['modal_{{ modal_id }}'] = bsModal;
+    }
+});
+
+// Helper functions for modal control
+function show{{ modal_id|title }}() {
+    if (window['modal_{{ modal_id }}']) {
+        window['modal_{{ modal_id }}'].show();
+    }
+}
+
+function hide{{ modal_id|title }}() {
+    if (window['modal_{{ modal_id }}']) {
+        window['modal_{{ modal_id }}'].hide();
+    }
+}
+</script>
+
+<style>
+.modal-content {
+    border-radius: var(--border-radius-lg);
+    border: none;
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, var(--primary-blue) 0%, rgba(24, 57, 99, 0.9) 100%);
+    color: white;
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
+}
+
+.modal-footer {
+    background-color: var(--light-gray);
+    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+}
+
+/* Loading state for modal */
+.modal-loading .modal-body {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+/* Responsive modal sizing */
+@media (max-width: 576px) {
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+}
+</style>

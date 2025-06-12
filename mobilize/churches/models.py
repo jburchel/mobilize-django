@@ -11,17 +11,27 @@ class Church(models.Model):
     Matches the 'churches' table in the Supabase database.
     It extends the Contact model via a OneToOneField.
     """
-    contact = models.OneToOneField(
+    # Temporarily using regular id as primary key to match existing database schema
+    # contact = models.OneToOneField(
+    #     Contact,
+    #     on_delete=models.CASCADE,
+    #     primary_key=True,
+    #     related_name='church_details' # Connects back to Contact
+    # )
+    id = models.AutoField(primary_key=True)
+    contact = models.ForeignKey(
         Contact,
         on_delete=models.CASCADE,
-        primary_key=True,
-        related_name='church_details' # Connects back to Contact
+        related_name='church_details',
+        null=True,
+        blank=True
     )
 
     # Church-specific fields
-    name = models.CharField(max_length=255, help_text="The official name of the church.")
+    name = models.CharField(max_length=255, blank=True, null=True, help_text="The official name of the church.")
+    location = models.CharField(max_length=255, blank=True, null=True)
     denomination = models.CharField(max_length=100, blank=True, null=True)
-    website = models.URLField(max_length=255, blank=True, null=True)
+    website = models.CharField(max_length=255, blank=True, null=True)  # Using CharField to match Supabase
     year_founded = models.IntegerField(blank=True, null=True)
 
     # Size Information
@@ -46,8 +56,8 @@ class Church(models.Model):
     # Missions Pastor Information
     missions_pastor_first_name = models.CharField(max_length=255, blank=True, null=True)
     missions_pastor_last_name = models.CharField(max_length=255, blank=True, null=True)
-    missions_pastor_phone = models.CharField(max_length=255, blank=True, null=True) # Corrected from mission_pastor_phone
-    missions_pastor_email = models.CharField(max_length=255, blank=True, null=True) # Corrected from mission_pastor_email
+    mission_pastor_phone = models.CharField(max_length=255, blank=True, null=True)  # Match Supabase field name
+    mission_pastor_email = models.CharField(max_length=255, blank=True, null=True)  # Match Supabase field name
 
     # Primary Contact Information
     primary_contact_first_name = models.CharField(max_length=255, blank=True, null=True)
@@ -56,9 +66,10 @@ class Church(models.Model):
     primary_contact_email = models.CharField(max_length=255, blank=True, null=True)
     main_contact_id = models.IntegerField(blank=True, null=True)
 
-    # Pipeline and Status (specific to Church, if different from Contact's pipeline/status)
-    # Note: Contact model has pipeline_stage, priority, status, owner.
-    # We will only keep fields here that are truly church-specific and not redundant.
+    # Pipeline and Status fields from Supabase schema
+    church_pipeline = models.CharField(max_length=255, blank=True, null=True)
+    priority = models.CharField(max_length=255, blank=True, null=True)
+    assigned_to = models.CharField(max_length=255, blank=True, null=True)
     virtuous = models.BooleanField(blank=True, null=True)
     date_closed = models.DateField(blank=True, null=True)
 
@@ -69,6 +80,10 @@ class Church(models.Model):
     # Church-specific notes and information
     info_given = models.TextField(blank=True, null=True)
     reason_closed = models.TextField(blank=True, null=True)
+    
+    # Ownership field from Supabase
+    owner_id = models.IntegerField(blank=True, null=True)
+    office_id = models.IntegerField(blank=True, null=True)
 
     class Meta:
         db_table = 'churches'
@@ -80,7 +95,7 @@ class Church(models.Model):
         ]
 
     def __str__(self):
-        return self.name if self.name else f"Church (Contact ID: {self.contact_id})"
+        return self.name if self.name else f"Church (ID: {self.id})"
 
     @property
     def full_address(self):
@@ -100,4 +115,4 @@ class Church(models.Model):
     def get_absolute_url(self):
         """Return the URL to access a detail record for this church."""
         from django.urls import reverse
-        return reverse('churches:church_detail', args=[str(self.contact_id)])
+        return reverse('churches:church_detail', args=[str(self.id)])

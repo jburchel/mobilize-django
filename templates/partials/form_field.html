@@ -1,0 +1,98 @@
+{% comment %}
+Reusable form field component with consistent styling
+Usage: {% include 'partials/form_field.html' with field=form.name label="Full Name" required=True help_text="Enter your full name" %}
+
+Parameters:
+- field: Django form field object (required)
+- label: Custom label text (optional, uses field label if not provided)
+- required: Show required indicator (optional, auto-detected from field)
+- help_text: Custom help text (optional, uses field help_text if not provided)
+- addon_before: Content to show before input (optional)
+- addon_after: Content to show after input (optional)
+- size: 'sm', 'lg' for input size (optional)
+{% endcomment %}
+
+<div class="mb-3">
+    <!-- Label -->
+    {% if field.label or label %}
+        <label for="{{ field.id_for_label }}" class="form-label">
+            {{ label|default:field.label }}
+            {% if required|default:field.field.required %}
+                <span class="text-danger">*</span>
+            {% endif %}
+        </label>
+    {% endif %}
+    
+    <!-- Input Group Container -->
+    {% if addon_before or addon_after %}
+        <div class="input-group{% if size %} input-group-{{ size }}{% endif %}">
+    {% endif %}
+    
+    <!-- Before Addon -->
+    {% if addon_before %}
+        <span class="input-group-text">{{ addon_before|safe }}</span>
+    {% endif %}
+    
+    <!-- Field Widget -->
+    <div class="form-field-widget">
+        {% if field.field.widget.input_type == 'checkbox' %}
+            <!-- Checkbox Field -->
+            <div class="form-check">
+                {{ field }}
+                <label class="form-check-label" for="{{ field.id_for_label }}">
+                    {{ label|default:field.label }}
+                    {% if required|default:field.field.required %}
+                        <span class="text-danger">*</span>
+                    {% endif %}
+                </label>
+            </div>
+        {% elif field.field.widget.input_type == 'select' %}
+            <!-- Select Field -->
+            {{ field|add_class:"form-select" }}
+        {% elif field.field.widget.input_type == 'textarea' %}
+            <!-- Textarea Field -->
+            {{ field|add_class:"form-control" }}
+        {% else %}
+            <!-- Regular Input Field -->
+            {{ field|add_class:"form-control" }}
+        {% endif %}
+    </div>
+    
+    <!-- After Addon -->
+    {% if addon_after %}
+        <span class="input-group-text">{{ addon_after|safe }}</span>
+    {% endif %}
+    
+    <!-- Close Input Group -->
+    {% if addon_before or addon_after %}
+        </div>
+    {% endif %}
+    
+    <!-- Help Text -->
+    {% if help_text or field.help_text %}
+        <div class="form-text text-muted">
+            {{ help_text|default:field.help_text }}
+        </div>
+    {% endif %}
+    
+    <!-- Error Messages -->
+    {% if field.errors %}
+        <div class="invalid-feedback d-block">
+            {% for error in field.errors %}
+                <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Add error styling if field has errors -->
+{% if field.errors %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const field = document.getElementById('{{ field.id_for_label }}');
+    if (field) {
+        field.classList.add('is-invalid');
+    }
+});
+</script>
+{% endif %}

@@ -44,7 +44,7 @@ class OfficeDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context['users'] = User.objects.filter(
             useroffice__office=self.object
-        ).select_related('useroffice')
+        )
         return context
 
 
@@ -196,3 +196,72 @@ class UpdateUserOfficeRoleView(LoginRequiredMixin, View):
         
         messages.success(request, f"{user.get_full_name()}'s role has been updated.")
         return redirect('admin_panel:office_users', office_id=office_id)
+
+
+class CrossOfficeReportView(LoginRequiredMixin, View):
+    """
+    Cross-office reporting view for super admins.
+    
+    Provides insights across all offices including:
+    - User distribution by office
+    - Contact counts by office  
+    - Performance metrics
+    """
+    
+    def get(self, request):
+        # Only super admins can access cross-office reports
+        if request.user.role != 'super_admin':
+            messages.error(request, "You don't have permission to view cross-office reports.")
+            return redirect('admin_panel:office_list')
+        
+        from mobilize.contacts.models import Person
+        from mobilize.churches.models import Church
+        from mobilize.tasks.models import Task
+        from django.db.models import Count, Q
+        
+        # Get all offices with statistics
+        offices = Office.objects.annotate(
+            user_count_db=Count('useroffice', distinct=True),
+            admin_count_db=Count('useroffice', filter=Q(useroffice__role='office_admin'), distinct=True)
+        ).order_by('name')
+        
+        # Calculate additional metrics for each office
+        office_data = []
+        for office in offices:
+            # Get contact counts for this office
+            people_count = Person.objects.filter(
+                Q(contact__office_id=office.id) | 
+                Q(assigned_to__in=UserOffice.objects.filter(office=office).values_list('user_id', flat=True))
+            ).distinct().count()
+            
+            churches_count = Church.objects.filter(office_id=office.id).count()
+            
+            # Get task counts for this office
+            office_users = UserOffice.objects.filter(office=office).values_list('user', flat=True)
+            pending_tasks = Task.objects.filter(
+                Q(assigned_to__in=office_users) | Q(created_by__in=office_users),
+                status='pending'
+            ).distinct().count()
+            
+            office_data.append({
+                'office': office,
+                'people_count': people_count,
+                'churches_count': churches_count,
+                'pending_tasks': pending_tasks,
+                'total_contacts': people_count + churches_count
+            })
+        
+        # Overall statistics
+        total_stats = {
+            'total_offices': offices.count(),
+            'active_offices': offices.filter(is_active=True).count(),
+            'total_users': User.objects.count(),
+            'total_people': Person.objects.count(),
+            'total_churches': Church.objects.count(),
+            'total_tasks': Task.objects.count(),
+        }
+        
+        return render(request, 'admin_panel/cross_office_report.html', {
+            'office_data': office_data,
+            'total_stats': total_stats,
+        })

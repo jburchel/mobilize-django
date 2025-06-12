@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Offices - Mobilize CRM{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 text-dark mb-1">Regional Office Management</h1>
+                    <p class="text-muted mb-0">Manage Crossover Global regional offices and mobilizer assignments</p>
+                </div>
+                {% if user.role == 'super_admin' %}
+                <div>
+                    <a href="{% url 'admin_panel:cross_office_report' %}" class="btn btn-outline-info me-2">
+                        <i class="fas fa-chart-bar me-2"></i>Cross-Office Report
+                    </a>
+                    <a href="{% url 'admin_panel:office_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Regional Office
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Offices Grid -->
+    <div class="row">
+        {% for office in offices %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title mb-0">{{ office.name }}</h5>
+                        {% if office.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1"><strong>Code:</strong> {{ office.code }}</p>
+                        {% if office.city and office.state %}
+                        <p class="text-muted mb-1">
+                            <i class="fas fa-map-marker-alt me-1"></i>
+                            {{ office.city }}, {{ office.state }}
+                        </p>
+                        {% endif %}
+                        {% if office.timezone_name %}
+                        <p class="text-muted mb-1">
+                            <i class="fas fa-clock me-1"></i>
+                            {{ office.timezone_name }}
+                        </p>
+                        {% endif %}
+                    </div>
+
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h6 class="text-primary mb-1">{{ office.user_count }}</h6>
+                                <small class="text-muted">Users</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-success mb-1">{{ office.admin_count }}</h6>
+                            <small class="text-muted">Admins</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'admin_panel:office_detail' office.pk %}" 
+                           class="btn btn-outline-primary btn-sm flex-fill">
+                            <i class="fas fa-eye me-1"></i>View
+                        </a>
+                        <a href="{% url 'admin_panel:office_users' office.pk %}" 
+                           class="btn btn-outline-success btn-sm flex-fill">
+                            <i class="fas fa-users me-1"></i>Users
+                        </a>
+                        {% if user.role == 'super_admin' %}
+                        <a href="{% url 'admin_panel:office_update' office.pk %}" 
+                           class="btn btn-outline-warning btn-sm">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No Offices Found</h4>
+                <p class="text-muted">
+                    {% if user.role == 'super_admin' %}
+                        Get started by creating your first office.
+                    {% else %}
+                        No offices have been assigned to your account.
+                    {% endif %}
+                </p>
+                {% if user.role == 'super_admin' %}
+                <a href="{% url 'admin_panel:office_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create First Office
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add any JavaScript functionality here
+</script>
+{% endblock %}

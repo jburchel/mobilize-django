@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% comment %}
+List Layout Template
+For pages that display lists of items (contacts, churches, tasks, etc.)
+Provides consistent layout for filter controls, search, and data tables
+{% endcomment %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/list_layout.css' %}">
+{% endblock %}
+
+{% block page_title %}
+    {{ page_title|default:"Items" }}
+    {% block page_subtitle %}
+        {% if page_subtitle %}
+            <small class="text-muted">{{ page_subtitle }}</small>
+        {% endif %}
+    {% endblock %}
+{% endblock %}
+
+{% block page_actions %}
+    {% block list_actions %}
+        {% if add_url %}
+            <a href="{{ add_url }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> Add {{ item_name|default:"Item" }}
+            </a>
+        {% endif %}
+        {% if import_url %}
+            <a href="{{ import_url }}" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-upload me-1"></i> Import
+            </a>
+        {% endif %}
+        {% if export_url %}
+            <a href="{{ export_url }}" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-download me-1"></i> Export
+            </a>
+        {% endif %}
+    {% endblock %}
+{% endblock %}
+
+{% block content %}
+    <!-- Breadcrumbs -->
+    {% if breadcrumbs %}
+        {% include 'partials/breadcrumb.html' with items=breadcrumbs %}
+    {% endif %}
+
+    <!-- Filters and Search Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    {% block filters %}
+                        <div class="row align-items-end">
+                            <!-- Search -->
+                            <div class="col-md-4">
+                                <label for="search" class="form-label">Search</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="search" 
+                                           placeholder="Search {{ item_name_plural|default:'items' }}..." 
+                                           value="{{ request.GET.search }}">
+                                </div>
+                            </div>
+                            
+                            <!-- Custom Filters -->
+                            {% block custom_filters %}
+                            {% endblock %}
+                            
+                            <!-- Filter Actions -->
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-outline-primary w-100" id="applyFilters">
+                                    <i class="fas fa-filter me-1"></i> Filter
+                                </button>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-outline-secondary w-100" id="clearFilters">
+                                    <i class="fas fa-times me-1"></i> Clear
+                                </button>
+                            </div>
+                        </div>
+                    {% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats (if provided) -->
+    {% if stats %}
+        <div class="row mb-4">
+            {% for stat in stats %}
+                {% include 'partials/metric_card.html' with title=stat.title value=stat.value subtitle=stat.subtitle icon=stat.icon color=stat.color href=stat.href %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Bulk Actions (if enabled) -->
+    {% if enable_bulk_actions %}
+        <div class="row mb-3" id="bulkActionsContainer" style="display: none;">
+            <div class="col-12">
+                <div class="alert alert-info" role="alert">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-check-square me-2"></i>
+                            <span id="selectedCount">0</span> item(s) selected
+                        </div>
+                        <div>
+                            {% block bulk_actions %}
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
+                                    <i class="fas fa-trash me-1"></i> Delete Selected
+                                </button>
+                            {% endblock %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Main Content Area -->
+    <div class="row">
+        <div class="col-12">
+            {% if table_data %}
+                <!-- Data Table -->
+                {% include 'partials/data_table.html' with headers=table_headers rows=table_data table_id=table_id|default:"listTable" searchable=False actions_column=True %}
+            {% else %}
+                <!-- Empty State -->
+                {% include 'partials/empty_state.html' with icon=empty_icon|default:"fas fa-inbox" title=empty_title|default:"No items found" message=empty_message action_text=empty_action_text action_url=add_url %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <nav aria-label="List pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Modals -->
+    {% block modals %}
+        <!-- Confirmation Dialog for Bulk Delete -->
+        {% if enable_bulk_actions %}
+            {% include 'partials/confirm_dialog.html' with title="Delete Items" message="Are you sure you want to delete the selected items?" action_url="#" modal_id="bulkDeleteModal" %}
+        {% endif %}
+    {% endblock %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filter functionality
+    const searchInput = document.getElementById('search');
+    const applyFiltersBtn = document.getElementById('applyFilters');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    
+    // Apply filters
+    if (applyFiltersBtn) {
+        applyFiltersBtn.addEventListener('click', function() {
+            applyFilters();
+        });
+    }
+    
+    // Clear filters
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', function() {
+            clearFilters();
+        });
+    }
+    
+    // Search on enter
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                applyFilters();
+            }
+        });
+    }
+    
+    {% if enable_bulk_actions %}
+    // Bulk actions functionality
+    const checkboxes = document.querySelectorAll('input[type="checkbox"][name="selected_items"]');
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const bulkActionsContainer = document.getElementById('bulkActionsContainer');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    function updateBulkActions() {
+        const selected = document.querySelectorAll('input[type="checkbox"][name="selected_items"]:checked');
+        const count = selected.length;
+        
+        if (selectedCount) selectedCount.textContent = count;
+        
+        if (bulkActionsContainer) {
+            bulkActionsContainer.style.display = count > 0 ? 'block' : 'none';
+        }
+    }
+    
+    // Individual checkbox change
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkActions);
+    });
+    
+    // Select all functionality
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateBulkActions();
+        });
+    }
+    {% endif %}
+});
+
+function applyFilters() {
+    const form = document.createElement('form');
+    form.method = 'GET';
+    
+    // Add search parameter
+    const searchInput = document.getElementById('search');
+    if (searchInput && searchInput.value) {
+        const searchField = document.createElement('input');
+        searchField.type = 'hidden';
+        searchField.name = 'search';
+        searchField.value = searchInput.value;
+        form.appendChild(searchField);
+    }
+    
+    // Add other filter parameters
+    {% block filter_js %}
+    {% endblock %}
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function clearFilters() {
+    window.location.href = window.location.pathname;
+}
+
+{% if enable_bulk_actions %}
+function bulkDelete() {
+    const selected = document.querySelectorAll('input[type="checkbox"][name="selected_items"]:checked');
+    if (selected.length === 0) {
+        alert('Please select items to delete.');
+        return;
+    }
+    
+    // Show confirmation modal
+    if (window.confirmDialog_bulkDeleteModal) {
+        window.confirmDialog_bulkDeleteModal.show();
+    }
+}
+{% endif %}
+</script>
+{% endblock %}

@@ -80,7 +80,7 @@ def dashboard(request):
     # Get activity summary for this week (based on access level)
     week_start = datetime.now() - timedelta(days=7)
     recent_people = people_queryset.filter(
-        contact__created_at__gte=week_start.date()
+        created_at__gte=week_start.date()
     ).count()
     
     recent_churches = churches_queryset.filter(
@@ -98,7 +98,7 @@ def dashboard(request):
         date = datetime.now().date() - timedelta(days=i)
         
         people_created = people_queryset.filter(
-            contact__created_at=date
+            created_at=date
         ).count()
         
         tasks_completed = tasks_queryset.filter(

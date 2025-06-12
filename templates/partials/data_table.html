@@ -1,0 +1,183 @@
+{% comment %}
+Reusable data table component with filtering and pagination
+Usage: {% include 'partials/data_table.html' with headers=headers rows=rows table_id="myTable" searchable=True sortable=True %}
+
+Parameters:
+- headers: List of header objects with 'title' and optional 'sortable' properties
+- rows: List of row objects  
+- table_id: Unique table ID for JavaScript functionality
+- searchable: Enable search functionality (default: True)
+- sortable: Enable sorting functionality (default: True)
+- empty_message: Message to show when no data (optional)
+- actions_column: Include actions column (default: False)
+{% endcomment %}
+
+<div class="card">
+    {% if searchable %}
+        <div class="card-header">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control" id="{{ table_id|default:'dataTable' }}_search" 
+                               placeholder="Search..." aria-label="Search table">
+                    </div>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="d-flex justify-content-end align-items-center">
+                        <label for="{{ table_id|default:'dataTable' }}_length" class="me-2">Show:</label>
+                        <select class="form-select form-select-sm" id="{{ table_id|default:'dataTable' }}_length" style="width: auto;">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <span class="ms-2">entries</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    
+    <div class="card-body p-0">
+        {% if rows %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="{{ table_id|default:'dataTable' }}">
+                    <thead>
+                        <tr>
+                            {% for header in headers %}
+                                <th {% if sortable and header.sortable|default:True %}class="sortable" style="cursor: pointer;"{% endif %}>
+                                    {{ header.title }}
+                                    {% if sortable and header.sortable|default:True %}
+                                        <i class="fas fa-sort ms-1 text-muted"></i>
+                                    {% endif %}
+                                </th>
+                            {% endfor %}
+                            {% if actions_column %}
+                                <th class="text-center" style="width: 120px;">Actions</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            <tr>
+                                {% for cell in row.cells %}
+                                    <td>{{ cell|safe }}</td>
+                                {% endfor %}
+                                {% if actions_column and row.actions %}
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            {{ row.actions|safe }}
+                                        </div>
+                                    </td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-table fa-3x mb-3 text-muted"></i>
+                <p class="text-muted">{{ empty_message|default:"No data available" }}</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    {% if rows and rows|length > 10 %}
+        <div class="card-footer">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="dataTables_info">
+                        Showing <span id="{{ table_id|default:'dataTable' }}_start">1</span> to 
+                        <span id="{{ table_id|default:'dataTable' }}_end">{{ rows|length }}</span> of 
+                        <span id="{{ table_id|default:'dataTable' }}_total">{{ rows|length }}</span> entries
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <nav aria-label="Table pagination">
+                        <ul class="pagination pagination-sm justify-content-end mb-0" id="{{ table_id|default:'dataTable' }}_pagination">
+                            <!-- Pagination will be generated by JavaScript -->
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+{% if sortable or searchable %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tableId = '{{ table_id|default:"dataTable" }}';
+    const table = document.getElementById(tableId);
+    
+    if (!table) return;
+    
+    {% if searchable %}
+    // Search functionality
+    const searchInput = document.getElementById(tableId + '_search');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = table.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+    }
+    {% endif %}
+    
+    {% if sortable %}
+    // Sorting functionality
+    const headers = table.querySelectorAll('th.sortable');
+    headers.forEach((header, index) => {
+        header.addEventListener('click', function() {
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Reset all sort icons
+            headers.forEach(h => {
+                const icon = h.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-sort ms-1 text-muted';
+                }
+            });
+            
+            // Determine sort direction
+            const currentIcon = this.querySelector('i');
+            const isAscending = currentIcon.classList.contains('fa-sort-up');
+            
+            // Sort rows
+            rows.sort((a, b) => {
+                const aVal = a.children[index].textContent.trim();
+                const bVal = b.children[index].textContent.trim();
+                
+                // Try to parse as numbers first
+                const aNum = parseFloat(aVal);
+                const bNum = parseFloat(bVal);
+                
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return isAscending ? bNum - aNum : aNum - bNum;
+                } else {
+                    return isAscending ? bVal.localeCompare(aVal) : aVal.localeCompare(bVal);
+                }
+            });
+            
+            // Update icon
+            currentIcon.className = isAscending ? 
+                'fas fa-sort-down ms-1 text-primary' : 
+                'fas fa-sort-up ms-1 text-primary';
+            
+            // Reorder rows
+            rows.forEach(row => tbody.appendChild(row));
+        });
+    });
+    {% endif %}
+});
+</script>
+{% endif %}

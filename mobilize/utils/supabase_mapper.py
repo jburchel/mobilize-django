@@ -18,8 +18,7 @@ class SupabaseMapper:
     # Field name mapping from Django model field to Supabase column
     FIELD_MAPPING = {
         'Church': {
-            'church_name': 'name',
-            # Add any other Church-specific field mappings here
+            # Church fields are mostly aligned with Supabase
         },
         'Person': {
             # Person-specific field mappings
@@ -32,8 +31,8 @@ class SupabaseMapper:
 
     # Field type mapping for special cases
     TYPE_MAPPING = {
-        # Integer to string conversions
-        'user_id': {
+        # Model-specific type conversions
+        'Person.user_id': {
             'to_supabase': lambda x: str(x) if x is not None else None,
             'from_supabase': lambda x: int(x) if x is not None and x != '' else None
         },
@@ -87,7 +86,10 @@ class SupabaseMapper:
             supabase_field_name = cls.FIELD_MAPPING.get(model_name, {}).get(field_name, field_name)
             
             # Apply type conversion if needed
-            if field_name in cls.TYPE_MAPPING:
+            model_field_key = f"{model_name}.{field_name}"
+            if model_field_key in cls.TYPE_MAPPING:
+                field_value = cls.TYPE_MAPPING[model_field_key]['to_supabase'](field_value)
+            elif field_name in cls.TYPE_MAPPING:
                 field_value = cls.TYPE_MAPPING[field_name]['to_supabase'](field_value)
             
             data[supabase_field_name] = field_value
@@ -130,7 +132,10 @@ class SupabaseMapper:
                     continue
                 
             # Apply type conversion if needed
-            if django_field_name in cls.TYPE_MAPPING:
+            model_field_key = f"{model_name}.{django_field_name}"
+            if model_field_key in cls.TYPE_MAPPING:
+                field_value = cls.TYPE_MAPPING[model_field_key]['from_supabase'](field_value)
+            elif django_field_name in cls.TYPE_MAPPING:
                 field_value = cls.TYPE_MAPPING[django_field_name]['from_supabase'](field_value)
                 
             django_data[django_field_name] = field_value

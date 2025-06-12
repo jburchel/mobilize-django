@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ office.name }} - Office Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'admin_panel:office_list' %}">Offices</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ office.name }}</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 text-dark mb-1">
+                        {{ office.name }}
+                        {% if office.is_active %}
+                            <span class="badge bg-success ms-2">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary ms-2">Inactive</span>
+                        {% endif %}
+                    </h1>
+                    <p class="text-muted mb-0">Office Code: {{ office.code }}</p>
+                </div>
+                <div>
+                    {% if user.role == 'super_admin' %}
+                    <a href="{% url 'admin_panel:office_update' office.pk %}" class="btn btn-warning me-2">
+                        <i class="fas fa-edit me-2"></i>Edit Office
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'admin_panel:office_users' office.pk %}" class="btn btn-primary">
+                        <i class="fas fa-users me-2"></i>Manage Users
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Office Information -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Office Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Contact Information</h6>
+                            {% if office.email %}
+                            <p class="mb-2">
+                                <i class="fas fa-envelope text-muted me-2"></i>
+                                <a href="mailto:{{ office.email }}">{{ office.email }}</a>
+                            </p>
+                            {% endif %}
+                            {% if office.phone %}
+                            <p class="mb-2">
+                                <i class="fas fa-phone text-muted me-2"></i>
+                                <a href="tel:{{ office.phone }}">{{ office.phone }}</a>
+                            </p>
+                            {% endif %}
+                            
+                            {% if office.address or office.city %}
+                            <h6 class="text-muted mt-3">Address</h6>
+                            {% if office.address %}
+                            <p class="mb-1">{{ office.address }}</p>
+                            {% endif %}
+                            {% if office.city %}
+                            <p class="mb-1">
+                                {{ office.city }}{% if office.state %}, {{ office.state }}{% endif %}
+                                {% if office.postal_code %} {{ office.postal_code }}{% endif %}
+                            </p>
+                            {% endif %}
+                            {% if office.country %}
+                            <p class="mb-1">{{ office.country }}</p>
+                            {% endif %}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-muted">System Information</h6>
+                            <p class="mb-2">
+                                <strong>Timezone:</strong> {{ office.timezone_name }}
+                            </p>
+                            <p class="mb-2">
+                                <strong>Created:</strong> {{ office.created_at|date:"M j, Y" }}
+                            </p>
+                            <p class="mb-2">
+                                <strong>Last Updated:</strong> {{ office.updated_at|date:"M j, Y g:i A" }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Overview -->
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Users ({{ users.count }})</h5>
+                    <a href="{% url 'admin_panel:office_users' office.pk %}" class="btn btn-sm btn-outline-primary">
+                        View All Users <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if users %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Primary</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user_obj in users|slice:":5" %}
+                                <tr>
+                                    <td>
+                                        {{ user_obj.get_full_name|default:user_obj.username }}
+                                    </td>
+                                    <td>{{ user_obj.email }}</td>
+                                    <td>
+                                        {% with user_office=user_obj.useroffice_set.first %}
+                                        <span class="badge bg-{{ user_office.role|yesno:'primary,success,info' }}">
+                                            {{ user_office.get_role_display }}
+                                        </span>
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        {% with user_office=user_obj.useroffice_set.first %}
+                                        {% if user_office.is_primary %}
+                                            <i class="fas fa-check text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-times text-muted"></i>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if users.count > 5 %}
+                    <div class="text-center">
+                        <small class="text-muted">
+                            Showing 5 of {{ users.count }} users.
+                            <a href="{% url 'admin_panel:office_users' office.pk %}">View all</a>
+                        </small>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-users fa-2x text-muted mb-3"></i>
+                        <p class="text-muted">No users assigned to this office.</p>
+                        <a href="{% url 'admin_panel:add_user_to_office' office.pk %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus me-1"></i>Add First User
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Sidebar -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Quick Stats</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <h4 class="text-primary mb-1">{{ office.user_count }}</h4>
+                            <small class="text-muted">Total Users</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h4 class="text-success mb-1">{{ office.admin_count }}</h4>
+                            <small class="text-muted">Admins</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if office.settings %}
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Office Settings</h5>
+                </div>
+                <div class="card-body">
+                    <pre class="text-muted small">{{ office.settings|pprint }}</pre>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add any JavaScript functionality here
+</script>
+{% endblock %}

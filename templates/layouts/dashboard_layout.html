@@ -1,0 +1,464 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% comment %}
+Dashboard Layout Template
+For dashboard and analytics pages
+Provides consistent layout for metrics, charts, and dashboard widgets
+{% endcomment %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard_layout.css' %}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block page_title %}
+    {{ page_title|default:"Dashboard" }}
+    {% if view_mode %}
+        <span class="badge bg-primary ms-2">{{ view_mode_display }}</span>
+    {% endif %}
+{% endblock %}
+
+{% block page_actions %}
+    {% block dashboard_actions %}
+        <a href="{% url 'core:customize_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-cog me-1"></i> Customize
+        </a>
+        {% if refresh_url %}
+            <button type="button" class="btn btn-outline-primary btn-sm ms-2" onclick="refreshDashboard()">
+                <i class="fas fa-sync me-1"></i> Refresh
+            </button>
+        {% endif %}
+        {% if export_url %}
+            <div class="dropdown d-inline-block ms-2">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown">
+                    <i class="fas fa-download me-1"></i> Export
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                    <li><a class="dropdown-item" href="{{ export_url }}?format=pdf">
+                        <i class="fas fa-file-pdf me-2"></i> PDF Report
+                    </a></li>
+                    <li><a class="dropdown-item" href="{{ export_url }}?format=excel">
+                        <i class="fas fa-file-excel me-2"></i> Excel Report
+                    </a></li>
+                </ul>
+            </div>
+        {% endif %}
+    {% endblock %}
+{% endblock %}
+
+{% block content %}
+    <!-- View Mode Toggle (for admins) -->
+    {% if can_toggle_view %}
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body py-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-eye me-2 text-muted"></i>
+                                <span class="text-muted me-3">View Mode:</span>
+                                <span class="badge bg-primary">{{ view_mode_display }}</span>
+                            </div>
+                            <div class="btn-group" role="group" aria-label="View mode toggle">
+                                {% for mode in view_modes %}
+                                    <a href="?view_mode={{ mode.key }}" 
+                                       class="btn btn-sm {% if current_view_mode == mode.key %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                        <i class="{{ mode.icon }} me-1"></i> {{ mode.label }}
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Key Metrics Row -->
+    {% if metrics %}
+        <div class="row mb-4">
+            {% for metric in metrics %}
+                {% include 'partials/metric_card.html' with title=metric.title value=metric.value subtitle=metric.subtitle icon=metric.icon color=metric.color href=metric.href %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Charts and Analytics Section -->
+    {% if charts %}
+        <div class="row mb-4">
+            {% for chart in charts %}
+                <div class="col-lg-{{ chart.width|default:'6' }} mb-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>
+                                {% if chart.icon %}
+                                    <i class="{{ chart.icon }} me-2"></i>
+                                {% endif %}
+                                {{ chart.title }}
+                            </span>
+                            {% if chart.filters %}
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                            id="chart{{ forloop.counter }}Dropdown" data-bs-toggle="dropdown">
+                                        Filter
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="chart{{ forloop.counter }}Dropdown">
+                                        {% for filter in chart.filters %}
+                                            <li><a class="dropdown-item" href="#" onclick="updateChart('{{ chart.id }}', '{{ filter.value }}')">{{ filter.label }}</a></li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            {% if chart.data %}
+                                <canvas id="{{ chart.id }}" height="{{ chart.height|default:'200' }}"></canvas>
+                            {% else %}
+                                {% include 'partials/empty_state.html' with icon="fas fa-chart-pie" title="No data available" message="Data will appear here once available." size="sm" %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Dashboard Widgets -->
+    {% if widgets %}
+        <div class="row mb-4">
+            {% for widget in widgets %}
+                <div class="col-lg-{{ widget.width|default:'6' }} col-xl-{{ widget.xl_width|default:widget.width|default:'4' }} mb-4">
+                    <div class="card h-100">
+                        {% if widget.title %}
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="card-title mb-0">
+                                    {% if widget.icon %}
+                                        <i class="{{ widget.icon }} me-2"></i>
+                                    {% endif %}
+                                    {{ widget.title }}
+                                </h6>
+                                {% if widget.action_url %}
+                                    <a href="{{ widget.action_url }}" class="btn btn-sm btn-outline-primary">
+                                        {{ widget.action_text|default:"View All" }}
+                                    </a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        <div class="card-body {% if not widget.title %}pt-3{% endif %}">
+                            {% if widget.template %}
+                                {% include widget.template with data=widget.data %}
+                            {% elif widget.content %}
+                                {{ widget.content|safe }}
+                            {% elif widget.type == 'list' %}
+                                {% if widget.items %}
+                                    <ul class="list-group list-group-flush">
+                                        {% for item in widget.items %}
+                                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                                <div>
+                                                    <h6 class="mb-1">{{ item.title }}</h6>
+                                                    {% if item.subtitle %}
+                                                        <p class="mb-0 text-muted small">{{ item.subtitle }}</p>
+                                                    {% endif %}
+                                                </div>
+                                                {% if item.value %}
+                                                    <span class="badge bg-{{ item.color|default:'primary' }}">{{ item.value }}</span>
+                                                {% endif %}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    {% include 'partials/empty_state.html' with icon=widget.empty_icon|default:"fas fa-inbox" title=widget.empty_title|default:"No items" size="sm" %}
+                                {% endif %}
+                            {% elif widget.type == 'table' %}
+                                {% if widget.rows %}
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover">
+                                            {% if widget.headers %}
+                                                <thead>
+                                                    <tr>
+                                                        {% for header in widget.headers %}
+                                                            <th>{{ header }}</th>
+                                                        {% endfor %}
+                                                    </tr>
+                                                </thead>
+                                            {% endif %}
+                                            <tbody>
+                                                {% for row in widget.rows %}
+                                                    <tr>
+                                                        {% for cell in row %}
+                                                            <td>{{ cell|safe }}</td>
+                                                        {% endfor %}
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    {% include 'partials/empty_state.html' with icon=widget.empty_icon|default:"fas fa-table" title=widget.empty_title|default:"No data" size="sm" %}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Quick Actions Row -->
+    {% if quick_actions %}
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-bolt me-2"></i> Quick Actions
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for action in quick_actions %}
+                                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                                    {% if action.modal %}
+                                        <button type="button" class="btn btn-outline-primary w-100" 
+                                                data-bs-toggle="modal" data-bs-target="#{{ action.modal }}">
+                                            <i class="{{ action.icon }} me-2"></i>
+                                            <div>
+                                                <div>{{ action.title }}</div>
+                                                {% if action.subtitle %}
+                                                    <small class="text-muted">{{ action.subtitle }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </button>
+                                    {% else %}
+                                        <a href="{{ action.url }}" class="btn btn-outline-primary w-100">
+                                            <i class="{{ action.icon }} me-2"></i>
+                                            <div>
+                                                <div>{{ action.title }}</div>
+                                                {% if action.subtitle %}
+                                                    <small class="text-muted">{{ action.subtitle }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Additional Dashboard Content -->
+    {% block dashboard_content %}
+    {% endblock %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize charts
+    {% for chart in charts %}
+        {% if chart.data %}
+            initChart('{{ chart.id }}', {{ chart.data|safe }}, '{{ chart.type|default:"line" }}');
+        {% endif %}
+    {% endfor %}
+    
+    // Auto-refresh functionality
+    {% if auto_refresh %}
+        setInterval(function() {
+            refreshDashboard();
+        }, {{ auto_refresh_interval|default:300000 }}); // Default 5 minutes
+    {% endif %}
+});
+
+function initChart(canvasId, data, type) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    
+    const config = {
+        type: type,
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: type === 'pie' || type === 'doughnut' ? 'right' : 'top',
+                }
+            },
+            scales: type === 'pie' || type === 'doughnut' ? {} : {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    };
+    
+    new Chart(ctx, config);
+}
+
+function updateChart(chartId, filterValue) {
+    // Show loading state
+    const canvas = document.getElementById(chartId);
+    const card = canvas.closest('.card');
+    const cardBody = card.querySelector('.card-body');
+    
+    // Add loading overlay
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'position-absolute top-50 start-50 translate-middle';
+    loadingOverlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+    cardBody.style.position = 'relative';
+    cardBody.appendChild(loadingOverlay);
+    
+    // Fetch updated chart data
+    fetch(`/api/charts/${chartId}/?filter=${filterValue}`)
+        .then(response => response.json())
+        .then(data => {
+            // Remove loading overlay
+            loadingOverlay.remove();
+            
+            // Update chart
+            const chart = Chart.getChart(chartId);
+            if (chart) {
+                chart.data = data;
+                chart.update();
+            }
+        })
+        .catch(error => {
+            console.error('Error updating chart:', error);
+            loadingOverlay.remove();
+        });
+}
+
+function refreshDashboard() {
+    // Show global loading indicator
+    const refreshBtn = document.querySelector('[onclick="refreshDashboard()"]');
+    if (refreshBtn) {
+        const originalIcon = refreshBtn.querySelector('i');
+        originalIcon.className = 'fas fa-spinner fa-spin me-1';
+        refreshBtn.disabled = true;
+    }
+    
+    // Reload the page to refresh all data
+    setTimeout(() => {
+        window.location.reload();
+    }, 500);
+}
+
+// Utility function for number formatting
+function formatNumber(num) {
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+}
+
+// Real-time updates (if WebSocket is available)
+{% if enable_realtime %}
+function initRealtimeUpdates() {
+    if (typeof WebSocket === 'undefined') return;
+    
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/dashboard/`;
+    
+    const ws = new WebSocket(wsUrl);
+    
+    ws.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        
+        // Update metrics
+        if (data.type === 'metrics_update') {
+            updateMetrics(data.metrics);
+        }
+        
+        // Update charts
+        if (data.type === 'chart_update') {
+            updateChart(data.chart_id, data.data);
+        }
+    };
+    
+    ws.onclose = function() {
+        // Attempt to reconnect after 5 seconds
+        setTimeout(initRealtimeUpdates, 5000);
+    };
+}
+
+// Initialize real-time updates
+initRealtimeUpdates();
+{% endif %}
+</script>
+
+<style>
+/* Dashboard-specific styles */
+.metric-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.dashboard-widget {
+    height: 100%;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+
+/* Quick actions styling */
+.quick-action-btn {
+    height: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.quick-action-btn i {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Loading states */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .chart-container {
+        height: 250px;
+    }
+    
+    .quick-action-btn {
+        height: 60px;
+        font-size: 0.9rem;
+    }
+    
+    .quick-action-btn i {
+        font-size: 1.2rem;
+        margin-bottom: 0.25rem;
+    }
+}
+</style>
+{% endblock %}

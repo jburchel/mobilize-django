@@ -193,3 +193,7 @@ class UserContactSyncSettings(models.Model):
         self.last_sync_at = timezone.now()
         self.sync_errors = errors
         self.save(update_fields=['last_sync_at', 'sync_errors'])
+
+
+# Import permission models to include them in this app
+from .permissions import Role, Permission, RolePermission

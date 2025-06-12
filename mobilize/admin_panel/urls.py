@@ -11,6 +11,9 @@ urlpatterns = [
     path('offices/<int:pk>/update/', views.OfficeUpdateView.as_view(), name='office_update'),
     path('offices/<int:pk>/delete/', views.OfficeDeleteView.as_view(), name='office_delete'),
     
+    # Cross-office reporting
+    path('reports/cross-office/', views.CrossOfficeReportView.as_view(), name='cross_office_report'),
+    
     # User-Office management
     path('offices/<int:office_id>/users/', views.OfficeUserListView.as_view(), name='office_users'),
     path('offices/<int:office_id>/users/add/', views.AddUserToOfficeView.as_view(), name='add_user_to_office'),
