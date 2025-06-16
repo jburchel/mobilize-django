@@ -13,8 +13,8 @@
     
     <!-- Custom CSS -->
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
-    <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
+    <!-- <link rel="stylesheet" href="{% static 'css/base.css' %}"> -->
+    <!-- <link rel="stylesheet" href="{% static 'css/responsive.css' %}"> -->
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -73,47 +73,30 @@
                         </li>
                     </ul>
                     <hr>
-                    <div class="dropdown">
-                        <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
-                            {% if user.profile_picture_url %}
-                                <img src="{{ user.profile_picture_url }}" alt="{{ user.get_full_name }}" width="32" height="32" class="rounded-circle me-2">
-                            {% else %}
-                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center bg-secondary" style="width: 32px; height: 32px;">
-                                    <i class="fas fa-user"></i>
-                                </div>
-                            {% endif %}
-                            <div class="d-flex flex-column">
-                                <strong>{{ user.get_full_name|default:user.username }}</strong>
-                                <small class="text-muted">{{ user.role|title }}</small>
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-user-circle fa-2x text-light"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <strong class="d-block text-light">{{ user.get_full_name|default:user.username }}</strong>
+                            <div class="btn-group dropup">
+                                <button type="button" class="btn btn-link btn-sm text-light p-0 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Profile
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{% url 'core:profile' %}">View Profile</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'core:settings' %}">Settings</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{% url 'authentication:logout' %}">Sign out</a></li>
+                                </ul>
                             </div>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
-                            <li>
-                                <div class="dropdown-header">
-                                    <small class="text-muted">{{ user.email }}</small>
-                                </div>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'core:profile' %}">
-                                <i class="fas fa-user me-2"></i> Profile
-                            </a></li>
-                            <li><a class="dropdown-item" href="{% url 'core:settings' %}">
-                                <i class="fas fa-cog me-2"></i> Settings
-                            </a></li>
-                            <li><a class="dropdown-item" href="{% url 'authentication:contact_sync_setup' %}">
-                                <i class="fas fa-sync me-2"></i> Sync Settings
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'authentication:logout' %}">
-                                <i class="fas fa-sign-out-alt me-2"></i> Sign out
-                            </a></li>
-                        </ul>
+                        </div>
                     </div>
                 </div>
             </div>
             
             <!-- Main Content -->
-            <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4 content-wrapper">
+            <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <!-- Top Navigation -->
                 <nav class="navbar navbar-expand-lg navbar-light bg-light d-md-none mb-4">
                     <div class="container-fluid">

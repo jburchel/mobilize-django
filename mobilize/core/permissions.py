@@ -37,7 +37,7 @@ class DataAccessManager:
         if self.user_role == 'super_admin':
             if self.view_mode == 'my_only':
                 # Super admin viewing only their assigned people
-                return Person.objects.filter(assigned_to=str(self.user.id))
+                return Person.objects.filter(contact__user=self.user)
             else:
                 # Super admin viewing all people across all offices
                 return Person.objects.all()
@@ -45,18 +45,18 @@ class DataAccessManager:
         elif self.user_role == 'office_admin':
             if self.view_mode == 'my_only':
                 # Office admin viewing only their assigned people
-                return Person.objects.filter(assigned_to=str(self.user.id))
+                return Person.objects.filter(contact__user=self.user)
             else:
                 # Office admin viewing all people in their office(s)
                 user_offices = self._get_user_offices()
                 return Person.objects.filter(
-                    Q(office_id__in=user_offices) |
-                    Q(assigned_to=str(self.user.id))
+                    Q(contact__office_id__in=user_offices) |
+                    Q(contact__user=self.user)
                 ).distinct()
                 
         else:  # standard_user or limited_user
             # Standard/limited users see only their assigned people
-            return Person.objects.filter(assigned_to=str(self.user.id))
+            return Person.objects.filter(contact__user=self.user)
     
     def get_churches_queryset(self):
         """
@@ -74,7 +74,7 @@ class DataAccessManager:
         elif self.user_role in ['office_admin', 'standard_user', 'limited_user']:
             # Office admin and standard users see churches in their office(s)
             user_offices = self._get_user_offices()
-            return Church.objects.filter(office_id__in=user_offices)
+            return Church.objects.filter(contact__office_id__in=user_offices)
             
         else:
             return Church.objects.none()

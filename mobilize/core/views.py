@@ -75,15 +75,15 @@ def dashboard(request):
     ).order_by('-date_sent')[:5]
     
     # Get pipeline distribution for people (based on access level)
-    pipeline_stages = people_queryset.values('pipeline_stage').annotate(
-        count=Count('id')
-    ).exclude(pipeline_stage__isnull=True).exclude(pipeline_stage='').order_by('pipeline_stage')
+    # Note: Pipeline stages are now tracked via PipelineContact model
+    # For now, return empty queryset until pipeline integration is complete
+    pipeline_stages = []
     
     # Get activity summary for this week (based on access level) using aggregation
     week_start = datetime.now() - timedelta(days=7)
     activity_stats = {
         'recent_people': people_queryset.filter(
-            created_at__gte=week_start.date()
+            contact__created_at__gte=week_start.date()
         ).count(),
         'recent_churches': churches_queryset.filter(
             contact__created_at__gte=week_start.date()
@@ -101,7 +101,7 @@ def dashboard(request):
         date = datetime.now().date() - timedelta(days=i)
         
         people_created = people_queryset.filter(
-            created_at=date
+            contact__created_at=date
         ).count()
         
         tasks_completed = tasks_queryset.filter(

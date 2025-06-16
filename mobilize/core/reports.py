@@ -180,7 +180,7 @@ class ReportGenerator:
                 person.church_id or '',
                 person.status or '',
                 person.last_contact.strftime('%Y-%m-%d') if person.last_contact else '',
-                person.created_at.strftime('%Y-%m-%d') if person.created_at else '',
+                person.contact.created_at.strftime('%Y-%m-%d') if person.contact.created_at else '',
             ])
         
         return response
@@ -207,7 +207,7 @@ class ReportGenerator:
                 church.pastor_email or '',
                 church.pastor_phone or '',
                 church.street_address or '',
-                church.created_at.strftime('%Y-%m-%d') if church.created_at else '',
+                church.contact.created_at.strftime('%Y-%m-%d') if church.contact.created_at else '',
             ])
         
         return response
