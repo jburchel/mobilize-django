@@ -134,17 +134,22 @@ class CommunicationListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        # Filter by user's access
+        # Filter by user's access with optimized queries
+        queryset = Communication.objects.select_related('person', 'church', 'office')
+        
         if hasattr(self.request.user, 'role') and self.request.user.role == 'super_admin':
-            return Communication.objects.all()
+            return queryset.order_by('-date')
         # For now, return all communications - proper filtering will be added later
-        return Communication.objects.all()
+        return queryset.order_by('-date')
 
 
 class CommunicationDetailView(LoginRequiredMixin, DetailView):
     model = Communication
     template_name = 'communications/communication_detail.html'
     context_object_name = 'communication'
+    
+    def get_queryset(self):
+        return Communication.objects.select_related('person', 'church', 'office')
 
 
 class CommunicationCreateView(LoginRequiredMixin, CreateView):

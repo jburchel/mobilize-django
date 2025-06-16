@@ -23,22 +23,28 @@ def church_list(request):
     pipeline_stage = request.GET.get('pipeline_stage', '')
     priority = request.GET.get('priority', '')
     
-    # Start with all churches
-    churches = Church.objects.all()
+    # Start with all churches - use select_related to optimize queries
+    churches = Church.objects.select_related('contact').all()
     
     # Apply filters if provided
     if query:
         churches = churches.filter(
             Q(name__icontains=query) | 
+            Q(contact__church_name__icontains=query) |
             Q(location__icontains=query) | 
-            Q(denomination__icontains=query)
+            Q(denomination__icontains=query) |
+            Q(contact__email__icontains=query) |
+            Q(contact__phone__icontains=query)
         )
     
     if pipeline_stage:
-        churches = churches.filter(church_pipeline=pipeline_stage)
+        churches = churches.filter(
+            Q(church_pipeline=pipeline_stage) | 
+            Q(contact__pipeline_stage=pipeline_stage)
+        )
     
     if priority:
-        churches = churches.filter(priority=priority)
+        churches = churches.filter(contact__priority=priority)
     
     # Pagination
     paginator = Paginator(churches, 25)  # Show 25 churches per page

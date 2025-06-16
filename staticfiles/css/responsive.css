@@ -221,6 +221,42 @@ h6 { font-size: clamp(0.9rem, 1.5vw, 1.125rem); }
     }
 }
 
+/* Mobile Sidebar Behavior */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -100%;
+        width: 80%;
+        height: 100%;
+        z-index: 1000;
+        transition: all 0.3s ease-in-out;
+    }
+    
+    .sidebar.show {
+        left: 0;
+    }
+    
+    .content-wrapper {
+        width: 100%;
+        padding: var(--space-md);
+    }
+    
+    .sidebar-toggle {
+        display: block !important;
+    }
+    
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+    }
+    
+    .card {
+        margin-bottom: var(--space-md);
+    }
+}
+
 /* Medium Mobile Devices (576px to 768px) */
 @media (min-width: 576px) and (max-width: 767.98px) {
     .container-fluid {

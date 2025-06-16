@@ -19,7 +19,10 @@ class TaskListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         # Order by due date (nulls last), then priority
-        queryset = Task.objects.all()
+        queryset = Task.objects.select_related(
+            'created_by', 'assigned_to', 'person', 'church', 'office'
+        ).prefetch_related('contact')
+        
         # Custom sort: incomplete tasks first, then completed tasks.
         # Within incomplete, sort by due_date (nulls last), then priority.
         # Within completed, sort by completed_at descending.
@@ -37,6 +40,11 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
     model = Task
     template_name = 'tasks/task_detail.html'
     context_object_name = 'task'
+    
+    def get_queryset(self):
+        return Task.objects.select_related(
+            'created_by', 'assigned_to', 'person', 'church', 'office', 'contact'
+        )
 
 
 class TaskCreateView(LoginRequiredMixin, CreateView):

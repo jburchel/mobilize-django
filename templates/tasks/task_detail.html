@@ -99,7 +99,7 @@
                         <h6 class="text-muted">Related Person</h6>
                         <p>
                             <a href="{% url 'contacts:person_detail' task.person.pk %}">
-                                {{ task.person.first_name }} {{ task.person.last_name }}
+                                {{ task.person.contact.first_name }} {{ task.person.contact.last_name }}
                             </a>
                         </p>
                     </div>

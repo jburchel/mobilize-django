@@ -33,6 +33,52 @@ Create a complete Customer Relationship Management (CRM) system called "Mobilize
 - DataTables for tabular data display
 - Chart.js for dashboard visualizations
 
+### Template Structure
+
+The project follows Django best practices with a centralized template organization:
+
+```
+templates/
+├── base.html                    # Base template with sidebar layout
+├── admin_panel/                 # Office and user management templates
+├── authentication/              # Login and auth setup templates
+├── churches/                    # Church management templates
+├── communications/              # Email and communication templates
+├── contacts/                    # Person and contact templates
+├── core/                        # Dashboard, reports, settings
+├── tasks/                       # Task management templates
+├── pipeline/                    # Pipeline visualization templates
+├── layouts/                     # Shared layout templates
+│   ├── dashboard_layout.html
+│   ├── detail_layout.html
+│   ├── form_layout.html
+│   └── list_layout.html
+└── partials/                    # Reusable components
+    ├── alert.html
+    ├── breadcrumb.html
+    ├── confirm_dialog.html
+    ├── data_table.html
+    ├── empty_state.html
+    ├── form_field.html
+    ├── loading_state.html
+    ├── metric_card.html
+    ├── modal.html
+    └── page_header.html
+```
+
+**Template Discovery Configuration:**
+- Main templates directory: `/templates/` (takes priority)
+- App-level templates: Not used (centralized approach)
+- Proper app namespacing: `templates/app_name/template.html`
+- Template inheritance: All templates extend `base.html` or layout templates
+
+**Key Template Features:**
+- Responsive design with mobile-first approach
+- Consistent sidebar navigation with role-based menu items
+- Reusable layout templates for common page structures
+- Modular partials for consistent UI components
+- Bootstrap 5 integration with custom CSS overrides
+
 ### UI Design and Branding Guidelines
 
 - **Color Palette**:

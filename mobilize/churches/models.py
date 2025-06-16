@@ -11,20 +11,11 @@ class Church(models.Model):
     Matches the 'churches' table in the Supabase database.
     It extends the Contact model via a OneToOneField.
     """
-    # Temporarily using regular id as primary key to match existing database schema
-    # contact = models.OneToOneField(
-    #     Contact,
-    #     on_delete=models.CASCADE,
-    #     primary_key=True,
-    #     related_name='church_details' # Connects back to Contact
-    # )
-    id = models.AutoField(primary_key=True)
-    contact = models.ForeignKey(
+    contact = models.OneToOneField(
         Contact,
         on_delete=models.CASCADE,
-        related_name='church_details',
-        null=True,
-        blank=True
+        primary_key=True,
+        related_name='church_details'
     )
 
     # Church-specific fields
@@ -66,24 +57,23 @@ class Church(models.Model):
     primary_contact_email = models.CharField(max_length=255, blank=True, null=True)
     main_contact_id = models.IntegerField(blank=True, null=True)
 
-    # Pipeline and Status fields from Supabase schema
+    # Church-specific pipeline field (generic pipeline_stage is on Contact)
     church_pipeline = models.CharField(max_length=255, blank=True, null=True)
-    priority = models.CharField(max_length=255, blank=True, null=True)
-    assigned_to = models.CharField(max_length=255, blank=True, null=True)
-    virtuous = models.BooleanField(blank=True, null=True)
-    date_closed = models.DateField(blank=True, null=True)
-
-    # Source information
-    source = models.CharField(max_length=255, blank=True, null=True)
-    referred_by = models.CharField(max_length=255, blank=True, null=True)
-
-    # Church-specific notes and information
-    info_given = models.TextField(blank=True, null=True)
-    reason_closed = models.TextField(blank=True, null=True)
     
-    # Ownership field from Supabase
-    owner_id = models.IntegerField(blank=True, null=True)
-    office_id = models.IntegerField(blank=True, null=True)
+    # Integration flag
+    virtuous = models.BooleanField(blank=True, null=True)
+    
+    # Church-specific fields
+    info_given = models.TextField(blank=True, null=True)
+    
+    # Note: The following fields are now on Contact model:
+    # - priority, status, pipeline_stage
+    # - assigned_to (via user field)
+    # - date_closed (via status)
+    # - source, referred_by (can use custom_fields)
+    # - reason_closed (can use notes)
+    # - owner_id (via user field)
+    # - office_id (via office field)
 
     class Meta:
         db_table = 'churches'
@@ -92,27 +82,21 @@ class Church(models.Model):
         ordering = ['name'] # Order by church name
         indexes = [
             models.Index(fields=['name']),
+            models.Index(fields=['church_pipeline']),
+            models.Index(fields=['denomination']),
+            models.Index(fields=['congregation_size']),
         ]
 
     def __str__(self):
-        return self.name if self.name else f"Church (ID: {self.id})"
+        return self.name if self.name else self.contact.church_name or f"Church (Contact ID: {self.contact_id})"
 
     @property
     def full_address(self):
         """Return the full address as a formatted string."""
-        # Address fields are now on the related Contact model
-        if not hasattr(self, 'contact') or not self.contact: # Check if contact exists
-            return "No address information"
-        parts = [
-            self.contact.address_street,
-            self.contact.address_city,
-            self.contact.address_state,
-            self.contact.address_zip,
-            self.contact.address_country
-        ]
-        return ", ".join(filter(None, parts))
+        # Address fields are on the related Contact model
+        return self.contact.full_address
 
     def get_absolute_url(self):
         """Return the URL to access a detail record for this church."""
         from django.urls import reverse
-        return reverse('churches:church_detail', args=[str(self.id)])
+        return reverse('churches:church_detail', args=[str(self.contact_id)])

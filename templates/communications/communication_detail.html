@@ -44,7 +44,7 @@
                                     <td>
                                         {% if communication.person %}
                                             <a href="{% url 'contacts:person_detail' communication.person.pk %}">
-                                                {{ communication.person.first_name }} {{ communication.person.last_name }}
+                                                {{ communication.person.contact.first_name }} {{ communication.person.contact.last_name }}
                                             </a>
                                         {% elif communication.church %}
                                             <a href="{% url 'churches:church_detail' communication.church.pk %}">

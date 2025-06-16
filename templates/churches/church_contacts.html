@@ -22,7 +22,7 @@
             <div class="col">
                 <div class="card h-100">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">{{ contact.person.first_name }} {{ contact.person.last_name }}</h5>
+                        <h5 class="card-title mb-0">{{ contact.person.contact.first_name }} {{ contact.person.contact.last_name }}</h5>
                         {% if contact.is_primary_contact %}
                             <span class="badge bg-primary">Primary</span>
                         {% endif %}
@@ -31,17 +31,17 @@
                         <h6 class="card-subtitle mb-2 text-muted">{{ contact.role }}</h6>
                         
                         <div class="mb-3">
-                            {% if contact.person.email %}
+                            {% if contact.person.contact.email %}
                                 <div class="mb-1">
                                     <i class="fas fa-envelope me-2"></i>
-                                    <a href="mailto:{{ contact.person.email }}">{{ contact.person.email }}</a>
+                                    <a href="mailto:{{ contact.person.contact.email }}">{{ contact.person.contact.email }}</a>
                                 </div>
                             {% endif %}
                             
-                            {% if contact.person.phone %}
+                            {% if contact.person.contact.phone %}
                                 <div>
                                     <i class="fas fa-phone me-2"></i>
-                                    <a href="tel:{{ contact.person.phone }}">{{ contact.person.phone }}</a>
+                                    <a href="tel:{{ contact.person.contact.phone }}">{{ contact.person.contact.phone }}</a>
                                 </div>
                             {% endif %}
                         </div>

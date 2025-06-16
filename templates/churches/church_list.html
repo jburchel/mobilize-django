@@ -75,32 +75,34 @@
             <tbody>
                 {% for church in page_obj %}
                     <tr>
-                        <td><a href="{% url 'churches:church_detail' church.pk %}">{{ church.name }}</a></td>
-                        <td>{{ church.city }}{% if church.city and church.state %}, {% endif %}{{ church.state }}</td>
+                        <td><a href="{% url 'churches:church_detail' church.pk %}">{{ church.name|default:church.contact.church_name }}</a></td>
+                        <td>{{ church.contact.city }}{% if church.contact.city and church.contact.state %}, {% endif %}{{ church.contact.state }}</td>
                         <td>{{ church.denomination|default:"-" }}</td>
                         <td>
-                            {% if church.pipeline_stage == 'new' %}
-                                <span class="badge bg-info">New</span>
-                            {% elif church.pipeline_stage == 'contacted' %}
-                                <span class="badge bg-secondary">Contacted</span>
-                            {% elif church.pipeline_stage == 'meeting_scheduled' %}
-                                <span class="badge bg-primary">Meeting</span>
-                            {% elif church.pipeline_stage == 'proposal' %}
-                                <span class="badge bg-warning text-dark">Proposal</span>
-                            {% elif church.pipeline_stage == 'committed' %}
-                                <span class="badge bg-success">Committed</span>
-                            {% elif church.pipeline_stage == 'partnership' %}
-                                <span class="badge bg-primary">Partnership</span>
-                            {% elif church.pipeline_stage == 'inactive' %}
-                                <span class="badge bg-danger">Inactive</span>
-                            {% endif %}
+                            {% with stage_code=church.contact.get_pipeline_stage_code %}
+                                {% if stage_code == 'promotion' %}
+                                    <span class="badge bg-info">Promotion</span>
+                                {% elif stage_code == 'information' %}
+                                    <span class="badge bg-secondary">Information</span>
+                                {% elif stage_code == 'invitation' %}
+                                    <span class="badge bg-primary">Invitation</span>
+                                {% elif stage_code == 'confirmation' %}
+                                    <span class="badge bg-warning text-dark">Confirmation</span>
+                                {% elif stage_code == 'automation' %}
+                                    <span class="badge bg-success">Automation</span>
+                                {% elif stage_code == 'en42' %}
+                                    <span class="badge bg-success">EN42</span>
+                                {% else %}
+                                    {{ church.contact.get_pipeline_stage_name|default:"-" }}
+                                {% endif %}
+                            {% endwith %}
                         </td>
                         <td>
-                            {% if church.priority == 'high' %}
+                            {% if church.contact.priority == 'high' %}
                                 <span class="badge bg-danger">High</span>
-                            {% elif church.priority == 'medium' %}
+                            {% elif church.contact.priority == 'medium' %}
                                 <span class="badge bg-warning text-dark">Medium</span>
-                            {% elif church.priority == 'low' %}
+                            {% elif church.contact.priority == 'low' %}
                                 <span class="badge bg-success">Low</span>
                             {% endif %}
                         </td>

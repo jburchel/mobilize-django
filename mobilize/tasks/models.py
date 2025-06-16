@@ -106,6 +106,10 @@ class Task(models.Model):
             models.Index(fields=['created_by']),
             models.Index(fields=['assigned_to']), # Index on ForeignKey is often created automatically by DB
             models.Index(fields=['is_recurring_template', 'next_occurrence_date']),
+            models.Index(fields=['status', 'due_date']),      # Composite for common queries
+            models.Index(fields=['assigned_to', 'status']),   # Composite for user tasks
+            models.Index(fields=['created_by', 'status']),    # Composite for created tasks
+            models.Index(fields=['office', 'status']),        # Composite for office tasks
         ]
     
     def __str__(self):

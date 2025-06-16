@@ -21,23 +21,23 @@ def person_list(request):
     pipeline_stage = request.GET.get('pipeline_stage', '')
     priority = request.GET.get('priority', '')
     
-    # Start with all people
-    people = Person.objects.all()
+    # Start with all people - use select_related to optimize queries
+    people = Person.objects.select_related('contact').all()
     
     # Apply filters if provided
     if query:
         people = people.filter(
-            Q(first_name__icontains=query) | 
-            Q(last_name__icontains=query) | 
-            Q(email__icontains=query) | 
-            Q(phone__icontains=query)
+            Q(contact__first_name__icontains=query) | 
+            Q(contact__last_name__icontains=query) | 
+            Q(contact__email__icontains=query) | 
+            Q(contact__phone__icontains=query)
         )
     
     if pipeline_stage:
-        people = people.filter(pipeline_stage=pipeline_stage)
+        people = people.filter(contact__pipeline_stage=pipeline_stage)
     
     if priority:
-        people = people.filter(priority=priority)
+        people = people.filter(contact__priority=priority)
     
     # Pagination
     paginator = Paginator(people, 25)  # Show 25 people per page
@@ -97,9 +97,7 @@ def person_create(request):
     if request.method == 'POST':
         form = PersonForm(request.POST)
         if form.is_valid():
-            person = form.save(commit=False)
-            person.created_by = request.user
-            person.save()
+            person = form.save()
             messages.success(request, f"Successfully created {person.name}")
             return redirect('contacts:person_detail', pk=person.pk)
     else:
@@ -185,50 +183,84 @@ def import_contacts(request):
                 
                 for row in reader:
                     try:
-                        # Check if person exists by email
+                        # Check if contact exists by email
                         email = row.get('email', '').strip()
+                        
+                        # First, handle the Contact creation/update
                         if email:
-                            person, created = Person.objects.update_or_create(
-                                email=email,
-                                defaults={
-                                    'first_name': row.get('first_name', '').strip(),
-                                    'last_name': row.get('last_name', '').strip(),
-                                    'phone': row.get('phone', '').strip(),
-                                    'address_line1': row.get('address_line1', '').strip(),
-                                    'address_line2': row.get('address_line2', '').strip(),
-                                    'city': row.get('city', '').strip(),
-                                    'state': row.get('state', '').strip(),
-                                    'postal_code': row.get('postal_code', '').strip(),
-                                    'country': row.get('country', 'United States').strip(),
-                                    'pipeline_stage': row.get('pipeline_stage', 'new').strip(),
-                                    'priority': row.get('priority', 'medium').strip(),
-                                    'notes': row.get('notes', '').strip(),
-                                    'created_by': request.user,
-                                }
-                            )
-                            
-                            if created:
-                                created_count += 1
-                            else:
-                                updated_count += 1
+                            # Check if a contact with this email already exists
+                            from .models import Contact
+                            try:
+                                contact = Contact.objects.get(email=email)
+                                created = False
+                                # Update contact fields
+                                contact.first_name = row.get('first_name', '').strip()
+                                contact.last_name = row.get('last_name', '').strip()
+                                contact.phone = row.get('phone', '').strip()
+                                contact.street_address = row.get('street_address', row.get('address_line1', '')).strip()
+                                contact.city = row.get('city', '').strip()
+                                contact.state = row.get('state', '').strip()
+                                contact.zip_code = row.get('zip_code', row.get('postal_code', '')).strip()
+                                contact.country = row.get('country', 'United States').strip()
+                                contact.pipeline_stage = row.get('pipeline_stage', 'new').strip()
+                                contact.priority = row.get('priority', 'medium').strip()
+                                contact.notes = row.get('notes', '').strip()
+                                contact.user = request.user
+                                contact.save()
+                            except Contact.DoesNotExist:
+                                # Create new contact
+                                contact = Contact.objects.create(
+                                    type='person',
+                                    email=email,
+                                    first_name=row.get('first_name', '').strip(),
+                                    last_name=row.get('last_name', '').strip(),
+                                    phone=row.get('phone', '').strip(),
+                                    street_address=row.get('street_address', row.get('address_line1', '')).strip(),
+                                    city=row.get('city', '').strip(),
+                                    state=row.get('state', '').strip(),
+                                    zip_code=row.get('zip_code', row.get('postal_code', '')).strip(),
+                                    country=row.get('country', 'United States').strip(),
+                                    pipeline_stage=row.get('pipeline_stage', 'new').strip(),
+                                    priority=row.get('priority', 'medium').strip(),
+                                    notes=row.get('notes', '').strip(),
+                                    user=request.user,
+                                )
+                                created = True
                         else:
-                            # No email, create new person
-                            Person.objects.create(
+                            # No email, create new contact
+                            contact = Contact.objects.create(
+                                type='person',
                                 first_name=row.get('first_name', '').strip(),
                                 last_name=row.get('last_name', '').strip(),
                                 phone=row.get('phone', '').strip(),
-                                address_line1=row.get('address_line1', '').strip(),
-                                address_line2=row.get('address_line2', '').strip(),
+                                street_address=row.get('street_address', row.get('address_line1', '')).strip(),
                                 city=row.get('city', '').strip(),
                                 state=row.get('state', '').strip(),
-                                postal_code=row.get('postal_code', '').strip(),
+                                zip_code=row.get('zip_code', row.get('postal_code', '')).strip(),
                                 country=row.get('country', 'United States').strip(),
                                 pipeline_stage=row.get('pipeline_stage', 'new').strip(),
                                 priority=row.get('priority', 'medium').strip(),
                                 notes=row.get('notes', '').strip(),
-                                created_by=request.user,
+                                user=request.user,
                             )
+                            created = True
+                        
+                        # Now create or update the Person record
+                        person, person_created = Person.objects.get_or_create(
+                            contact=contact,
+                            defaults={
+                                # Add any person-specific fields from CSV if available
+                                'title': row.get('title', '').strip(),
+                                'profession': row.get('profession', row.get('occupation', '')).strip(),
+                                'organization': row.get('organization', row.get('employer', '')).strip(),
+                            }
+                        )
+                        
+                        if created or person_created:
                             created_count += 1
+                        else:
+                            updated_count += 1
+                            
                     except Exception as e:
                         error_count += 1
                         print(f"Error importing row: {e}")
@@ -258,23 +290,23 @@ def export_contacts(request):
     pipeline_stage = request.GET.get('pipeline_stage', '')
     priority = request.GET.get('priority', '')
     
-    # Start with all people
-    people = Person.objects.all()
+    # Start with all people - use select_related to optimize queries
+    people = Person.objects.select_related('contact').all()
     
     # Apply filters if provided
     if query:
         people = people.filter(
-            Q(first_name__icontains=query) | 
-            Q(last_name__icontains=query) | 
-            Q(email__icontains=query) | 
-            Q(phone__icontains=query)
+            Q(contact__first_name__icontains=query) | 
+            Q(contact__last_name__icontains=query) | 
+            Q(contact__email__icontains=query) | 
+            Q(contact__phone__icontains=query)
         )
     
     if pipeline_stage:
-        people = people.filter(pipeline_stage=pipeline_stage)
+        people = people.filter(contact__pipeline_stage=pipeline_stage)
     
     if priority:
-        people = people.filter(priority=priority)
+        people = people.filter(contact__priority=priority)
     
     # Create the HttpResponse object with CSV header
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -287,27 +319,33 @@ def export_contacts(request):
     # Write header row
     writer.writerow([
         'First Name', 'Last Name', 'Email', 'Phone', 
-        'Address Line 1', 'Address Line 2', 'City', 'State', 'Postal Code', 'Country',
-        'Pipeline Stage', 'Priority', 'Notes', 'Created At'
+        'Street Address', 'City', 'State', 'Zip Code', 'Country',
+        'Pipeline Stage', 'Priority', 'Status', 'Notes', 
+        'Title', 'Profession', 'Organization',
+        'Created At', 'Last Updated'
     ])
     
     # Write data rows
     for person in people:
         writer.writerow([
-            person.first_name,
-            person.last_name,
-            person.email or '',
-            person.phone or '',
-            person.address_line1 or '',
-            person.address_line2 or '',
-            person.city or '',
-            person.state or '',
-            person.postal_code or '',
-            person.country or '',
-            person.get_pipeline_stage_display(),
-            person.get_priority_display(),
-            person.notes or '',
-            person.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            person.contact.first_name or '',
+            person.contact.last_name or '',
+            person.contact.email or '',
+            person.contact.phone or '',
+            person.contact.street_address or '',
+            person.contact.city or '',
+            person.contact.state or '',
+            person.contact.zip_code or '',
+            person.contact.country or '',
+            person.contact.pipeline_stage or '',
+            person.contact.priority or '',
+            person.contact.status or '',
+            person.contact.notes or '',
+            person.title or '',
+            person.profession or '',
+            person.organization or '',
+            person.contact.created_at.strftime('%Y-%m-%d %H:%M:%S') if person.contact.created_at else '',
+            person.contact.updated_at.strftime('%Y-%m-%d %H:%M:%S') if person.contact.updated_at else ''
         ])
     
     return response

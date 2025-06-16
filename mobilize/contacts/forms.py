@@ -3,45 +3,67 @@ from django.core.validators import FileExtensionValidator
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Row, Column, HTML, Div
 
-from .models import Person
+from .models import Person, Contact
 
 
 class PersonForm(forms.ModelForm):
     """Form for creating and editing Person records."""
     
+    # Contact fields that will be handled separately
+    first_name = forms.CharField(max_length=255, required=False)
+    last_name = forms.CharField(max_length=255, required=False)
+    email = forms.EmailField(max_length=255, required=False)
+    phone = forms.CharField(max_length=20, required=False)
+    preferred_contact_method = forms.CharField(max_length=255, required=False)
+    street_address = forms.CharField(max_length=255, required=False)
+    city = forms.CharField(max_length=255, required=False)
+    state = forms.CharField(max_length=255, required=False)
+    zip_code = forms.CharField(max_length=255, required=False)
+    country = forms.CharField(max_length=100, required=False)
+    notes = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}), required=False)
+    pipeline_stage = forms.CharField(max_length=50, required=False)
+    priority = forms.CharField(max_length=20, required=False)
+    status = forms.CharField(max_length=20, required=False)
+    tags = forms.CharField(widget=forms.Textarea(attrs={'rows': 2}), required=False)
+    
     class Meta:
         model = Person
         fields = [
-            # Contact fields (inherited)
-            'first_name', 'last_name', 'email', 'phone', 'preferred_contact_method',
-            'street_address', 'city', 'state', 'zip_code', 'country', 'notes',
-            # Person-specific fields
-            'birthday', 'anniversary', 'marital_status', 'spouse_first_name', 'spouse_last_name',
-            'home_country', 'languages', 'occupation', 'employer', 'skills', 'interests',
-            'church_id', 'church_role', 'is_primary_contact', 'pipeline_stage',
-            'people_pipeline', 'priority', 'status', 'last_contact', 'next_contact',
-            'date_closed', 'info_given', 'desired_service', 'reason_closed', 'tags',
-            'assigned_to', 'source', 'referred_by', 'website', 'facebook', 'twitter',
-            'linkedin', 'instagram', 'virtuous'
+            # Person-specific fields only
+            'title', 'preferred_name', 'birthday', 'anniversary', 'marital_status', 
+            'spouse_first_name', 'spouse_last_name', 'home_country', 'languages', 
+            'profession', 'organization', 'primary_church', 'church_role',
+            'linkedin_url', 'facebook_url', 'twitter_url', 'instagram_url',
+            'google_contact_id'
         ]
         widgets = {
-            'notes': forms.Textarea(attrs={'rows': 3}),
-            'tags': forms.Textarea(attrs={'rows': 2}),
-            'skills': forms.Textarea(attrs={'rows': 2}),
-            'interests': forms.Textarea(attrs={'rows': 2}),
-            'info_given': forms.Textarea(attrs={'rows': 3}),
-            'desired_service': forms.Textarea(attrs={'rows': 3}),
-            'reason_closed': forms.Textarea(attrs={'rows': 3}),
             'languages': forms.Textarea(attrs={'rows': 2}),
             'birthday': forms.DateInput(attrs={'type': 'date'}),
             'anniversary': forms.DateInput(attrs={'type': 'date'}),
-            'last_contact': forms.DateInput(attrs={'type': 'date'}),
-            'next_contact': forms.DateInput(attrs={'type': 'date'}),
-            'date_closed': forms.DateInput(attrs={'type': 'date'}),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        # If we have an instance, populate Contact fields
+        if self.instance and hasattr(self.instance, 'contact'):
+            contact = self.instance.contact
+            self.fields['first_name'].initial = contact.first_name
+            self.fields['last_name'].initial = contact.last_name
+            self.fields['email'].initial = contact.email
+            self.fields['phone'].initial = contact.phone
+            self.fields['preferred_contact_method'].initial = contact.preferred_contact_method
+            self.fields['street_address'].initial = contact.street_address
+            self.fields['city'].initial = contact.city
+            self.fields['state'].initial = contact.state
+            self.fields['zip_code'].initial = contact.zip_code
+            self.fields['country'].initial = contact.country
+            self.fields['notes'].initial = contact.notes
+            self.fields['pipeline_stage'].initial = contact.pipeline_stage
+            self.fields['priority'].initial = contact.priority
+            self.fields['status'].initial = contact.status
+            self.fields['tags'].initial = contact.tags
+        
         self.helper = FormHelper()
         self.helper.form_tag = True
         self.helper.form_method = 'post'
@@ -74,6 +96,8 @@ class PersonForm(forms.ModelForm):
             'country',
             
             HTML('<h3 class="mb-4 mt-4">Personal Details</h3>'),
+            'title',
+            'preferred_name',
             Row(
                 Column('birthday', css_class='form-group col-md-6 mb-3'),
                 Column('anniversary', css_class='form-group col-md-6 mb-3'),
@@ -89,59 +113,30 @@ class PersonForm(forms.ModelForm):
             'languages',
             
             HTML('<h3 class="mb-4 mt-4">Professional Details</h3>'),
-            'occupation',
-            'employer',
-            'skills',
-            'interests',
+            'profession',
+            'organization',
             
             HTML('<h3 class="mb-4 mt-4">Church Relationship</h3>'),
-            'church_id',
+            'primary_church',
             'church_role',
-            'is_primary_contact',
             
             HTML('<h3 class="mb-4 mt-4">Pipeline and Status</h3>'),
             Row(
                 Column('pipeline_stage', css_class='form-group col-md-6 mb-3'),
-                Column('people_pipeline', css_class='form-group col-md-6 mb-3'),
-                css_class='form-row'
-            ),
-            Row(
                 Column('priority', css_class='form-group col-md-6 mb-3'),
-                Column('status', css_class='form-group col-md-6 mb-3'),
                 css_class='form-row'
             ),
+            'status',
             
-            HTML('<h3 class="mb-4 mt-4">Dates and Tracking</h3>'),
-            Row(
-                Column('last_contact', css_class='form-group col-md-4 mb-3'),
-                Column('next_contact', css_class='form-group col-md-4 mb-3'),
-                Column('date_closed', css_class='form-group col-md-4 mb-3'),
-                css_class='form-row'
-            ),
-            
-            HTML('<h3 class="mb-4 mt-4">Notes and Metadata</h3>'),
+            HTML('<h3 class="mb-4 mt-4">Notes</h3>'),
             'notes',
-            'info_given',
-            'desired_service',
-            'reason_closed',
             'tags',
             
-            HTML('<h3 class="mb-4 mt-4">Assignment</h3>'),
-            'assigned_to',
-            
-            HTML('<h3 class="mb-4 mt-4">Source Information</h3>'),
-            'source',
-            'referred_by',
-            
             HTML('<h3 class="mb-4 mt-4">Social Media</h3>'),
-            'website',
-            'facebook',
-            'twitter',
-            'linkedin',
-            'instagram',
-            
-            HTML('<h3 class="mb-4 mt-4">Integration</h3>'),
-            'virtuous',
+            'facebook_url',
+            'twitter_url',
+            'linkedin_url',
+            'instagram_url',
             
             Div(
                 Submit('submit', 'Save', css_class='btn btn-primary'),
@@ -149,6 +144,51 @@ class PersonForm(forms.ModelForm):
                 css_class='mt-4'
             )
         )
+    
+    def save(self, commit=True):
+        # Handle Contact creation/update
+        if self.instance.pk:
+            # Editing existing person
+            contact = self.instance.contact
+        else:
+            # Creating new person
+            contact = Contact(type='person')
+        
+        # Update contact fields
+        contact.first_name = self.cleaned_data.get('first_name')
+        contact.last_name = self.cleaned_data.get('last_name')
+        contact.email = self.cleaned_data.get('email')
+        contact.phone = self.cleaned_data.get('phone')
+        contact.preferred_contact_method = self.cleaned_data.get('preferred_contact_method')
+        contact.street_address = self.cleaned_data.get('street_address')
+        contact.city = self.cleaned_data.get('city')
+        contact.state = self.cleaned_data.get('state')
+        contact.zip_code = self.cleaned_data.get('zip_code')
+        contact.country = self.cleaned_data.get('country')
+        contact.notes = self.cleaned_data.get('notes')
+        contact.pipeline_stage = self.cleaned_data.get('pipeline_stage')
+        contact.priority = self.cleaned_data.get('priority')
+        contact.status = self.cleaned_data.get('status') or 'active'
+        
+        # Handle tags - convert string to list if needed
+        tags_value = self.cleaned_data.get('tags')
+        if tags_value and isinstance(tags_value, str):
+            # Convert comma-separated string to list
+            contact.tags = [tag.strip() for tag in tags_value.split(',') if tag.strip()]
+        else:
+            contact.tags = tags_value
+        
+        if commit:
+            contact.save()
+            if not self.instance.pk:
+                # Only set contact for new instances
+                self.instance.contact = contact
+            person = super().save(commit=True)
+            return person
+        else:
+            if not self.instance.pk:
+                self.instance.contact = contact
+            return super().save(commit=False)
 
 
 

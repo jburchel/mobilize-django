@@ -125,6 +125,10 @@ class Communication(models.Model):
             models.Index(fields=['type'], name='comm_type_idx'),
             models.Index(fields=['user_id'], name='comm_user_id_idx'),
             models.Index(fields=['email_status'], name='comm_email_status_idx'),
+            models.Index(fields=['user_id', 'date']),         # Composite for user communications
+            models.Index(fields=['type', 'date']),            # Composite for type filtering
+            models.Index(fields=['office', 'date']),          # Composite for office communications
+            models.Index(fields=['gmail_message_id']),        # For Gmail sync lookups
         ]
     
     def __str__(self):

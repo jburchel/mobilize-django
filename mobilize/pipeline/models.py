@@ -14,21 +14,53 @@ PIPELINE_TYPE_CHOICES = [
     (PIPELINE_TYPE_CUSTOM, 'Custom Pipeline'),
 ]
 
+# Main Pipeline Stage constants - shared across all offices
+MAIN_PEOPLE_PIPELINE_STAGES = [
+    ('promotion', 'Promotion'),
+    ('information', 'Information'),
+    ('invitation', 'Invitation'),
+    ('confirmation', 'Confirmation'),
+    ('automation', 'Automation'),
+]
+
+MAIN_CHURCH_PIPELINE_STAGES = [
+    ('promotion', 'Promotion'),
+    ('information', 'Information'),
+    ('invitation', 'Invitation'),
+    ('confirmation', 'Confirmation'),
+    ('automation', 'Automation'),
+    ('en42', 'EN42'),  # Additional stage for churches
+]
+
 
 class Pipeline(models.Model):
     """Model for defining sales or recruitment pipelines"""
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     pipeline_type = models.CharField(max_length=50, choices=PIPELINE_TYPE_CHOICES, default=PIPELINE_TYPE_CUSTOM)
+    
+    # For Main Pipelines: office is NULL (shared across all offices)
+    # For Custom Pipelines: office is set (specific to that office)
     office = models.ForeignKey(
         'admin_panel.Office',
         on_delete=models.CASCADE,
-        related_name='pipelines'
+        related_name='pipelines',
+        null=True,
+        blank=True,
+        help_text="NULL for main pipelines (shared), set for custom pipelines (office-specific)"
     )
+    
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
-    is_main_pipeline = models.BooleanField(default=False, null=True)
-    parent_pipeline_stage = models.CharField(max_length=100, blank=True, null=True)
+    is_main_pipeline = models.BooleanField(default=False, help_text="True for the global Main People/Church pipelines")
+    
+    # For custom pipelines: which main pipeline stage they fall under
+    parent_pipeline_stage = models.CharField(
+        max_length=100, 
+        blank=True, 
+        null=True,
+        help_text="For custom pipelines: the main pipeline stage this custom pipeline falls under (e.g. 'promotion', 'information')"
+    )
     
     class Meta:
         verbose_name = 'Pipeline'
@@ -43,6 +75,28 @@ class Pipeline(models.Model):
     
     def __str__(self):
         return self.name
+    
+    @classmethod
+    def get_main_people_pipeline(cls):
+        """Get the main people pipeline (shared across all offices)"""
+        return cls.objects.filter(is_main_pipeline=True, pipeline_type=PIPELINE_TYPE_PEOPLE).first()
+    
+    @classmethod
+    def get_main_church_pipeline(cls):
+        """Get the main church pipeline (shared across all offices)"""
+        return cls.objects.filter(is_main_pipeline=True, pipeline_type=PIPELINE_TYPE_CHURCH).first()
+    
+    def is_custom_pipeline(self):
+        """Check if this is a custom (office-specific) pipeline"""
+        return not self.is_main_pipeline and self.office is not None
+    
+    def get_main_stage_choices(self):
+        """Get the main pipeline stage choices for the parent_pipeline_stage field"""
+        if self.pipeline_type == PIPELINE_TYPE_PEOPLE:
+            return MAIN_PEOPLE_PIPELINE_STAGES
+        elif self.pipeline_type == PIPELINE_TYPE_CHURCH:
+            return MAIN_CHURCH_PIPELINE_STAGES
+        return []
 
 
 class PipelineStage(models.Model):
@@ -77,21 +131,34 @@ class PipelineStage(models.Model):
 
 class PipelineContact(models.Model):
     """Model for tracking contacts within pipelines"""
-    # We'll use separate fields for person and church to support both types
-    person = models.ForeignKey(
-        'contacts.Person',
+    # Direct relationship to Contact (preferred)
+    contact = models.ForeignKey(
+        'contacts.Contact',
         on_delete=models.CASCADE,
         related_name='pipeline_entries',
         null=True,
-        blank=True
+        blank=True,
+        help_text="Direct link to Contact model (preferred approach)"
+    )
+    
+    # Legacy fields for person and church - kept for backwards compatibility
+    person = models.ForeignKey(
+        'contacts.Person',
+        on_delete=models.CASCADE,
+        related_name='legacy_pipeline_entries',
+        null=True,
+        blank=True,
+        help_text="Legacy field - use contact field instead"
     )
     church = models.ForeignKey(
         'churches.Church',
         on_delete=models.CASCADE,
-        related_name='pipeline_entries',
+        related_name='legacy_pipeline_entries',
         null=True,
-        blank=True
+        blank=True,
+        help_text="Legacy field - use contact field instead"
     )
+    
     # This field is used to determine which type of contact this is
     contact_type = models.CharField(
         max_length=10,
@@ -115,8 +182,9 @@ class PipelineContact(models.Model):
         verbose_name = 'Pipeline Contact'
         verbose_name_plural = 'Pipeline Contacts'
         indexes = [
-            models.Index(fields=['person']),
-            models.Index(fields=['church']),
+            models.Index(fields=['contact']),  # New preferred field
+            models.Index(fields=['person']),   # Legacy
+            models.Index(fields=['church']),   # Legacy
             models.Index(fields=['contact_type']),
             models.Index(fields=['pipeline']),
             models.Index(fields=['current_stage']),
@@ -124,13 +192,19 @@ class PipelineContact(models.Model):
         ]
     
     def __str__(self):
-        contact_name = self.person if self.contact_type == 'person' else self.church
+        # Use the direct contact field if available, fallback to legacy fields
+        if self.contact:
+            contact_name = str(self.contact)
+        else:
+            contact_name = self.person if self.contact_type == 'person' else self.church
         return f"{contact_name} in {self.pipeline.name} at {self.current_stage.name}"
         
-    @property
-    def contact(self):
-        """Return the actual contact object (either person or church)"""
-        return self.person if self.contact_type == 'person' else self.church
+    def get_contact_object(self):
+        """Return the actual contact object (preferred: direct contact, fallback: person/church)"""
+        if self.contact:
+            return self.contact
+        # Legacy support
+        return self.person.contact if self.person else (self.church.contact if self.church else None)
 
 
 class PipelineStageHistory(models.Model):

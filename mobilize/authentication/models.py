@@ -30,6 +30,9 @@ class User(AbstractUser):
         db_table = 'users'
         indexes = [
             models.Index(fields=['email']),
+            models.Index(fields=['role']),                    # For role-based filtering
+            models.Index(fields=['is_active', 'role']),       # Composite for active users by role
+            models.Index(fields=['username']),                # For username lookups
         ]
     
     def has_office_permission(self, office_id, required_role=None):
@@ -118,6 +121,8 @@ class GoogleToken(models.Model):
         db_table = 'google_tokens'
         indexes = [
             models.Index(fields=['user']),
+            models.Index(fields=['user', 'expires_at']),      # Composite for token management
+            models.Index(fields=['expires_at']),              # For cleanup of expired tokens
         ]
     
     @property

@@ -123,6 +123,11 @@ def google_auth_callback(request):
         return render(request, 'authentication/google_auth_error.html',
                      {'error': 'Email not provided by Google'})
     
+    # Restrict access to @crossoverglobal.net email addresses only
+    if not email.endswith('@crossoverglobal.net'):
+        return render(request, 'authentication/google_auth_error.html',
+                     {'error': 'Access restricted to @crossoverglobal.net email addresses only. Please use your Crossover Global email account.'})
+    
     # Get or create user based on email
     from django.contrib.auth import get_user_model
     User = get_user_model()

@@ -4,54 +4,47 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Row, Column, HTML, Div
 
 from .models import Church
-
-# ChurchInteraction and ChurchContact models have been removed as they don't exist in Supabase
-# Person import removed as it's no longer needed after removing ChurchContactForm
+from mobilize.contacts.models import Contact
 
 
 class ChurchForm(forms.ModelForm):
     """Form for creating and editing Church records."""
     
+    # Contact fields that will be handled separately
+    church_name = forms.CharField(max_length=255, required=False, label="Church Name")
+    email = forms.EmailField(max_length=255, required=False)
+    phone = forms.CharField(max_length=20, required=False)
+    street_address = forms.CharField(max_length=255, required=False)
+    city = forms.CharField(max_length=255, required=False)
+    state = forms.CharField(max_length=255, required=False)
+    zip_code = forms.CharField(max_length=255, required=False)
+    country = forms.CharField(max_length=100, required=False)
+    notes = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}), required=False)
+    pipeline_stage = forms.CharField(max_length=50, required=False)
+    priority = forms.CharField(max_length=20, required=False)
+    status = forms.CharField(max_length=20, required=False)
+    
     class Meta:
         model = Church
         fields = [
-            'name', # Renamed from church_name
-            'location',  # Added location field
-            # Website
-            'website',
-            # Church-specific fields
-            'denomination', 'year_founded',
-            # Size Information
+            # Church-specific fields only
+            'name', 'location', 'website', 'denomination', 'year_founded',
             'congregation_size', 'weekly_attendance',
-            # New JSON fields
             'service_times', 'facilities', 'ministries', 'primary_language', 'secondary_languages',
-            # Senior Pastor Information
-            'pastor_name', # Renamed from senior_pastor_name
-            'senior_pastor_first_name', 'senior_pastor_last_name',
-            'pastor_phone', # Renamed from senior_pastor_phone
-            'pastor_email', # Renamed from senior_pastor_email
-            # Missions Pastor Information
+            # Pastor Information
+            'pastor_name', 'senior_pastor_first_name', 'senior_pastor_last_name',
+            'pastor_phone', 'pastor_email',
             'missions_pastor_first_name', 'missions_pastor_last_name',
-            'mission_pastor_phone', # Corrected field name
-            'mission_pastor_email', # Corrected field name
+            'mission_pastor_phone', 'mission_pastor_email',
             # Primary Contact Information
             'primary_contact_first_name', 'primary_contact_last_name',
             'primary_contact_phone', 'primary_contact_email',
             'main_contact_id',
-            # Pipeline and Status
-            'church_pipeline', 'priority', 'assigned_to',
-            'virtuous', 'date_closed',
-            # Source information
-            'source', 'referred_by',
-            # Church-specific notes and information
-            'info_given', 'reason_closed',
-            # Ownership fields
-            'owner_id', 'office_id'
+            # Church-specific fields
+            'church_pipeline', 'virtuous', 'info_given'
         ]
         widgets = {
             'info_given': forms.Textarea(attrs={'rows': 3}),
-            'reason_closed': forms.Textarea(attrs={'rows': 3}),
-            'date_closed': forms.DateInput(attrs={'type': 'date'}),
             'service_times': forms.Textarea(attrs={'rows': 2, 'placeholder': 'e.g., {"Sunday": "9am, 11am", "Wednesday": "7pm"}'}),
             'facilities': forms.Textarea(attrs={'rows': 2, 'placeholder': 'e.g., {"sanctuary_capacity": 500, "parking_spots": 100}'}),
             'ministries': forms.Textarea(attrs={'rows': 2, 'placeholder': 'e.g., ["Youth Group", "Food Pantry"]'}),
@@ -60,6 +53,23 @@ class ChurchForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        # If we have an instance, populate Contact fields
+        if self.instance and hasattr(self.instance, 'contact'):
+            contact = self.instance.contact
+            self.fields['church_name'].initial = contact.church_name
+            self.fields['email'].initial = contact.email
+            self.fields['phone'].initial = contact.phone
+            self.fields['street_address'].initial = contact.street_address
+            self.fields['city'].initial = contact.city
+            self.fields['state'].initial = contact.state
+            self.fields['zip_code'].initial = contact.zip_code
+            self.fields['country'].initial = contact.country
+            self.fields['notes'].initial = contact.notes
+            self.fields['pipeline_stage'].initial = contact.pipeline_stage
+            self.fields['priority'].initial = contact.priority
+            self.fields['status'].initial = contact.status
+        
         self.helper = FormHelper()
         self.helper.form_tag = True
         self.helper.form_method = 'post'
@@ -69,7 +79,13 @@ class ChurchForm(forms.ModelForm):
         
         self.helper.layout = Layout(
             HTML('<h3 class="mb-4">Basic Information</h3>'),
+            'church_name',
             'name',
+            Row(
+                Column('email', css_class='form-group col-md-6 mb-3'),
+                Column('phone', css_class='form-group col-md-6 mb-3'),
+                css_class='form-row'
+            ),
             'location',
             'denomination',
             Row(
@@ -77,6 +93,18 @@ class ChurchForm(forms.ModelForm):
                 Column('year_founded', css_class='form-group col-md-6 mb-3'),
                 css_class='form-row'
             ),
+            
+            HTML('<h3 class="mb-4 mt-4">Address</h3>'),
+            'street_address',
+            Row(
+                Column('city', css_class='form-group col-md-4 mb-3'),
+                Column('state', css_class='form-group col-md-4 mb-3'),
+                Column('zip_code', css_class='form-group col-md-4 mb-3'),
+                css_class='form-row'
+            ),
+            'country',
+            
+            HTML('<h3 class="mb-4 mt-4">Language & Services</h3>'),
             Row(
                 Column('primary_language', css_class='form-group col-md-6 mb-3'),
                 Column('secondary_languages', css_class='form-group col-md-6 mb-3'),
@@ -132,39 +160,61 @@ class ChurchForm(forms.ModelForm):
             'main_contact_id',
             HTML('<h3 class="mb-4 mt-4">Pipeline & Status</h3>'),
             Row(
-                Column('church_pipeline', css_class='form-group col-md-6 mb-3'),
+                Column('pipeline_stage', css_class='form-group col-md-6 mb-3'),
                 Column('priority', css_class='form-group col-md-6 mb-3'),
                 css_class='form-row'
             ),
             Row(
-                Column('assigned_to', css_class='form-group col-md-6 mb-3'),
-                Column('virtuous', css_class='form-group col-md-6 mb-3'),
+                Column('church_pipeline', css_class='form-group col-md-6 mb-3'),
+                Column('status', css_class='form-group col-md-6 mb-3'),
                 css_class='form-row'
             ),
-            Row(
-                Column('date_closed', css_class='form-group col-md-6 mb-3'),
-                css_class='form-row'
-            ),
-            HTML('<h3 class="mb-4 mt-4">Source Information</h3>'),
-            Row(
-                Column('source', css_class='form-group col-md-6 mb-3'),
-                Column('referred_by', css_class='form-group col-md-6 mb-3'),
-                css_class='form-row'
-            ),
-            HTML('<h3 class="mb-4 mt-4">Additional Information</h3>'),
+            'virtuous',
+            
+            HTML('<h3 class="mb-4 mt-4">Notes & Information</h3>'),
+            'notes',
             'info_given',
-            'reason_closed',
-            Row(
-                Column('owner_id', css_class='form-group col-md-6 mb-3'),
-                Column('office_id', css_class='form-group col-md-6 mb-3'),
-                css_class='form-row'
-            ),
             Div(
                 Submit('submit', 'Save', css_class='btn btn-primary'),
                 HTML('<a href="{% url \'churches:church_list\' %}" class="btn btn-secondary ms-2">Cancel</a>'),
                 css_class='mt-4'
             )
         )
+    
+    def save(self, commit=True):
+        # Handle Contact creation/update
+        if self.instance.pk:
+            # Editing existing church
+            contact = self.instance.contact
+        else:
+            # Creating new church
+            contact = Contact(type='church')
+        
+        # Update contact fields
+        contact.church_name = self.cleaned_data.get('church_name')
+        contact.email = self.cleaned_data.get('email')
+        contact.phone = self.cleaned_data.get('phone')
+        contact.street_address = self.cleaned_data.get('street_address')
+        contact.city = self.cleaned_data.get('city')
+        contact.state = self.cleaned_data.get('state')
+        contact.zip_code = self.cleaned_data.get('zip_code')
+        contact.country = self.cleaned_data.get('country')
+        contact.notes = self.cleaned_data.get('notes')
+        contact.pipeline_stage = self.cleaned_data.get('pipeline_stage')
+        contact.priority = self.cleaned_data.get('priority')
+        contact.status = self.cleaned_data.get('status') or 'active'
+        
+        if commit:
+            contact.save()
+            if not self.instance.pk:
+                # Only set contact for new instances
+                self.instance.contact = contact
+            church = super().save(commit=True)
+            return church
+        else:
+            if not self.instance.pk:
+                self.instance.contact = contact
+            return super().save(commit=False)
 
 
 # ChurchInteractionForm and ChurchContactForm have been removed as the related models don't exist in Supabase

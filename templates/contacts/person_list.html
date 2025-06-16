@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}People - Mobilize CRM{% endblock %}
+
+{% block page_title %}People{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'contacts:person_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add Person
+    </a>
+    <a href="{% url 'contacts:import_contacts' %}" class="btn btn-secondary">
+        <i class="fas fa-upload"></i> Import
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Office</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for person in object_list %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'contacts:person_detail' person.pk %}">
+                                {{ person.name|default:person.contact.email }}
+                            </a>
+                        </td>
+                        <td>{{ person.contact.email|default:'-' }}</td>
+                        <td>{{ person.contact.phone|default:'-' }}</td>
+                        <td>{{ person.contact.office.name|default:'-' }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'contacts:person_detail' person.pk %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'contacts:person_update' person.pk %}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'contacts:person_delete' person.pk %}" class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">
+                            No people found. <a href="{% url 'contacts:person_create' %}">Add the first person</a>.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

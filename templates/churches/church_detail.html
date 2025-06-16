@@ -63,8 +63,8 @@
                 <div class="row mb-3">
                     <div class="col-md-4 fw-bold">Email:</div>
                     <div class="col-md-8">
-                        {% if church.email %}
-                            <a href="mailto:{{ church.email }}">{{ church.email }}</a>
+                        {% if church.contact.email %}
+                            <a href="mailto:{{ church.contact.email }}">{{ church.contact.email }}</a>
                         {% else %}
                             Not specified
                         {% endif %}
@@ -73,8 +73,8 @@
                 <div class="row mb-3">
                     <div class="col-md-4 fw-bold">Phone:</div>
                     <div class="col-md-8">
-                        {% if church.phone %}
-                            <a href="tel:{{ church.phone }}">{{ church.phone }}</a>
+                        {% if church.contact.phone %}
+                            <a href="tel:{{ church.contact.phone }}">{{ church.contact.phone }}</a>
                         {% else %}
                             Not specified
                         {% endif %}
@@ -89,17 +89,16 @@
                 <h5 class="card-title mb-0">Address</h5>
             </div>
             <div class="card-body">
-                {% if church.full_address %}
+                {% if church.contact.full_address %}
                     <address>
-                        {% if church.address_line1 %}{{ church.address_line1 }}<br>{% endif %}
-                        {% if church.address_line2 %}{{ church.address_line2 }}<br>{% endif %}
-                        {% if church.city or church.state or church.postal_code %}
-                            {{ church.city }}{% if church.city and church.state %}, {% endif %}
-                            {{ church.state }} {{ church.postal_code }}<br>
+                        {% if church.contact.street_address %}{{ church.contact.street_address }}<br>{% endif %}
+                        {% if church.contact.city or church.contact.state or church.contact.zip_code %}
+                            {{ church.contact.city }}{% if church.contact.city and church.contact.state %}, {% endif %}
+                            {{ church.contact.state }} {{ church.contact.zip_code }}<br>
                         {% endif %}
-                        {% if church.country and church.country != 'United States' %}{{ church.country }}{% endif %}
+                        {% if church.contact.country and church.contact.country != 'United States' %}{{ church.contact.country }}{% endif %}
                     </address>
-                    <a href="https://maps.google.com/?q={{ church.full_address|urlencode }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                    <a href="https://maps.google.com/?q={{ church.contact.full_address|urlencode }}" target="_blank" class="btn btn-sm btn-outline-secondary">
                         <i class="fas fa-map-marker-alt"></i> View on Map
                     </a>
                 {% else %}
@@ -114,8 +113,8 @@
                 <h5 class="card-title mb-0">Notes</h5>
             </div>
             <div class="card-body">
-                {% if church.notes %}
-                    <p>{{ church.notes|linebreaks }}</p>
+                {% if church.contact.notes %}
+                    <p>{{ church.contact.notes|linebreaks }}</p>
                 {% else %}
                     <p class="text-muted">No notes available.</p>
                 {% endif %}
@@ -183,31 +182,33 @@
                 <div class="mb-3">
                     <label class="fw-bold">Pipeline Stage:</label>
                     <div>
-                        {% if church.pipeline_stage == 'new' %}
-                            <span class="badge bg-info">New Contact</span>
-                        {% elif church.pipeline_stage == 'contacted' %}
-                            <span class="badge bg-secondary">Contacted</span>
-                        {% elif church.pipeline_stage == 'meeting_scheduled' %}
-                            <span class="badge bg-primary">Meeting Scheduled</span>
-                        {% elif church.pipeline_stage == 'proposal' %}
-                            <span class="badge bg-warning text-dark">Proposal</span>
-                        {% elif church.pipeline_stage == 'committed' %}
-                            <span class="badge bg-success">Committed</span>
-                        {% elif church.pipeline_stage == 'partnership' %}
-                            <span class="badge bg-primary">Partnership</span>
-                        {% elif church.pipeline_stage == 'inactive' %}
-                            <span class="badge bg-danger">Inactive</span>
-                        {% endif %}
+                        {% with stage_code=church.contact.get_pipeline_stage_code %}
+                            {% if stage_code == 'promotion' %}
+                                <span class="badge bg-info">Promotion</span>
+                            {% elif stage_code == 'information' %}
+                                <span class="badge bg-secondary">Information</span>
+                            {% elif stage_code == 'invitation' %}
+                                <span class="badge bg-primary">Invitation</span>
+                            {% elif stage_code == 'confirmation' %}
+                                <span class="badge bg-warning text-dark">Confirmation</span>
+                            {% elif stage_code == 'automation' %}
+                                <span class="badge bg-success">Automation</span>
+                            {% elif stage_code == 'en42' %}
+                                <span class="badge bg-success">EN42</span>
+                            {% else %}
+                                {{ church.contact.get_pipeline_stage_name|default:"No stage assigned" }}
+                            {% endif %}
+                        {% endwith %}
                     </div>
                 </div>
                 <div class="mb-3">
                     <label class="fw-bold">Priority:</label>
                     <div>
-                        {% if church.priority == 'high' %}
+                        {% if church.contact.priority == 'high' %}
                             <span class="badge bg-danger">High</span>
-                        {% elif church.priority == 'medium' %}
+                        {% elif church.contact.priority == 'medium' %}
                             <span class="badge bg-warning text-dark">Medium</span>
-                        {% elif church.priority == 'low' %}
+                        {% elif church.contact.priority == 'low' %}
                             <span class="badge bg-success">Low</span>
                         {% endif %}
                     </div>
@@ -215,8 +216,8 @@
                 <div class="mb-3">
                     <label class="fw-bold">Assigned To:</label>
                     <div>
-                        {% if church.assigned_to %}
-                            {{ church.assigned_to.get_full_name|default:church.assigned_to.username }}
+                        {% if church.contact.user %}
+                            {{ church.contact.user.get_full_name|default:church.contact.user.username }}
                         {% else %}
                             <span class="text-muted">Not assigned</span>
                         {% endif %}
@@ -225,8 +226,8 @@
                 <div class="mb-3">
                     <label class="fw-bold">Office:</label>
                     <div>
-                        {% if church.office %}
-                            {{ church.office.name }}
+                        {% if church.contact.office %}
+                            {{ church.contact.office.name }}
                         {% else %}
                             <span class="text-muted">Not assigned</span>
                         {% endif %}
@@ -249,18 +250,18 @@
                         {% for contact in contacts %}
                             <div class="list-group-item list-group-item-action">
                                 <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">{{ contact.person.first_name }} {{ contact.person.last_name }}</h6>
+                                    <h6 class="mb-1">{{ contact.person.contact.first_name }} {{ contact.person.contact.last_name }}</h6>
                                     {% if contact.is_primary_contact %}
                                         <span class="badge bg-primary">Primary</span>
                                     {% endif %}
                                 </div>
                                 <p class="mb-1">{{ contact.role }}</p>
                                 <small>
-                                    {% if contact.person.email %}
-                                        <a href="mailto:{{ contact.person.email }}">{{ contact.person.email }}</a><br>
+                                    {% if contact.person.contact.email %}
+                                        <a href="mailto:{{ contact.person.contact.email }}">{{ contact.person.contact.email }}</a><br>
                                     {% endif %}
-                                    {% if contact.person.phone %}
-                                        <a href="tel:{{ contact.person.phone }}">{{ contact.person.phone }}</a>
+                                    {% if contact.person.contact.phone %}
+                                        <a href="tel:{{ contact.person.contact.phone }}">{{ contact.person.contact.phone }}</a>
                                     {% endif %}
                                 </small>
                                 <div class="mt-2">
@@ -294,17 +295,17 @@
             <div class="card-body">
                 <div class="mb-2">
                     <small class="text-muted">Created:</small>
-                    <div>{{ church.created_at|date:"M d, Y" }}</div>
+                    <div>{{ church.contact.created_at|date:"M d, Y" }}</div>
                 </div>
                 <div class="mb-2">
                     <small class="text-muted">Last Updated:</small>
-                    <div>{{ church.updated_at|date:"M d, Y" }}</div>
+                    <div>{{ church.contact.updated_at|date:"M d, Y" }}</div>
                 </div>
                 <div>
                     <small class="text-muted">Created By:</small>
                     <div>
-                        {% if church.created_by %}
-                            {{ church.created_by.get_full_name|default:church.created_by.username }}
+                        {% if church.contact.user %}
+                            {{ church.contact.user.get_full_name|default:church.contact.user.username }}
                         {% else %}
                             <span class="text-muted">Unknown</span>
                         {% endif %}

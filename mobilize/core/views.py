@@ -46,46 +46,49 @@ def dashboard(request):
     people_count = people_queryset.count()
     churches_count = churches_queryset.count()
     
-    # Get pending tasks for current user (always user-specific)
-    pending_tasks = tasks_queryset.filter(
+    # Get pending tasks for current user (always user-specific) with optimization
+    pending_tasks = tasks_queryset.select_related(
+        'created_by', 'assigned_to', 'person', 'church', 'office'
+    ).filter(
         status='pending'
     ).order_by('due_date')[:5]
     
-    # Get overdue tasks
-    overdue_tasks = tasks_queryset.filter(
-        status='pending',
-        due_date__lt=datetime.now().date()
-    ).count()
+    # Get task counts using aggregation for efficiency
+    task_stats = tasks_queryset.aggregate(
+        overdue_tasks=Count('id', filter=Q(
+            status='pending',
+            due_date__lt=datetime.now().date()
+        )),
+        upcoming_tasks=Count('id', filter=Q(
+            status='pending',
+            due_date__range=[datetime.now().date(), datetime.now().date() + timedelta(days=7)]
+        )),
+        completed_this_week=Count('id', filter=Q(
+            status='completed',
+            completed_at__gte=datetime.now() - timedelta(days=7)
+        ))
+    )
     
-    # Get upcoming tasks (next 7 days)
-    upcoming_tasks = tasks_queryset.filter(
-        status='pending',
-        due_date__range=[datetime.now().date(), datetime.now().date() + timedelta(days=7)]
-    ).count()
-    
-    # Get recent communications (user-specific)
-    recent_communications = communications_queryset.order_by('-date_sent')[:5]
+    # Get recent communications (user-specific) with optimization
+    recent_communications = communications_queryset.select_related(
+        'person', 'church', 'office'
+    ).order_by('-date_sent')[:5]
     
     # Get pipeline distribution for people (based on access level)
     pipeline_stages = people_queryset.values('pipeline_stage').annotate(
         count=Count('id')
     ).exclude(pipeline_stage__isnull=True).exclude(pipeline_stage='').order_by('pipeline_stage')
     
-    # Get task statistics (user-specific)
-    completed_this_week = tasks_queryset.filter(
-        status='completed',
-        completed_at__gte=datetime.now() - timedelta(days=7)
-    ).count()
-    
-    # Get activity summary for this week (based on access level)
+    # Get activity summary for this week (based on access level) using aggregation
     week_start = datetime.now() - timedelta(days=7)
-    recent_people = people_queryset.filter(
-        created_at__gte=week_start.date()
-    ).count()
-    
-    recent_churches = churches_queryset.filter(
-        contact__created_at__gte=week_start.date()
-    ).count()
+    activity_stats = {
+        'recent_people': people_queryset.filter(
+            created_at__gte=week_start.date()
+        ).count(),
+        'recent_churches': churches_queryset.filter(
+            contact__created_at__gte=week_start.date()
+        ).count()
+    }
     
     # Prepare priority distribution (user-specific tasks)
     priority_tasks = tasks_queryset.filter(
@@ -137,13 +140,13 @@ def dashboard(request):
         'people_count': people_count,
         'churches_count': churches_count,
         'pending_tasks': pending_tasks,
-        'overdue_tasks': overdue_tasks,
-        'upcoming_tasks': upcoming_tasks,
+        'overdue_tasks': task_stats['overdue_tasks'],
+        'upcoming_tasks': task_stats['upcoming_tasks'],
         'recent_communications': recent_communications,
         'pipeline_stages': pipeline_stages,
-        'completed_this_week': completed_this_week,
-        'recent_people': recent_people,
-        'recent_churches': recent_churches,
+        'completed_this_week': task_stats['completed_this_week'],
+        'recent_people': activity_stats['recent_people'],
+        'recent_churches': activity_stats['recent_churches'],
         'priority_tasks': priority_tasks,
         'activity_timeline': activity_timeline,
         'church_stats': church_stats,
