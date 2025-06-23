@@ -76,8 +76,18 @@ class Contact(models.Model):
 
     # Fields from mobilize-prompt-django.md for Contact
     # NOTE: pipeline_stage removed - now tracked via PipelineContact relationship
-    priority = models.CharField(max_length=20, blank=True, null=True, help_text="Priority level (e.g., low, medium, high).")
-    status = models.CharField(max_length=20, default='active', help_text="Status of the contact (e.g., active, inactive).")
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+    ]
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, blank=True, null=True, help_text="Priority level (e.g., low, medium, high).")
+    
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active', help_text="Status of the contact (e.g., active, inactive).")
     last_contact_date = models.DateTimeField(blank=True, null=True, help_text="Date of last interaction.")
     next_contact_date = models.DateTimeField(blank=True, null=True, help_text="Scheduled date for next interaction.")
     tags = models.JSONField(blank=True, null=True, help_text="JSON field for storing tags.") # Overwrites existing tags field
@@ -91,6 +101,15 @@ class Contact(models.Model):
             models.Index(fields=['type']),
             models.Index(fields=['office']),
             models.Index(fields=['email']),
+            # Performance indexes for common search patterns
+            models.Index(fields=['first_name']),
+            models.Index(fields=['last_name']),
+            models.Index(fields=['priority']),
+            models.Index(fields=['status']),
+            models.Index(fields=['created_at']),
+            # Composite indexes for common filter combinations
+            models.Index(fields=['type', 'priority']),
+            models.Index(fields=['type', 'office']),
         ]
     
     def __str__(self):
@@ -99,6 +118,16 @@ class Contact(models.Model):
         elif self.church_name:
             return self.church_name
         return f"Contact {self.id}"
+    
+    def get_current_pipeline_stage(self):
+        """Get the current pipeline stage for this contact."""
+        pipeline_entry = self.pipeline_entries.first()
+        return pipeline_entry.current_stage if pipeline_entry else None
+    
+    def get_pipeline_stage_display(self):
+        """Get the display name of the current pipeline stage."""
+        stage = self.get_current_pipeline_stage()
+        return stage.name if stage else None
     
     @property
     def full_address(self):
@@ -233,7 +262,15 @@ class Person(models.Model):
     preferred_name = models.CharField(max_length=100, blank=True, null=True)
     birthday = models.DateField(blank=True, null=True)
     anniversary = models.DateField(blank=True, null=True)
-    marital_status = models.CharField(max_length=20, blank=True, null=True)
+    MARITAL_STATUS_CHOICES = [
+        ('', '-- Select Status --'),
+        ('single', 'Single'),
+        ('married', 'Married'),
+        ('divorced', 'Divorced'),
+        ('widowed', 'Widowed'),
+        ('engaged', 'Engaged'),
+    ]
+    marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=True, null=True)
     spouse_first_name = models.CharField(max_length=255, blank=True, null=True)
     spouse_last_name = models.CharField(max_length=255, blank=True, null=True)
     home_country = models.CharField(max_length=100, blank=True, null=True)
@@ -269,6 +306,10 @@ class Person(models.Model):
         verbose_name = 'Person'
         verbose_name_plural = 'People'
         ordering = ['contact__last_name', 'contact__first_name'] # Order by related Contact fields
+    
+    def __str__(self):
+        """Return the string representation of the person."""
+        return self.name or f"Person {self.pk}"
     
     @property
     def name(self):

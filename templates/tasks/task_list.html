@@ -62,9 +62,10 @@
                             </button>
                             {% endif %}
                             <a href="{% url 'tasks:task_update' task.pk %}" class="btn btn-sm btn-outline-secondary ms-1"><i class="fas fa-edit"></i></a>
+                            <a href="{% url 'tasks:task_delete' task.pk %}" class="btn btn-sm btn-outline-danger ms-1"><i class="fas fa-trash"></i></a>
                         </div>
                     </div>
-                    <p class="mb-1 mt-1">{{ task.description|truncatewords:20|default:"" }}</p_>
+                    <p class="mb-1 mt-1">{{ task.description|truncatewords:20|default:"" }}</p>
                     {% if task.assigned_to %}<small class="d-block text-muted">Assigned to: {{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</small>{% endif %}
                 </div>
             {% endfor %}

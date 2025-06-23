@@ -9,7 +9,7 @@
     <a href="{% url 'tasks:task_list' %}" class="btn btn-secondary">
         <i class="fas fa-arrow-left"></i> Back to Tasks
     </a>
-    <a href="{% url 'tasks:task_edit' task.pk %}" class="btn btn-primary">
+    <a href="{% url 'tasks:task_update' task.pk %}" class="btn btn-primary">
         <i class="fas fa-edit"></i> Edit Task
     </a>
     {% if not task.is_completed %}
@@ -79,16 +79,20 @@
                     </div>
                 </div>
 
-                {% if task.assigned_to %}
+                {% if task.assigned_to or task.created_by %}
                 <div class="row">
+                    {% if task.assigned_to %}
                     <div class="col-md-6">
                         <h6 class="text-muted">Assigned To</h6>
                         <p>{{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</p>
                     </div>
+                    {% endif %}
+                    {% if task.created_by %}
                     <div class="col-md-6">
                         <h6 class="text-muted">Created By</h6>
                         <p>{{ task.created_by.get_full_name|default:task.created_by.username }}</p>
                     </div>
+                    {% endif %}
                 </div>
                 {% endif %}
 

@@ -173,16 +173,68 @@
                                 </div>
                             </div>
                             {% endif %}
-                            <div class="col-12">
+                            <!-- Office Settings as Individual Fields -->
+                            <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="{{ form.settings.id_for_label }}" class="form-label">Office Settings (JSON)</label>
-                                    {{ form.settings }}
-                                    {% if form.settings.errors %}
-                                        <div class="text-danger small">{{ form.settings.errors.0 }}</div>
+                                    <label for="{{ form.default_pipeline.id_for_label }}" class="form-label">Default Pipeline</label>
+                                    {{ form.default_pipeline }}
+                                    {% if form.default_pipeline.errors %}
+                                        <div class="text-danger small">{{ form.default_pipeline.errors.0 }}</div>
                                     {% endif %}
-                                    <div class="form-text">
-                                        Optional JSON configuration for office-specific settings. 
-                                        Example: {"allow_cross_office_access": true, "default_pipeline": "standard"}
+                                    <div class="form-text">{{ form.default_pipeline.help_text }}</div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <h6 class="text-muted mb-3">Office Settings</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                {{ form.allow_cross_office_access }}
+                                                <label class="form-check-label" for="{{ form.allow_cross_office_access.id_for_label }}">
+                                                    Allow Cross-Office Access
+                                                </label>
+                                            </div>
+                                            <div class="form-text small">{{ form.allow_cross_office_access.help_text }}</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                {{ form.enable_notifications }}
+                                                <label class="form-check-label" for="{{ form.enable_notifications.id_for_label }}">
+                                                    Enable Email Notifications
+                                                </label>
+                                            </div>
+                                            <div class="form-text small">{{ form.enable_notifications.help_text }}</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                {{ form.auto_assign_contacts }}
+                                                <label class="form-check-label" for="{{ form.auto_assign_contacts.id_for_label }}">
+                                                    Auto-Assign New Contacts
+                                                </label>
+                                            </div>
+                                            <div class="form-text small">{{ form.auto_assign_contacts.help_text }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                {{ form.require_approval_for_deletions }}
+                                                <label class="form-check-label" for="{{ form.require_approval_for_deletions.id_for_label }}">
+                                                    Require Approval for Deletions
+                                                </label>
+                                            </div>
+                                            <div class="form-text small">{{ form.require_approval_for_deletions.help_text }}</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                {{ form.enable_advanced_reporting }}
+                                                <label class="form-check-label" for="{{ form.enable_advanced_reporting.id_for_label }}">
+                                                    Enable Advanced Reporting
+                                                </label>
+                                            </div>
+                                            <div class="form-text small">{{ form.enable_advanced_reporting.help_text }}</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

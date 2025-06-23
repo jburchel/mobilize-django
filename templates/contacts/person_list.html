@@ -13,40 +13,141 @@
     <a href="{% url 'contacts:import_contacts' %}" class="btn btn-secondary">
         <i class="fas fa-upload"></i> Import
     </a>
+    <a href="{% url 'contacts:export_contacts' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-download"></i> Export
+    </a>
 </div>
 {% endblock %}
 
 {% block content %}
+<!-- Bulk Operations Bar -->
+<div class="card mb-3" id="bulk-operations" style="display: none;">
+    <div class="card-body py-2">
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-muted"><span id="selected-count">0</span> selected</span>
+            
+            <!-- Bulk Delete -->
+            <form method="post" action="{% url 'contacts:bulk_delete' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected contacts?');">
+                {% csrf_token %}
+                <input type="hidden" name="contact_ids" id="bulk-delete-ids">
+                <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash"></i> Delete Selected
+                </button>
+            </form>
+            
+            
+            <!-- Bulk Priority Update -->
+            <form method="post" action="{% url 'contacts:bulk_update_priority' %}" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="contact_ids" id="bulk-priority-ids">
+                <select name="priority" class="form-select form-select-sm" style="width: auto; display: inline;">
+                    <option value="">Change Priority...</option>
+                    {% for priority_value, priority_label in priorities %}
+                    <option value="{{ priority_value }}">{{ priority_label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body">
+        <!-- Search and Filter -->
+        <form method="get" class="mb-3">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <input type="text" name="q" value="{{ query }}" placeholder="Search people..." class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <select name="priority" class="form-select">
+                        <option value="">All Priorities</option>
+                        {% for priority_value, priority_label in priorities %}
+                        <option value="{{ priority_value }}" {% if priority == priority_value %}selected{% endif %}>{{ priority_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-outline-primary w-100">Filter</button>
+                </div>
+            </div>
+        </form>
+
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
                     <tr>
+                        <th width="40">
+                            <input type="checkbox" id="select-all" class="form-check-input">
+                        </th>
                         <th>Name</th>
                         <th>Email</th>
                         <th>Phone</th>
-                        <th>Office</th>
+                        <th>Priority</th>
+                        <th>Pipeline Stage</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for person in object_list %}
+                    {% for person in page_obj %}
                     <tr>
                         <td>
+                            <input type="checkbox" name="contact_ids" value="{{ person.contact.id }}" class="form-check-input contact-checkbox">
+                        </td>
+                        <td>
                             <a href="{% url 'contacts:person_detail' person.pk %}">
-                                {{ person.name|default:person.contact.email }}
+                                {{ person.contact.first_name }} {{ person.contact.last_name }}
                             </a>
                         </td>
-                        <td>{{ person.contact.email|default:'-' }}</td>
-                        <td>{{ person.contact.phone|default:'-' }}</td>
-                        <td>{{ person.contact.office.name|default:'-' }}</td>
+                        <td>
+                            {% if person.contact.email %}
+                                <a href="#" onclick="openEmailCompose('{{ person.contact.email }}', '{{ person.contact.first_name }} {{ person.contact.last_name }}', {{ person.contact.id }})" class="text-decoration-none">
+                                    <i class="fas fa-envelope me-1"></i>{{ person.contact.email }}
+                                </a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if person.contact.phone %}
+                                <a href="#" onclick="handlePhoneClick('{{ person.contact.phone }}', {{ person.contact.id }})" class="text-decoration-none">
+                                    <i class="fas fa-phone me-1"></i>{{ person.contact.phone }}
+                                </a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {% if person.contact.priority == 'high' %}bg-danger{% elif person.contact.priority == 'medium' %}bg-warning{% else %}bg-success{% endif %}">
+                                {{ person.contact.get_priority_display|default:'-' }}
+                            </span>
+                        </td>
+                        <td>
+                            {% with stage_code=person.contact.get_pipeline_stage_code %}
+                                {% if stage_code == 'promotion' %}
+                                    <span class="badge bg-primary">Promotion</span>
+                                {% elif stage_code == 'information' %}
+                                    <span class="badge bg-info text-dark">Information</span>
+                                {% elif stage_code == 'invitation' %}
+                                    <span class="badge bg-warning text-dark">Invitation</span>
+                                {% elif stage_code == 'confirmation' %}
+                                    <span class="badge bg-success">Confirmation</span>
+                                {% elif stage_code == 'automation' %}
+                                    <span class="badge bg-secondary">Automation</span>
+                                {% elif stage_code == 'en42' %}
+                                    <span class="badge bg-dark">EN42</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
                         <td>
                             <div class="btn-group btn-group-sm">
                                 <a href="{% url 'contacts:person_detail' person.pk %}" class="btn btn-outline-primary btn-sm">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <a href="{% url 'contacts:person_update' person.pk %}" class="btn btn-outline-secondary btn-sm">
+                                <a href="{% url 'contacts:person_edit' person.pk %}" class="btn btn-outline-secondary btn-sm">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <a href="{% url 'contacts:person_delete' person.pk %}" class="btn btn-outline-danger btn-sm">
@@ -57,7 +158,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center text-muted py-4">
+                        <td colspan="7" class="text-center text-muted py-4">
                             No people found. <a href="{% url 'contacts:person_create' %}">Add the first person</a>.
                         </td>
                     </tr>
@@ -65,6 +166,109 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <nav>
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.contact-checkbox');
+    const bulkOpsBar = document.getElementById('bulk-operations');
+    const selectedCount = document.getElementById('selected-count');
+    
+    // Update bulk operations visibility and selected count
+    function updateBulkOperations() {
+        const selected = document.querySelectorAll('.contact-checkbox:checked');
+        const count = selected.length;
+        
+        selectedCount.textContent = count;
+        bulkOpsBar.style.display = count > 0 ? 'block' : 'none';
+        
+        // Update hidden inputs for bulk operations
+        const ids = Array.from(selected).map(cb => cb.value).join(',');
+        document.getElementById('bulk-delete-ids').value = ids;
+        document.getElementById('bulk-priority-ids').value = ids;
+    }
+    
+    // Select all functionality
+    selectAll.addEventListener('change', function() {
+        checkboxes.forEach(cb => cb.checked = this.checked);
+        updateBulkOperations();
+    });
+    
+    // Individual checkbox functionality
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            const noneChecked = Array.from(checkboxes).every(cb => !cb.checked);
+            
+            selectAll.checked = allChecked;
+            selectAll.indeterminate = !allChecked && !noneChecked;
+            
+            updateBulkOperations();
+        });
+    });
+    
+    // Handle bulk operation form submissions
+    document.querySelectorAll('form select[name="priority"]').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.closest('form').submit();
+            }
+        });
+    });
+});
+
+// Handle email click - open Gmail compose in app
+function openEmailCompose(email, name, contactId) {
+    // Redirect to Gmail compose with pre-populated recipient
+    const composeUrl = `/communications/gmail/compose/?recipient=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}&contact_id=${contactId}`;
+    window.location.href = composeUrl;
+}
+
+// Handle phone click - detect mobile and either dial or open communication log
+function handlePhoneClick(phoneNumber, contactId) {
+    // Check if we're on a mobile device
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        // On mobile, dial the number
+        window.location.href = `tel:${phoneNumber}`;
+    } else {
+        // On desktop, redirect to communications page and open the log modal
+        window.location.href = `/communications/?open_log_modal=phone&contact_id=${contactId}`;
+    }
+}
+</script>
 {% endblock %}

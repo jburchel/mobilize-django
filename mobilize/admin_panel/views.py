@@ -9,6 +9,7 @@ from django.utils import timezone
 from mobilize.authentication.decorators import super_admin_required, office_admin_required
 from mobilize.authentication.models import User
 from .models import Office, UserOffice
+from .forms import OfficeForm
 
 
 # Apply the super_admin_required decorator to class-based views
@@ -50,17 +51,15 @@ class OfficeDetailView(LoginRequiredMixin, DetailView):
 
 class OfficeCreateView(SuperAdminRequiredMixin, CreateView):
     model = Office
+    form_class = OfficeForm
     template_name = 'admin_panel/office_form.html'
-    fields = ['name', 'code', 'address', 'city', 'state', 'country', 
-              'postal_code', 'phone', 'email', 'timezone_name', 'settings']
     success_url = reverse_lazy('admin_panel:office_list')
 
 
 class OfficeUpdateView(SuperAdminRequiredMixin, UpdateView):
     model = Office
+    form_class = OfficeForm
     template_name = 'admin_panel/office_form.html'
-    fields = ['name', 'code', 'address', 'city', 'state', 'country', 
-              'postal_code', 'phone', 'email', 'timezone_name', 'settings', 'is_active']
     
     def get_success_url(self):
         return reverse('admin_panel:office_detail', kwargs={'pk': self.object.pk})
@@ -81,8 +80,8 @@ class OfficeUserListView(LoginRequiredMixin, ListView):
         
         # Check if user has permission to view this office's users
         if not (self.request.user.role == 'super_admin' or 
-                UserOffice.objects.filter(user=self.request.user, office=self.office, 
-                                         role__in=['office_admin']).exists()):
+                (self.request.user.role == 'office_admin' and 
+                 UserOffice.objects.filter(user=self.request.user, office=self.office).exists())):
             return UserOffice.objects.none()
         
         return UserOffice.objects.filter(office=self.office).select_related('user')
@@ -99,8 +98,8 @@ class AddUserToOfficeView(LoginRequiredMixin, View):
         
         # Check if user has permission to add users to this office
         if not (request.user.role == 'super_admin' or 
-                UserOffice.objects.filter(user=request.user, office=office, 
-                                         role='office_admin').exists()):
+                (request.user.role == 'office_admin' and 
+                 UserOffice.objects.filter(user=request.user, office=office).exists())):
             messages.error(request, "You don't have permission to add users to this office.")
             return redirect('admin_panel:office_detail', pk=office_id)
         
@@ -118,13 +117,12 @@ class AddUserToOfficeView(LoginRequiredMixin, View):
         
         # Check if user has permission to add users to this office
         if not (request.user.role == 'super_admin' or 
-                UserOffice.objects.filter(user=request.user, office=office, 
-                                         role='office_admin').exists()):
+                (request.user.role == 'office_admin' and 
+                 UserOffice.objects.filter(user=request.user, office=office).exists())):
             messages.error(request, "You don't have permission to add users to this office.")
             return redirect('admin_panel:office_detail', pk=office_id)
         
         user_id = request.POST.get('user_id')
-        role = request.POST.get('role', 'standard_user')
         is_primary = request.POST.get('is_primary') == 'on'
         
         if not user_id:
@@ -137,7 +135,6 @@ class AddUserToOfficeView(LoginRequiredMixin, View):
         UserOffice.objects.create(
             user=user,
             office=office,
-            role=role,
             is_primary=is_primary,
             assigned_at=timezone.now()
         )
@@ -153,8 +150,8 @@ class RemoveUserFromOfficeView(LoginRequiredMixin, View):
         
         # Check if user has permission to remove users from this office
         if not (request.user.role == 'super_admin' or 
-                (UserOffice.objects.filter(user=request.user, office=office, 
-                                          role='office_admin').exists() and 
+                (request.user.role == 'office_admin' and 
+                 UserOffice.objects.filter(user=request.user, office=office).exists() and 
                  user_id != request.user.id)):  # Can't remove yourself
             messages.error(request, "You don't have permission to remove this user.")
             return redirect('admin_panel:office_users', office_id=office_id)
@@ -167,34 +164,32 @@ class RemoveUserFromOfficeView(LoginRequiredMixin, View):
         return redirect('admin_panel:office_users', office_id=office_id)
 
 
-class UpdateUserOfficeRoleView(LoginRequiredMixin, View):
+class UpdateUserOfficePrimaryView(LoginRequiredMixin, View):
     def post(self, request, office_id, user_id):
         office = get_object_or_404(Office, pk=office_id)
         user = get_object_or_404(User, pk=user_id)
         
-        # Check if user has permission to update roles in this office
+        # Check if user has permission to update office assignments
         if not (request.user.role == 'super_admin' or 
-                (UserOffice.objects.filter(user=request.user, office=office, 
-                                          role='office_admin').exists() and 
-                 user_id != request.user.id)):  # Can't change your own role
-            messages.error(request, "You don't have permission to update this user's role.")
+                (request.user.role == 'office_admin' and 
+                 UserOffice.objects.filter(user=request.user, office=office).exists() and 
+                 user_id != request.user.id)):  # Can't change your own primary office
+            messages.error(request, "You don't have permission to update this user's office assignment.")
             return redirect('admin_panel:office_users', office_id=office_id)
         
-        role = request.POST.get('role')
         is_primary = request.POST.get('is_primary') == 'on'
         
         # Update the UserOffice relationship
         user_office = get_object_or_404(UserOffice, user=user, office=office)
-        user_office.role = role
         
         if is_primary:
             # Set all other offices for this user as non-primary
             UserOffice.objects.filter(user=user, is_primary=True).update(is_primary=False)
-            user_office.is_primary = True
         
+        user_office.is_primary = is_primary
         user_office.save()
         
-        messages.success(request, f"{user.get_full_name()}'s role has been updated.")
+        messages.success(request, f"{user.get_full_name()}'s primary office has been updated.")
         return redirect('admin_panel:office_users', office_id=office_id)
 
 
@@ -222,7 +217,7 @@ class CrossOfficeReportView(LoginRequiredMixin, View):
         # Get all offices with statistics
         offices = Office.objects.annotate(
             user_count_db=Count('useroffice', distinct=True),
-            admin_count_db=Count('useroffice', filter=Q(useroffice__role='office_admin'), distinct=True)
+            admin_count_db=Count('useroffice', filter=Q(useroffice__user__role__in=['super_admin', 'office_admin']), distinct=True)
         ).order_by('name')
         
         # Calculate additional metrics for each office
@@ -231,10 +226,10 @@ class CrossOfficeReportView(LoginRequiredMixin, View):
             # Get contact counts for this office
             people_count = Person.objects.filter(
                 Q(contact__office_id=office.id) | 
-                Q(assigned_to__in=UserOffice.objects.filter(office=office).values_list('user_id', flat=True))
+                Q(contact__user__in=UserOffice.objects.filter(office=office).values_list('user_id', flat=True))
             ).distinct().count()
             
-            churches_count = Church.objects.filter(office_id=office.id).count()
+            churches_count = Church.objects.filter(contact__office_id=office.id).count()
             
             # Get task counts for this office
             office_users = UserOffice.objects.filter(office=office).values_list('user', flat=True)

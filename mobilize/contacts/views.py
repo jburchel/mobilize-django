@@ -1,13 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.views.decorators.http import require_POST
 import csv
 from datetime import datetime
 
-from .models import Person
+from .models import Person, Contact
 from .forms import PersonForm, ImportContactsForm
 
 
@@ -18,11 +19,10 @@ def person_list(request):
     """
     # Get query parameters for filtering
     query = request.GET.get('q', '')
-    pipeline_stage = request.GET.get('pipeline_stage', '')
     priority = request.GET.get('priority', '')
     
     # Start with all people - use select_related to optimize queries
-    people = Person.objects.select_related('contact').all()
+    people = Person.objects.select_related('contact', 'contact__office').all()
     
     # Apply filters if provided
     if query:
@@ -33,9 +33,6 @@ def person_list(request):
             Q(contact__phone__icontains=query)
         )
     
-    if pipeline_stage:
-        people = people.filter(contact__pipeline_stage=pipeline_stage)
-    
     if priority:
         people = people.filter(contact__priority=priority)
     
@@ -44,29 +41,13 @@ def person_list(request):
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
     
-    # Get pipeline stages and priorities for filter dropdowns
-    pipeline_stages = [
-        ('new', 'New Contact'),
-        ('contacted', 'Contacted'),
-        ('meeting_scheduled', 'Meeting Scheduled'),
-        ('proposal', 'Proposal'),
-        ('committed', 'Committed'),
-        ('partnership', 'Partnership'),
-        ('inactive', 'Inactive'),
-    ]
-    
-    priorities = [
-        ('low', 'Low'),
-        ('medium', 'Medium'),
-        ('high', 'High'),
-    ]
+    # Get priorities for filter dropdowns
+    priorities = Contact.PRIORITY_CHOICES
     
     context = {
         'page_obj': page_obj,
         'query': query,
-        'pipeline_stage': pipeline_stage,
         'priority': priority,
-        'pipeline_stages': pipeline_stages,
         'priorities': priorities,
     }
     
@@ -78,12 +59,20 @@ def person_detail(request, pk):
     """
     Display detailed information about a person.
     """
-    person = get_object_or_404(Person, pk=pk)
-    interactions = person.interactions.all()[:5]  # Get the 5 most recent interactions
+    person = get_object_or_404(Person.objects.select_related('contact', 'contact__office'), pk=pk)
+    # Get recent communications for this person
+    from mobilize.communications.models import Communication
+    recent_communications = Communication.objects.filter(
+        person=person
+    ).order_by('-date_sent', '-created_at')[:5]
+    
+    # Get related tasks for this person
+    related_tasks = person.person_tasks.all().order_by('-due_date', '-created_at')[:10]
     
     context = {
         'person': person,
-        'interactions': interactions,
+        'recent_communications': recent_communications,
+        'related_tasks': related_tasks,
     }
     
     return render(request, 'contacts/person_detail.html', context)
@@ -287,11 +276,10 @@ def export_contacts(request):
     """
     # Get query parameters for filtering
     query = request.GET.get('q', '')
-    pipeline_stage = request.GET.get('pipeline_stage', '')
     priority = request.GET.get('priority', '')
     
     # Start with all people - use select_related to optimize queries
-    people = Person.objects.select_related('contact').all()
+    people = Person.objects.select_related('contact', 'contact__office').all()
     
     # Apply filters if provided
     if query:
@@ -301,9 +289,6 @@ def export_contacts(request):
             Q(contact__email__icontains=query) | 
             Q(contact__phone__icontains=query)
         )
-    
-    if pipeline_stage:
-        people = people.filter(contact__pipeline_stage=pipeline_stage)
     
     if priority:
         people = people.filter(contact__priority=priority)
@@ -320,7 +305,7 @@ def export_contacts(request):
     writer.writerow([
         'First Name', 'Last Name', 'Email', 'Phone', 
         'Street Address', 'City', 'State', 'Zip Code', 'Country',
-        'Pipeline Stage', 'Priority', 'Status', 'Notes', 
+        'Priority', 'Status', 'Notes', 
         'Title', 'Profession', 'Organization',
         'Created At', 'Last Updated'
     ])
@@ -337,7 +322,6 @@ def export_contacts(request):
             person.contact.state or '',
             person.contact.zip_code or '',
             person.contact.country or '',
-            person.contact.pipeline_stage or '',
             person.contact.priority or '',
             person.contact.status or '',
             person.contact.notes or '',
@@ -363,3 +347,119 @@ def google_sync(request):
         messages.info(request, "Google Contacts sync is not yet implemented")
     
     return render(request, 'contacts/google_sync.html')
+
+
+@login_required
+@require_POST
+def bulk_delete(request):
+    """
+    Delete multiple contacts at once.
+    """
+    contact_ids = request.POST.getlist('contact_ids')
+    
+    if not contact_ids:
+        messages.error(request, "No contacts selected for deletion")
+        return redirect('contacts:person_list')
+    
+    try:
+        # Get the contacts to delete
+        contacts = Contact.objects.filter(id__in=contact_ids, type='person')
+        count = contacts.count()
+        
+        if count == 0:
+            messages.error(request, "No valid contacts found to delete")
+            return redirect('contacts:person_list')
+        
+        # Delete the contacts (this will cascade to delete Person records)
+        contacts.delete()
+        
+        messages.success(request, f"Successfully deleted {count} contact(s)")
+        
+    except Exception as e:
+        messages.error(request, f"Error deleting contacts: {str(e)}")
+    
+    return redirect('contacts:person_list')
+
+
+
+@login_required
+@require_POST
+def bulk_update_priority(request):
+    """
+    Update priority for multiple contacts at once.
+    """
+    contact_ids = request.POST.getlist('contact_ids')
+    new_priority = request.POST.get('priority')
+    
+    if not contact_ids:
+        messages.error(request, "No contacts selected for update")
+        return redirect('contacts:person_list')
+    
+    if not new_priority:
+        messages.error(request, "Please select a priority")
+        return redirect('contacts:person_list')
+    
+    try:
+        # Get the contacts to update
+        contacts = Contact.objects.filter(id__in=contact_ids, type='person')
+        count = contacts.count()
+        
+        if count == 0:
+            messages.error(request, "No valid contacts found to update")
+            return redirect('contacts:person_list')
+        
+        # Update the priority
+        contacts.update(priority=new_priority)
+        
+        priority_display = dict([
+            ('low', 'Low'),
+            ('medium', 'Medium'),
+            ('high', 'High'),
+        ]).get(new_priority, new_priority)
+        
+        messages.success(request, f"Successfully updated {count} contact(s) to {priority_display} priority")
+        
+    except Exception as e:
+        messages.error(request, f"Error updating contacts: {str(e)}")
+    
+    return redirect('contacts:person_list')
+
+
+@login_required
+@require_POST
+def bulk_assign_office(request):
+    """
+    Assign multiple contacts to an office at once.
+    """
+    contact_ids = request.POST.getlist('contact_ids')
+    office_id = request.POST.get('office_id')
+    
+    if not contact_ids:
+        messages.error(request, "No contacts selected for assignment")
+        return redirect('contacts:person_list')
+    
+    if not office_id:
+        messages.error(request, "Please select an office")
+        return redirect('contacts:person_list')
+    
+    try:
+        from mobilize.admin_panel.models import Office
+        office = get_object_or_404(Office, id=office_id)
+        
+        # Get the contacts to update
+        contacts = Contact.objects.filter(id__in=contact_ids, type='person')
+        count = contacts.count()
+        
+        if count == 0:
+            messages.error(request, "No valid contacts found to assign")
+            return redirect('contacts:person_list')
+        
+        # Update the office assignment
+        contacts.update(office=office)
+        
+        messages.success(request, f"Successfully assigned {count} contact(s) to {office.name}")
+        
+    except Exception as e:
+        messages.error(request, f"Error assigning contacts: {str(e)}")
+    
+    return redirect('contacts:person_list')

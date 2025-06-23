@@ -24,7 +24,7 @@ DEFAULT_WIDGETS = [
         'description': 'Tasks completed and communications this week',
         'enabled': True,
         'order': 2,
-        'size': 'half',
+        'size': 'two_thirds',
     },
     {
         'id': 'task_priorities',
@@ -32,7 +32,7 @@ DEFAULT_WIDGETS = [
         'description': 'Distribution of task priorities',
         'enabled': True,
         'order': 3,
-        'size': 'half',
+        'size': 'one_third',
     },
     {
         'id': 'pipeline_distribution',
@@ -48,7 +48,7 @@ DEFAULT_WIDGETS = [
         'description': 'Recent communications and activity',
         'enabled': True,
         'order': 5,
-        'size': 'one_third',
+        'size': 'full',
     },
     {
         'id': 'activity_timeline',

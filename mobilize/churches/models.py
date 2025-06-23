@@ -100,3 +100,131 @@ class Church(models.Model):
         """Return the URL to access a detail record for this church."""
         from django.urls import reverse
         return reverse('churches:church_detail', args=[str(self.contact_id)])
+    
+    def get_primary_contact(self):
+        """Get the primary contact person for this church."""
+        primary_membership = self.memberships.filter(is_primary_contact=True, status='active').first()
+        return primary_membership.person if primary_membership else None
+    
+    def get_all_contacts(self):
+        """Get all active contacts for this church."""
+        return self.memberships.filter(status='active').select_related('person__contact')
+
+
+class ChurchMembership(models.Model):
+    """
+    Relationship model between Church and Person.
+    
+    Handles roles, primary contact designation, and membership status.
+    """
+    ROLE_CHOICES = [
+        ('senior_pastor', 'Senior Pastor'),
+        ('associate_pastor', 'Associate Pastor'),
+        ('youth_pastor', 'Youth Pastor'),
+        ('worship_pastor', 'Worship Pastor'),
+        ('missions_pastor', 'Missions Pastor'),
+        ('admin_pastor', 'Administrative Pastor'),
+        ('elder', 'Elder'),
+        ('deacon', 'Deacon'),
+        ('board_member', 'Board Member'),
+        ('secretary', 'Secretary'),
+        ('treasurer', 'Treasurer'),
+        ('member', 'Member'),
+        ('regular_attendee', 'Regular Attendee'),
+        ('volunteer', 'Volunteer'),
+        ('committee_member', 'Committee Member'),
+        ('ministry_leader', 'Ministry Leader'),
+        ('other', 'Other'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+        ('former', 'Former'),
+    ]
+    
+    person = models.ForeignKey(
+        'contacts.Person',
+        on_delete=models.CASCADE,
+        related_name='church_memberships'
+    )
+    church = models.ForeignKey(
+        Church,
+        on_delete=models.CASCADE,
+        related_name='memberships'
+    )
+    role = models.CharField(
+        max_length=50,
+        choices=ROLE_CHOICES,
+        default='member',
+        help_text="The person's role in this church"
+    )
+    is_primary_contact = models.BooleanField(
+        default=False,
+        help_text="Is this person the primary contact for the church?"
+    )
+    start_date = models.DateField(
+        default=timezone.now,
+        help_text="When this relationship started"
+    )
+    end_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="When this relationship ended (if applicable)"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='active'
+    )
+    notes = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Additional notes about this membership/relationship"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'church_memberships'
+        unique_together = ('person', 'church')  # One relationship per person per church
+        indexes = [
+            models.Index(fields=['church']),
+            models.Index(fields=['person']),
+            models.Index(fields=['is_primary_contact']),
+            models.Index(fields=['status']),
+            models.Index(fields=['role']),
+        ]
+        ordering = ['-is_primary_contact', 'role', 'person__contact__last_name']
+    
+    def __str__(self):
+        return f"{self.person.name} - {self.church.name} ({self.get_role_display()})"
+    
+    def save(self, *args, **kwargs):
+        """Override save to ensure only one primary contact per church."""
+        if self.is_primary_contact:
+            # Set all other memberships for this church as non-primary
+            ChurchMembership.objects.filter(
+                church=self.church,
+                is_primary_contact=True
+            ).exclude(pk=self.pk).update(is_primary_contact=False)
+        super().save(*args, **kwargs)
+    
+    @property
+    def is_pastor(self):
+        """Check if this membership represents a pastoral role."""
+        pastoral_roles = [
+            'senior_pastor', 'associate_pastor', 'youth_pastor',
+            'worship_pastor', 'missions_pastor', 'admin_pastor'
+        ]
+        return self.role in pastoral_roles
+    
+    @property
+    def is_leadership(self):
+        """Check if this membership represents a leadership role."""
+        leadership_roles = [
+            'senior_pastor', 'associate_pastor', 'youth_pastor',
+            'worship_pastor', 'missions_pastor', 'admin_pastor',
+            'elder', 'deacon', 'board_member', 'ministry_leader'
+        ]
+        return self.role in leadership_roles

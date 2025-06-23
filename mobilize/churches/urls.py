@@ -13,4 +13,10 @@ urlpatterns = [
     path('<int:pk>/contacts/', views.church_contacts, name='church_contacts'),  # Kept for compatibility
     path('import/', views.import_churches, name='import_churches'),
     path('export/', views.export_churches, name='export_churches'),
+    
+    # Church membership management
+    path('<int:pk>/add-member/', views.add_church_member, name='add_church_member'),
+    path('membership/<int:membership_id>/edit/', views.edit_church_member, name='edit_church_member'),
+    path('membership/<int:membership_id>/set-primary/', views.set_primary_contact, name='set_primary_contact'),
+    path('membership/<int:membership_id>/remove/', views.remove_church_member, name='remove_church_member'),
 ]

@@ -1,14 +1,16 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.db import models
 import csv
 from datetime import datetime
 
-from .models import Church
+from .models import Church, ChurchMembership
 from .forms import ChurchForm, ImportChurchesForm
+from mobilize.pipeline.models import MAIN_CHURCH_PIPELINE_STAGES
 
 # ChurchContact and ChurchInteraction models have been removed as they don't exist in Supabase
 
@@ -38,10 +40,23 @@ def church_list(request):
         )
     
     if pipeline_stage:
-        churches = churches.filter(
-            Q(church_pipeline=pipeline_stage) | 
-            Q(contact__pipeline_stage=pipeline_stage)
-        )
+        # Filter by pipeline stage through the pipeline system
+        from mobilize.pipeline.models import PipelineContact, PipelineStage
+        try:
+            # Get church contacts that have the specified pipeline stage
+            stage_objects = PipelineStage.objects.filter(name__iexact=pipeline_stage.title())
+            if stage_objects.exists():
+                pipeline_contacts = PipelineContact.objects.filter(
+                    current_stage__in=stage_objects,
+                    contact_type='church'
+                ).values_list('contact_id', flat=True)
+                churches = churches.filter(contact_id__in=pipeline_contacts)
+            else:
+                # If no matching stage found, also check church_pipeline field
+                churches = churches.filter(church_pipeline=pipeline_stage)
+        except Exception:
+            # Fallback to church_pipeline field
+            churches = churches.filter(church_pipeline=pipeline_stage)
     
     if priority:
         churches = churches.filter(contact__priority=priority)
@@ -52,15 +67,7 @@ def church_list(request):
     page_obj = paginator.get_page(page_number)
     
     # Get pipeline stages and priorities for filter dropdowns
-    pipeline_stages = [
-        ('new', 'New Contact'),
-        ('contacted', 'Contacted'),
-        ('meeting_scheduled', 'Meeting Scheduled'),
-        ('proposal', 'Proposal'),
-        ('committed', 'Committed'),
-        ('partnership', 'Partnership'),
-        ('inactive', 'Inactive'),
-    ]
+    pipeline_stages = MAIN_CHURCH_PIPELINE_STAGES
     
     priorities = [
         ('low', 'Low'),
@@ -86,17 +93,28 @@ def church_detail(request, pk):
     Display detailed information about a church.
     """
     church = get_object_or_404(Church, pk=pk)
-    # Remove references to non-existent related models
-    # contacts = church.contacts.all()
-    # interactions = church.interactions.all()[:5]  # Get the 5 most recent interactions
+    
+    # Get church memberships with related person data
+    memberships = church.memberships.filter(status='active').select_related(
+        'person__contact'
+    ).order_by('-is_primary_contact', 'role', 'person__contact__last_name')
+    
+    # Get recent communications for this church
+    try:
+        from mobilize.communications.models import Communication
+        recent_communications = Communication.objects.filter(
+            models.Q(church=church) | models.Q(person__church_memberships__church=church)
+        ).distinct().order_by('-created_at')[:5]
+    except ImportError:
+        recent_communications = []
     
     context = {
         'church': church,
-        # 'contacts': contacts,
-        # 'interactions': interactions,
+        'memberships': memberships,
+        'recent_communications': recent_communications,
     }
     
-    return render(request, 'churches/church_detail_simple.html', context)
+    return render(request, 'churches/church_detail.html', context)
 
 
 @login_required
@@ -324,3 +342,108 @@ def export_churches(request):
         ])
     
     return response
+
+
+@login_required
+def add_church_member(request, pk):
+    """
+    Add a person to a church with a specific role.
+    """
+    church = get_object_or_404(Church, pk=pk)
+    
+    if request.method == 'POST':
+        person_id = request.POST.get('person')
+        role = request.POST.get('role', 'member')
+        is_primary_contact = request.POST.get('is_primary_contact') == 'on'
+        notes = request.POST.get('notes', '')
+        
+        if person_id:
+            from mobilize.contacts.models import Person
+            try:
+                person = Person.objects.get(pk=person_id)
+                
+                # Check if membership already exists
+                existing_membership = ChurchMembership.objects.filter(
+                    church=church, person=person
+                ).first()
+                
+                if existing_membership:
+                    messages.warning(request, f"{person.name} is already associated with this church.")
+                else:
+                    # Create new membership
+                    membership = ChurchMembership.objects.create(
+                        church=church,
+                        person=person,
+                        role=role,
+                        is_primary_contact=is_primary_contact,
+                        notes=notes,
+                        status='active'
+                    )
+                    
+                    messages.success(request, f"Successfully added {person.name} to {church.name} as {membership.get_role_display()}.")
+                    
+            except Person.DoesNotExist:
+                messages.error(request, "Selected person not found.")
+        else:
+            messages.error(request, "Please select a person.")
+    
+    return redirect('churches:church_detail', pk=church.pk)
+
+
+@login_required
+def edit_church_member(request, membership_id):
+    """
+    Edit a church membership.
+    """
+    membership = get_object_or_404(ChurchMembership, pk=membership_id)
+    
+    if request.method == 'POST':
+        role = request.POST.get('role', membership.role)
+        is_primary_contact = request.POST.get('is_primary_contact') == 'on'
+        notes = request.POST.get('notes', '')
+        status = request.POST.get('status', membership.status)
+        
+        membership.role = role
+        membership.is_primary_contact = is_primary_contact
+        membership.notes = notes
+        membership.status = status
+        membership.save()
+        
+        messages.success(request, f"Updated {membership.person.name}'s role in {membership.church.name}.")
+        
+        return redirect('churches:church_detail', pk=membership.church.pk)
+    
+    # Return edit form (TODO: implement template)
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+@login_required
+def set_primary_contact(request, membership_id):
+    """
+    Set a church member as the primary contact.
+    """
+    membership = get_object_or_404(ChurchMembership, pk=membership_id)
+    
+    if request.method == 'POST':
+        membership.is_primary_contact = True
+        membership.save()  # The model's save method will handle setting others to False
+        
+        messages.success(request, f"Set {membership.person.name} as primary contact for {membership.church.name}.")
+    
+    return redirect('churches:church_detail', pk=membership.church.pk)
+
+
+@login_required
+def remove_church_member(request, membership_id):
+    """
+    Remove a person from a church (delete the membership).
+    """
+    membership = get_object_or_404(ChurchMembership, pk=membership_id)
+    church = membership.church
+    person_name = membership.person.name
+    
+    if request.method == 'POST':
+        membership.delete()
+        messages.success(request, f"Removed {person_name} from {church.name}.")
+    
+    return redirect('churches:church_detail', pk=church.pk)

@@ -108,15 +108,6 @@
                         <h5 class="mb-0">Contact Synchronization Settings</h5>
                     </div>
                     <div class="card-body">
-                        {% if not gmail_connected %}
-                        <div class="alert alert-warning">
-                            <h6><i class="fas fa-exclamation-triangle"></i> Gmail Not Connected</h6>
-                            <p class="mb-2">You need to connect your Gmail account to enable contact synchronization.</p>
-                            <a href="{% url 'communications:gmail_auth' %}" class="btn btn-warning btn-sm">
-                                <i class="fab fa-google"></i> Connect Gmail
-                            </a>
-                        </div>
-                        {% endif %}
                         
                         <form method="post" id="sync-settings-form">
                             {% csrf_token %}

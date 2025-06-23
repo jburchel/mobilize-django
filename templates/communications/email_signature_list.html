@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Email Signatures{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Email Signatures</h4>
+                    <div class="card-tools">
+                        <a href="{% url 'communications:email_signature_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Signature
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if email_signatures %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Preview</th>
+                                        <th>Default</th>
+                                        <th>Type</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for signature in email_signatures %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'communications:email_signature_detail' signature.pk %}">
+                                                {{ signature.name }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <div class="signature-preview" style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                {% if signature.is_html %}
+                                                    {{ signature.content|safe|truncatechars:50 }}
+                                                {% else %}
+                                                    {{ signature.content|truncatechars:50 }}
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if signature.is_default %}
+                                                <span class="badge badge-success">Default</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if signature.is_html %}
+                                                <span class="badge badge-info">HTML</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary">Text</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ signature.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'communications:email_signature_detail' signature.pk %}" 
+                                                   class="btn btn-sm btn-info" title="View">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'communications:email_signature_update' signature.pk %}" 
+                                                   class="btn btn-sm btn-primary" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                {% if not signature.is_default %}
+                                                <a href="{% url 'communications:email_signature_delete' signature.pk %}" 
+                                                   class="btn btn-sm btn-danger" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if is_paginated %}
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1">&laquo; First</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                    </li>
+                                {% endif %}
+
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                    </span>
+                                </li>
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-signature fa-3x text-muted mb-3"></i>
+                            <h4 class="text-muted">No Email Signatures</h4>
+                            <p class="text-muted">Create your first email signature to personalize your emails.</p>
+                            <a href="{% url 'communications:email_signature_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create Signature
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

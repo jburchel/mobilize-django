@@ -48,15 +48,9 @@
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="h3 text-dark mb-0">Compose Email via Gmail</h1>
                 <div>
-                    {% if not gmail_authenticated %}
-                    <a href="{% url 'communications:gmail_auth' %}" class="btn btn-warning">
-                        <i class="fab fa-google me-2"></i>Connect Gmail
-                    </a>
-                    {% else %}
                     <span class="badge bg-success me-2">
                         <i class="fab fa-google me-1"></i>Gmail Connected
                     </span>
-                    {% endif %}
                     <a href="{% url 'communications:communication_list' %}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back to Communications
                     </a>
@@ -65,20 +59,6 @@
         </div>
     </div>
 
-    {% if not gmail_authenticated %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="alert alert-warning" role="alert">
-                <h5 class="alert-heading">Gmail Not Connected</h5>
-                <p>To send emails via Gmail, you need to connect your Gmail account first.</p>
-                <hr>
-                <a href="{% url 'communications:gmail_auth' %}" class="btn btn-warning">
-                    <i class="fab fa-google me-2"></i>Connect Gmail Account
-                </a>
-            </div>
-        </div>
-    </div>
-    {% else %}
 
     <form method="post" enctype="multipart/form-data" id="emailForm">
         {% csrf_token %}
@@ -122,7 +102,7 @@
                         <select class="form-select" id="id_template" name="template">
                             <option value="">Select a template...</option>
                             {% for template in email_templates %}
-                            <option value="{{ template.id }}" data-subject="{{ template.subject }}" data-content="{{ template.content }}">
+                            <option value="{{ template.id }}" data-subject="{{ template.subject|escapejs }}" data-body="{{ template.body|escapejs }}">
                                 {{ template.name }}
                             </option>
                             {% endfor %}
@@ -169,7 +149,7 @@
 
                     <!-- Action Buttons -->
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary" {% if not gmail_authenticated %}disabled{% endif %}>
+                        <button type="submit" class="btn btn-primary">
                             <i class="fas fa-paper-plane me-2"></i>Send Email
                         </button>
                         <button type="button" class="btn btn-outline-secondary" id="previewBtn">
@@ -273,7 +253,6 @@
         </div>
     </div>
 
-    {% endif %}
 </div>
 {% endblock %}
 
@@ -290,10 +269,56 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedOption = this.options[this.selectedIndex];
             if (selectedOption.value) {
                 const subject = selectedOption.getAttribute('data-subject');
-                const content = selectedOption.getAttribute('data-content');
+                const body = selectedOption.getAttribute('data-body');
                 
                 if (subject) subjectField.value = subject;
-                if (content) bodyField.value = content;
+                if (body) {
+                    // Decode Unicode escape sequences back to actual characters
+                    const decodedBody = body.replace(/\\u([0-9a-fA-F]{4})/g, function(match, hex) {
+                        return String.fromCharCode(parseInt(hex, 16));
+                    });
+                    bodyField.value = decodedBody;
+                }
+            }
+        });
+    }
+    
+    // Signature selection
+    const signatureSelect = document.getElementById('id_signature');
+    
+    if (signatureSelect) {
+        signatureSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value) {
+                const signatureContent = selectedOption.getAttribute('data-content');
+                
+                if (signatureContent) {
+                    // Decode Unicode escape sequences back to actual characters
+                    const decodedSignature = signatureContent.replace(/\\u([0-9a-fA-F]{4})/g, function(match, hex) {
+                        return String.fromCharCode(parseInt(hex, 16));
+                    });
+                    
+                    // Get current body content
+                    let currentBody = bodyField.value;
+                    
+                    // Remove any existing signature (look for signature separator)
+                    const signatureSeparator = '\n\n--\n';
+                    const separatorIndex = currentBody.indexOf(signatureSeparator);
+                    if (separatorIndex !== -1) {
+                        currentBody = currentBody.substring(0, separatorIndex);
+                    }
+                    
+                    // Add new signature
+                    bodyField.value = currentBody + signatureSeparator + decodedSignature;
+                }
+            } else {
+                // Remove signature if "No signature" is selected
+                let currentBody = bodyField.value;
+                const signatureSeparator = '\n\n--\n';
+                const separatorIndex = currentBody.indexOf(signatureSeparator);
+                if (separatorIndex !== -1) {
+                    bodyField.value = currentBody.substring(0, separatorIndex);
+                }
             }
         });
     }

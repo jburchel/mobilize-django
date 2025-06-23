@@ -70,8 +70,69 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
             messages.success(self.request, f'Recurring task template "{form.instance.title}" created successfully.')
         else:
             messages.success(self.request, f'Task "{form.instance.title}" created successfully.')
+        
+        # Handle Google Calendar sync if enabled
+        if form.instance.google_calendar_sync_enabled:
+            self._sync_task_to_calendar(form.instance)
             
         return response
+    
+    def _sync_task_to_calendar(self, task):
+        """Sync the task to Google Calendar if user is authenticated"""
+        try:
+            from mobilize.communications.google_calendar_service import GoogleCalendarService
+            
+            # Debug: Check if task has due_date
+            if not task.due_date:
+                messages.warning(
+                    self.request,
+                    'Task created but calendar sync skipped: Task must have a due date for calendar sync.'
+                )
+                return
+            
+            calendar_service = GoogleCalendarService(self.request.user)
+            
+            # Debug: Check if user has Google tokens
+            from mobilize.authentication.models import GoogleToken
+            try:
+                google_token = GoogleToken.objects.get(user=self.request.user)
+                print(f"DEBUG: User {self.request.user.username} has Google token, expires: {google_token.expires_at}")
+            except GoogleToken.DoesNotExist:
+                print(f"DEBUG: User {self.request.user.username} has NO Google token")
+                messages.warning(
+                    self.request,
+                    f'Task created but Google Calendar sync requires Google authentication. '
+                    f'<a href="/auth/google-auth/">Click here to authenticate with Google</a>',
+                    extra_tags='safe'
+                )
+                return
+            
+            # Debug: More detailed authentication check
+            if calendar_service.is_authenticated():
+                result = calendar_service.create_event_from_task(task)
+                if result['success']:
+                    messages.success(
+                        self.request, 
+                        f'Task synced to Google Calendar successfully! '
+                        f'<a href="{result["event_link"]}" target="_blank">View in Calendar</a>',
+                        extra_tags='safe'
+                    )
+                else:
+                    messages.warning(
+                        self.request,
+                        f'Task created but calendar sync failed: {result["error"]}'
+                    )
+            else:
+                messages.warning(
+                    self.request,
+                    f'Task created but Google Calendar sync is not set up for user {self.request.user.username}. '
+                    'Please authenticate with Google Calendar in your settings.'
+                )
+        except Exception as e:
+            messages.warning(
+                self.request,
+                f'Task created but calendar sync failed: {str(e)}'
+            )
 
     def get_success_url(self):
         return reverse('tasks:task_list')
@@ -106,9 +167,55 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
              original_task.due_date != task.due_date)):
             task.next_occurrence_date = task.calculate_next_occurrence()
             task.save(update_fields=['next_occurrence_date'])
+        
+        # Handle Google Calendar sync if enabled and not already synced
+        if (task.google_calendar_sync_enabled and 
+            not task.google_calendar_event_id and 
+            not original_task.google_calendar_sync_enabled):
+            self._sync_task_to_calendar(task)
             
         messages.success(self.request, f'Task "{task.title}" updated successfully.')
         return response
+    
+    def _sync_task_to_calendar(self, task):
+        """Sync the task to Google Calendar if user is authenticated"""
+        try:
+            from mobilize.communications.google_calendar_service import GoogleCalendarService
+            
+            # Debug: Check if task has due_date
+            if not task.due_date:
+                messages.warning(
+                    self.request,
+                    'Task updated but calendar sync skipped: Task must have a due date for calendar sync.'
+                )
+                return
+            
+            calendar_service = GoogleCalendarService(self.request.user)
+            if calendar_service.is_authenticated():
+                result = calendar_service.create_event_from_task(task)
+                if result['success']:
+                    messages.success(
+                        self.request, 
+                        f'Task synced to Google Calendar successfully! '
+                        f'<a href="{result["event_link"]}" target="_blank">View in Calendar</a>',
+                        extra_tags='safe'
+                    )
+                else:
+                    messages.warning(
+                        self.request,
+                        f'Task updated but calendar sync failed: {result["error"]}'
+                    )
+            else:
+                messages.warning(
+                    self.request,
+                    f'Task updated but Google Calendar sync is not set up for user {self.request.user.username}. '
+                    'Please authenticate with Google Calendar in your settings.'
+                )
+        except Exception as e:
+            messages.warning(
+                self.request,
+                f'Task updated but calendar sync failed: {str(e)}'
+            )
 
     def get_success_url(self):
         return reverse('tasks:task_detail', kwargs={'pk': self.object.pk})

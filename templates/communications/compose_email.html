@@ -17,32 +17,67 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <form method="post" enctype="multipart/form-data">
+                    <form method="post" enctype="multipart/form-data" id="emailForm">
                         {% csrf_token %}
                         
                         <div class="form-group">
-                            <label for="{{ form.to_email.id_for_label }}">To:</label>
-                            {{ form.to_email }}
-                            {% if form.to_email.errors %}
-                                <div class="text-danger">{{ form.to_email.errors }}</div>
+                            <label for="id_recipients">To:</label>
+                            <input type="text" class="form-control" id="id_recipients" name="recipients" 
+                                placeholder="Enter email addresses separated by commas" required 
+                                value="{{ form.recipients.value|default:'' }}">
+                            {% if form.recipients.errors %}
+                                <div class="text-danger">{{ form.recipients.errors }}</div>
                             {% endif %}
                         </div>
                         
                         <div class="form-group">
-                            <label for="{{ form.subject.id_for_label }}">Subject:</label>
-                            {{ form.subject }}
+                            <label for="id_subject">Subject:</label>
+                            <input type="text" class="form-control" id="id_subject" name="subject" 
+                                placeholder="Email subject" required value="{{ form.subject.value|default:'' }}">
                             {% if form.subject.errors %}
                                 <div class="text-danger">{{ form.subject.errors }}</div>
                             {% endif %}
                         </div>
                         
+                        <!-- Template Selection -->
+                        {% if email_templates %}
                         <div class="form-group">
-                            <label for="{{ form.body.id_for_label }}">Message:</label>
-                            {{ form.body }}
+                            <label for="id_template">Email Template (Optional):</label>
+                            <select class="form-control" id="id_template" name="template">
+                                <option value="">Select a template...</option>
+                                {% for template in email_templates %}
+                                <option value="{{ template.id }}" data-subject="{{ template.subject|escapejs }}" data-body="{{ template.body|escapejs }}">
+                                    {{ template.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">Select a template to pre-fill subject and body</small>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="form-group">
+                            <label for="id_body">Message:</label>
+                            <textarea class="form-control" id="id_body" name="body" rows="10" 
+                                placeholder="Type your message here..." required>{{ form.body.value|default:'' }}</textarea>
                             {% if form.body.errors %}
                                 <div class="text-danger">{{ form.body.errors }}</div>
                             {% endif %}
                         </div>
+                        
+                        <!-- Signature Selection -->
+                        {% if email_signatures %}
+                        <div class="form-group">
+                            <label for="id_signature">Email Signature (Optional):</label>
+                            <select class="form-control" id="id_signature" name="signature">
+                                <option value="">No signature</option>
+                                {% for signature in email_signatures %}
+                                <option value="{{ signature.id }}" data-content="{{ signature.content|escapejs }}">
+                                    {{ signature.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
                         
                         <div class="form-group">
                             <button type="submit" class="btn btn-primary">
@@ -58,4 +93,72 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Template selection
+    const templateSelect = document.getElementById('id_template');
+    const subjectField = document.getElementById('id_subject');
+    const bodyField = document.getElementById('id_body');
+    
+    if (templateSelect) {
+        templateSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value) {
+                const subject = selectedOption.getAttribute('data-subject');
+                const body = selectedOption.getAttribute('data-body');
+                
+                if (subject) subjectField.value = subject;
+                if (body) {
+                    // Decode Unicode escape sequences back to actual characters
+                    const decodedBody = body.replace(/\\u([0-9a-fA-F]{4})/g, function(match, hex) {
+                        return String.fromCharCode(parseInt(hex, 16));
+                    });
+                    bodyField.value = decodedBody;
+                }
+            }
+        });
+    }
+    
+    // Signature selection
+    const signatureSelect = document.getElementById('id_signature');
+    
+    if (signatureSelect) {
+        signatureSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value) {
+                const signatureContent = selectedOption.getAttribute('data-content');
+                
+                if (signatureContent) {
+                    // Decode Unicode escape sequences back to actual characters
+                    const decodedSignature = signatureContent.replace(/\\u([0-9a-fA-F]{4})/g, function(match, hex) {
+                        return String.fromCharCode(parseInt(hex, 16));
+                    });
+                    
+                    // Get current body content
+                    let currentBody = bodyField.value;
+                    
+                    // Remove any existing signature (look for signature separator)
+                    const signatureSeparator = '\n\n--\n';
+                    const separatorIndex = currentBody.indexOf(signatureSeparator);
+                    if (separatorIndex !== -1) {
+                        currentBody = currentBody.substring(0, separatorIndex);
+                    }
+                    
+                    // Add new signature
+                    bodyField.value = currentBody + signatureSeparator + decodedSignature;
+                }
+            } else {
+                // Remove signature if "No signature" is selected
+                let currentBody = bodyField.value;
+                const signatureSeparator = '\n\n--\n';
+                const separatorIndex = currentBody.indexOf(signatureSeparator);
+                if (separatorIndex !== -1) {
+                    bodyField.value = currentBody.substring(0, separatorIndex);
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

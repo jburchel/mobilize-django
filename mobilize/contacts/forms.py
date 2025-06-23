@@ -4,46 +4,87 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Row, Column, HTML, Div
 
 from .models import Person, Contact
+from mobilize.churches.models import Church, ChurchMembership
 
 
 class PersonForm(forms.ModelForm):
     """Form for creating and editing Person records."""
     
     # Contact fields that will be handled separately
-    first_name = forms.CharField(max_length=255, required=False)
-    last_name = forms.CharField(max_length=255, required=False)
-    email = forms.EmailField(max_length=255, required=False)
-    phone = forms.CharField(max_length=20, required=False)
-    preferred_contact_method = forms.CharField(max_length=255, required=False)
-    street_address = forms.CharField(max_length=255, required=False)
-    city = forms.CharField(max_length=255, required=False)
-    state = forms.CharField(max_length=255, required=False)
-    zip_code = forms.CharField(max_length=255, required=False)
-    country = forms.CharField(max_length=100, required=False)
+    first_name = forms.CharField(max_length=255, required=False, label="First Name")
+    last_name = forms.CharField(max_length=255, required=False, label="Last Name")
+    email = forms.EmailField(max_length=255, required=False, label="Email")
+    phone = forms.CharField(max_length=20, required=False, label="Phone")
+    CONTACT_METHOD_CHOICES = [
+        ('', '-- Select Method --'),
+        ('email', 'Email'),
+        ('phone', 'Phone'),
+        ('text', 'Text'),
+    ]
+    
+    preferred_contact_method = forms.ChoiceField(
+        choices=CONTACT_METHOD_CHOICES, 
+        required=False, 
+        label="Preferred Contact Method"
+    )
+    street_address = forms.CharField(max_length=255, required=False, label="Street Address")
+    city = forms.CharField(max_length=255, required=False, label="City")
+    state = forms.CharField(max_length=255, required=False, label="State")
+    zip_code = forms.CharField(max_length=255, required=False, label="ZIP Code")
+    country = forms.CharField(max_length=100, required=False, label="Country")
     notes = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}), required=False)
-    pipeline_stage = forms.CharField(max_length=50, required=False)
-    priority = forms.CharField(max_length=20, required=False)
-    status = forms.CharField(max_length=20, required=False)
+    pipeline_stage = forms.ChoiceField(choices=[], required=False)
+    priority = forms.ChoiceField(choices=Contact.PRIORITY_CHOICES, required=False)
+    status = forms.ChoiceField(choices=Contact.STATUS_CHOICES, required=False)
     tags = forms.CharField(widget=forms.Textarea(attrs={'rows': 2}), required=False)
+    
+    # Override church-related fields to use proper choices
+    primary_church = forms.ModelChoiceField(
+        queryset=Church.objects.all(),
+        required=False,
+        empty_label="-- Select Church --",
+        label="Primary Church"
+    )
+    church_role = forms.ChoiceField(
+        choices=[('', '-- Select Role --')] + ChurchMembership.ROLE_CHOICES,
+        required=False,
+        label="Church Role"
+    )
+    
+    # Override languages field to handle comma-separated input
+    languages = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 2, 'placeholder': 'Enter languages separated by commas (e.g., English, Spanish, French)'}),
+        required=False,
+        help_text="Enter languages separated by commas"
+    )
     
     class Meta:
         model = Person
         fields = [
             # Person-specific fields only
             'title', 'preferred_name', 'birthday', 'anniversary', 'marital_status', 
-            'spouse_first_name', 'spouse_last_name', 'home_country', 'languages', 
-            'profession', 'organization', 'primary_church', 'church_role',
+            'spouse_first_name', 'spouse_last_name', 'home_country', 
+            'profession', 'organization',
             'linkedin_url', 'facebook_url', 'twitter_url', 'instagram_url',
             'google_contact_id'
         ]
         widgets = {
-            'languages': forms.Textarea(attrs={'rows': 2}),
             'birthday': forms.DateInput(attrs={'type': 'date'}),
             'anniversary': forms.DateInput(attrs={'type': 'date'}),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        # Set up pipeline stage choices for person contacts
+        from mobilize.pipeline.models import Pipeline
+        main_pipeline = Pipeline.get_main_people_pipeline()
+        if main_pipeline:
+            stage_choices = [('', '--- Select Stage ---')]
+            stage_choices.extend([
+                (stage.name, stage.name) for stage in main_pipeline.stages.all().order_by('order')
+            ])
+            self.fields['pipeline_stage'].choices = stage_choices
         
         # If we have an instance, populate Contact fields
         if self.instance and hasattr(self.instance, 'contact'):
@@ -59,89 +100,164 @@ class PersonForm(forms.ModelForm):
             self.fields['zip_code'].initial = contact.zip_code
             self.fields['country'].initial = contact.country
             self.fields['notes'].initial = contact.notes
-            self.fields['pipeline_stage'].initial = contact.pipeline_stage
+            # Get pipeline stage from the relationship system
+            current_stage = contact.get_current_pipeline_stage()
+            self.fields['pipeline_stage'].initial = current_stage.name if current_stage else None
             self.fields['priority'].initial = contact.priority
             self.fields['status'].initial = contact.status
-            self.fields['tags'].initial = contact.tags
+            # Handle tags - convert list to string for display
+            if contact.tags:
+                if isinstance(contact.tags, list):
+                    self.fields['tags'].initial = ', '.join(contact.tags)
+                else:
+                    self.fields['tags'].initial = contact.tags
+            else:
+                self.fields['tags'].initial = ''
+                
+            # Populate church relationship fields from ChurchMembership
+            primary_membership = self.instance.church_memberships.filter(
+                is_primary_contact=True, 
+                status='active'
+            ).first()
+            if primary_membership:
+                self.fields['primary_church'].initial = primary_membership.church
+                self.fields['church_role'].initial = primary_membership.role
+            elif self.instance.church_memberships.filter(status='active').exists():
+                # If no primary contact but has active memberships, use the first one
+                first_membership = self.instance.church_memberships.filter(status='active').first()
+                self.fields['primary_church'].initial = first_membership.church
+                self.fields['church_role'].initial = first_membership.role
+                
+            # Handle languages field - convert JSON list to comma-separated string
+            if self.instance.languages:
+                if isinstance(self.instance.languages, list):
+                    self.fields['languages'].initial = ', '.join(self.instance.languages)
+                else:
+                    self.fields['languages'].initial = str(self.instance.languages)
         
         self.helper = FormHelper()
         self.helper.form_tag = True
         self.helper.form_method = 'post'
-        self.helper.form_class = 'form-horizontal'
-        self.helper.label_class = 'col-lg-2'
-        self.helper.field_class = 'col-lg-8'
+        self.helper.form_class = 'form-grid'
         
         self.helper.layout = Layout(
-            HTML('<h3 class="mb-4">Basic Information</h3>'),
-            Row(
-                Column('first_name', css_class='form-group col-md-6 mb-3'),
-                Column('last_name', css_class='form-group col-md-6 mb-3'),
-                css_class='form-row'
-            ),
-            Row(
-                Column('email', css_class='form-group col-md-6 mb-3'),
-                Column('phone', css_class='form-group col-md-6 mb-3'),
-                css_class='form-row'
-            ),
-            'preferred_contact_method',
-            
-            HTML('<h3 class="mb-4 mt-4">Address</h3>'),
-            'street_address',
-            Row(
-                Column('city', css_class='form-group col-md-4 mb-3'),
-                Column('state', css_class='form-group col-md-4 mb-3'),
-                Column('zip_code', css_class='form-group col-md-4 mb-3'),
-                css_class='form-row'
-            ),
-            'country',
-            
-            HTML('<h3 class="mb-4 mt-4">Personal Details</h3>'),
-            'title',
-            'preferred_name',
-            Row(
-                Column('birthday', css_class='form-group col-md-6 mb-3'),
-                Column('anniversary', css_class='form-group col-md-6 mb-3'),
-                css_class='form-row'
-            ),
-            'marital_status',
-            Row(
-                Column('spouse_first_name', css_class='form-group col-md-6 mb-3'),
-                Column('spouse_last_name', css_class='form-group col-md-6 mb-3'),
-                css_class='form-row'
-            ),
-            'home_country',
-            'languages',
-            
-            HTML('<h3 class="mb-4 mt-4">Professional Details</h3>'),
-            'profession',
-            'organization',
-            
-            HTML('<h3 class="mb-4 mt-4">Church Relationship</h3>'),
-            'primary_church',
-            'church_role',
-            
-            HTML('<h3 class="mb-4 mt-4">Pipeline and Status</h3>'),
-            Row(
-                Column('pipeline_stage', css_class='form-group col-md-6 mb-3'),
-                Column('priority', css_class='form-group col-md-6 mb-3'),
-                css_class='form-row'
-            ),
-            'status',
-            
-            HTML('<h3 class="mb-4 mt-4">Notes</h3>'),
-            'notes',
-            'tags',
-            
-            HTML('<h3 class="mb-4 mt-4">Social Media</h3>'),
-            'facebook_url',
-            'twitter_url',
-            'linkedin_url',
-            'instagram_url',
-            
+            # Basic Information Section
             Div(
-                Submit('submit', 'Save', css_class='btn btn-primary'),
-                HTML('<a href="{% url \'contacts:person_list\' %}" class="btn btn-secondary ms-2">Cancel</a>'),
-                css_class='mt-4'
+                HTML('<div class="card mb-4"><div class="card-header bg-primary text-white"><h5 class="mb-0"><i class="fas fa-user me-2"></i>Basic Information</h5></div><div class="card-body">'),
+                Row(
+                    Column('first_name', css_class='col-md-6 mb-3'),
+                    Column('last_name', css_class='col-md-6 mb-3'),
+                ),
+                Row(
+                    Column('title', css_class='col-md-6 mb-3'),
+                    Column('preferred_name', css_class='col-md-6 mb-3'),
+                ),
+                HTML('</div></div>')
+            ),
+            
+            # Contact Information Section
+            Div(
+                HTML('<div class="card mb-4"><div class="card-header bg-success text-white"><h5 class="mb-0"><i class="fas fa-address-card me-2"></i>Contact Information</h5></div><div class="card-body">'),
+                Row(
+                    Column('street_address', css_class='col-md-8 mb-3'),
+                    Column('country', css_class='col-md-4 mb-3'),
+                ),
+                Row(
+                    Column('city', css_class='col-md-4 mb-3'),
+                    Column('state', css_class='col-md-4 mb-3'),
+                    Column('zip_code', css_class='col-md-4 mb-3'),
+                ),
+                Row(
+                    Column('email', css_class='col-md-6 mb-3'),
+                    Column('phone', css_class='col-md-6 mb-3'),
+                ),
+                Row(
+                    Column('preferred_contact_method', css_class='col-md-6 mb-3'),
+                    Column(HTML(''), css_class='col-md-6'),  # Empty spacer
+                ),
+                HTML('</div></div>')
+            ),
+            
+            # Personal Details Section
+            Div(
+                HTML('<div class="card mb-4"><div class="card-header bg-info text-white"><h5 class="mb-0"><i class="fas fa-heart me-2"></i>Personal Details</h5></div><div class="card-body">'),
+                Row(
+                    Column('birthday', css_class='col-md-6 mb-3'),
+                    Column('anniversary', css_class='col-md-6 mb-3'),
+                ),
+                Row(
+                    Column('marital_status', css_class='col-md-6 mb-3'),
+                    Column('home_country', css_class='col-md-6 mb-3'),
+                ),
+                Row(
+                    Column('spouse_first_name', css_class='col-md-6 mb-3'),
+                    Column('spouse_last_name', css_class='col-md-6 mb-3'),
+                ),
+                Row(
+                    Column('languages', css_class='col-md-6 mb-3'),
+                    Column(HTML(''), css_class='col-md-6'),  # Empty spacer
+                ),
+                HTML('</div></div>')
+            ),
+            
+            # Professional Information Section
+            Div(
+                HTML('<div class="card mb-4"><div class="card-header bg-warning text-dark"><h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Professional Information</h5></div><div class="card-body">'),
+                Row(
+                    Column('profession', css_class='col-md-6 mb-3'),
+                    Column('organization', css_class='col-md-6 mb-3'),
+                ),
+                HTML('</div></div>')
+            ),
+            
+            # Church Relationship Section
+            Div(
+                HTML('<div class="card mb-4"><div class="card-header bg-purple text-white"><h5 class="mb-0"><i class="fas fa-church me-2"></i>Church Relationship</h5></div><div class="card-body">'),
+                Row(
+                    Column('primary_church', css_class='col-md-8 mb-3'),
+                    Column('church_role', css_class='col-md-4 mb-3'),
+                ),
+                HTML('</div></div>')
+            ),
+            
+            # Status & Pipeline Section
+            Div(
+                HTML('<div class="card mb-4"><div class="card-header bg-secondary text-white"><h5 class="mb-0"><i class="fas fa-flag me-2"></i>Status & Pipeline</h5></div><div class="card-body">'),
+                Row(
+                    Column('pipeline_stage', css_class='col-md-4 mb-3'),
+                    Column('priority', css_class='col-md-4 mb-3'),
+                    Column('status', css_class='col-md-4 mb-3'),
+                ),
+                HTML('</div></div>')
+            ),
+            
+            # Social Media Section
+            Div(
+                HTML('<div class="card mb-4"><div class="card-header bg-gradient text-white"><h5 class="mb-0"><i class="fas fa-share-alt me-2"></i>Social Media</h5></div><div class="card-body">'),
+                Row(
+                    Column('facebook_url', css_class='col-md-6 mb-3'),
+                    Column('twitter_url', css_class='col-md-6 mb-3'),
+                ),
+                Row(
+                    Column('linkedin_url', css_class='col-md-6 mb-3'),
+                    Column('instagram_url', css_class='col-md-6 mb-3'),
+                ),
+                HTML('</div></div>')
+            ),
+            
+            # Notes & Tags Section
+            Div(
+                HTML('<div class="card mb-4"><div class="card-header bg-dark text-white"><h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes & Tags</h5></div><div class="card-body">'),
+                'notes',
+                'tags',
+                HTML('</div></div>')
+            ),
+            
+            # Action Buttons
+            Div(
+                Submit('submit', 'Save Person', css_class='btn btn-primary btn-lg me-3'),
+                HTML('<a href="{% if person %}{% url \'contacts:person_detail\' person.pk %}{% else %}{% url \'contacts:person_list\' %}{% endif %}" class="btn btn-secondary btn-lg">Cancel</a>'),
+                css_class='text-center mt-4 mb-4'
             )
         )
     
@@ -166,7 +282,6 @@ class PersonForm(forms.ModelForm):
         contact.zip_code = self.cleaned_data.get('zip_code')
         contact.country = self.cleaned_data.get('country')
         contact.notes = self.cleaned_data.get('notes')
-        contact.pipeline_stage = self.cleaned_data.get('pipeline_stage')
         contact.priority = self.cleaned_data.get('priority')
         contact.status = self.cleaned_data.get('status') or 'active'
         
@@ -183,7 +298,59 @@ class PersonForm(forms.ModelForm):
             if not self.instance.pk:
                 # Only set contact for new instances
                 self.instance.contact = contact
+            
+            # Handle pipeline stage using the relationship system
+            pipeline_stage_name = self.cleaned_data.get('pipeline_stage')
+            if pipeline_stage_name:
+                try:
+                    contact.set_pipeline_stage(pipeline_stage_name)
+                except ValueError:
+                    # If stage doesn't exist, just skip it for now
+                    pass
+            
+            # Handle languages field - convert comma-separated string to JSON list
+            languages_input = self.cleaned_data.get('languages')
+            if languages_input:
+                # Split by comma and clean up whitespace
+                languages_list = [lang.strip() for lang in languages_input.split(',') if lang.strip()]
+                self.instance.languages = languages_list if languages_list else None
+            else:
+                self.instance.languages = None
+            
             person = super().save(commit=True)
+            
+            # Handle church membership relationship
+            primary_church = self.cleaned_data.get('primary_church')
+            church_role = self.cleaned_data.get('church_role')
+            
+            if primary_church and church_role:
+                # Create or update ChurchMembership
+                membership, created = ChurchMembership.objects.get_or_create(
+                    person=person,
+                    church=primary_church,
+                    defaults={
+                        'role': church_role,
+                        'is_primary_contact': True,  # Assume primary church = primary contact
+                        'status': 'active'
+                    }
+                )
+                if not created:
+                    # Update existing membership
+                    membership.role = church_role
+                    membership.status = 'active'
+                    membership.is_primary_contact = True
+                    membership.save()
+                
+                # Make sure this is the only primary contact for this church
+                ChurchMembership.objects.filter(
+                    church=primary_church,
+                    is_primary_contact=True
+                ).exclude(person=person).update(is_primary_contact=False)
+                
+            elif not primary_church and not church_role:
+                # If both are cleared, remove any existing memberships
+                person.church_memberships.filter(is_primary_contact=True).update(status='inactive')
+            
             return person
         else:
             if not self.instance.pk:

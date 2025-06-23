@@ -74,10 +74,48 @@ def dashboard(request):
         'person', 'church', 'office'
     ).order_by('-date_sent')[:5]
     
-    # Get pipeline distribution for people (based on access level)
-    # Note: Pipeline stages are now tracked via PipelineContact model
-    # For now, return empty queryset until pipeline integration is complete
-    pipeline_stages = []
+    # Get pipeline distribution for people and churches
+    from mobilize.pipeline.models import MAIN_PEOPLE_PIPELINE_STAGES, MAIN_CHURCH_PIPELINE_STAGES
+    from django.db.models import Count, Case, When, CharField, Value
+    
+    # Get people pipeline distribution
+    people_pipeline_data = []
+    for stage_code, stage_name in MAIN_PEOPLE_PIPELINE_STAGES:
+        # Count contacts that have this pipeline stage through the pipeline system
+        count = 0
+        for person in people_queryset:
+            stage_code_from_contact = person.contact.get_pipeline_stage_code()
+            if stage_code_from_contact == stage_code:
+                count += 1
+        people_pipeline_data.append({
+            'stage_code': stage_code,
+            'stage_name': stage_name,
+            'count': count
+        })
+    
+    # Get churches pipeline distribution
+    churches_pipeline_data = []
+    for stage_code, stage_name in MAIN_CHURCH_PIPELINE_STAGES:
+        # Count contacts that have this pipeline stage through the pipeline system
+        count = 0
+        for church in churches_queryset:
+            stage_code_from_contact = church.contact.get_pipeline_stage_code()
+            if stage_code_from_contact == stage_code:
+                count += 1
+        churches_pipeline_data.append({
+            'stage_code': stage_code,
+            'stage_name': stage_name,
+            'count': count
+        })
+    
+    # Calculate percentages
+    people_total = sum(item['count'] for item in people_pipeline_data) or 1
+    for item in people_pipeline_data:
+        item['percentage'] = round((item['count'] / people_total) * 100, 1)
+    
+    churches_total = sum(item['count'] for item in churches_pipeline_data) or 1
+    for item in churches_pipeline_data:
+        item['percentage'] = round((item['count'] / churches_total) * 100, 1)
     
     # Get activity summary for this week (based on access level) using aggregation
     week_start = datetime.now() - timedelta(days=7)
@@ -101,7 +139,7 @@ def dashboard(request):
         date = datetime.now().date() - timedelta(days=i)
         
         people_created = people_queryset.filter(
-            contact__created_at=date
+            contact__created_at__date=date
         ).count()
         
         tasks_completed = tasks_queryset.filter(
@@ -127,7 +165,7 @@ def dashboard(request):
             main_contact_id__isnull=False
         ).count(),
         'recent_activity': churches_queryset.filter(
-            contact__updated_at__gte=week_start.date()
+            contact__updated_at__gte=week_start
         ).count(),
     }
     
@@ -143,7 +181,8 @@ def dashboard(request):
         'overdue_tasks': task_stats['overdue_tasks'],
         'upcoming_tasks': task_stats['upcoming_tasks'],
         'recent_communications': recent_communications,
-        'pipeline_stages': pipeline_stages,
+        'people_pipeline_data': people_pipeline_data,
+        'churches_pipeline_data': churches_pipeline_data,
         'completed_this_week': task_stats['completed_this_week'],
         'recent_people': activity_stats['recent_people'],
         'recent_churches': activity_stats['recent_churches'],

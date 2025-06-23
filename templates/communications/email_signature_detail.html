@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Email Signature Detail{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">{{ email_signature.name }}</h4>
+                    <div class="card-tools">
+                        <a href="{% url 'communications:email_signature_list' %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Signatures
+                        </a>
+                        <a href="{% url 'communications:email_signature_update' email_signature.pk %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        {% if not email_signature.is_default %}
+                        <a href="{% url 'communications:email_signature_delete' email_signature.pk %}" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th>Name:</th>
+                                    <td>{{ email_signature.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Type:</th>
+                                    <td>
+                                        {% if email_signature.is_html %}
+                                            <span class="badge badge-info">HTML</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Plain Text</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Default:</th>
+                                    <td>
+                                        {% if email_signature.is_default %}
+                                            <span class="badge badge-success">Yes</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">No</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Owner:</th>
+                                    <td>{{ email_signature.user.get_full_name|default:email_signature.user.username }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th>Created:</th>
+                                    <td>{{ email_signature.created_at|date:"M d, Y g:i A" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Updated:</th>
+                                    <td>{{ email_signature.updated_at|date:"M d, Y g:i A" }}</td>
+                                </tr>
+                                {% if email_signature.logo_url %}
+                                <tr>
+                                    <th>Logo URL:</th>
+                                    <td>
+                                        <a href="{{ email_signature.logo_url }}" target="_blank" class="text-break">
+                                            {{ email_signature.logo_url|truncatechars:50 }}
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% if email_signature.logo_file %}
+                                <tr>
+                                    <th>Logo File:</th>
+                                    <td>
+                                        <a href="{{ email_signature.logo_file.url }}" target="_blank" class="text-break">
+                                            {{ email_signature.logo_file.name|truncatechars:50 }}
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Signature Content -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5>Signature Content:</h5>
+                            <div class="card">
+                                <div class="card-body">
+                                    {% if email_signature.is_html %}
+                                        {{ email_signature.content|safe }}
+                                    {% else %}
+                                        <pre>{{ email_signature.content }}</pre>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview as it would appear in email -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5>Email Preview:</h5>
+                            <div class="card">
+                                <div class="card-body" style="background-color: #f8f9fa;">
+                                    <div class="border p-3 bg-white">
+                                        <p class="mb-2"><strong>Sample Email Content</strong></p>
+                                        <p>This is how your signature would appear at the bottom of an email message.</p>
+                                        <hr class="my-3">
+                                        <div class="signature-preview">
+                                            {% if email_signature.is_html %}
+                                                {{ email_signature.content|safe }}
+                                            {% else %}
+                                                <pre style="font-family: inherit; margin: 0;">{{ email_signature.content }}</pre>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if email_signature.logo_source %}
+                    <!-- Logo Preview -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5>Logo Preview:</h5>
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <img src="{{ email_signature.logo_source }}" alt="Signature Logo" 
+                                         class="img-fluid" style="max-height: 100px;" 
+                                         onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjUwIiB2aWV3Qm94PSIwIDAgMTAwIDUwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjZTllOWU5Ii8+Cjx0ZXh0IHg9IjUwIiB5PSIzMCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5JbWFnZSBub3QgZm91bmQ8L3RleHQ+Cjwvc3ZnPgo=';">
+                                    <p class="text-muted mt-2 mb-0">
+                                        <small>Logo loaded from: {{ email_signature.logo_source|truncatechars:60 }}</small>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -267,19 +267,19 @@ This document outlines the comprehensive task list for implementing the Mobilize
 
 ### Environment Configuration (High Priority - Week 17)
 
-- [ ] Create production environment variables
+- [ ] Create production environment variables for Railway
 - [ ] Configure production settings
-- [ ] Set up database connection for production
-- [ ] Configure static file serving
-- [ ] Set up media file storage
+- [ ] Set up Supabase database connection
+- [ ] Configure static file serving with Cloudflare CDN
+- [ ] Set up media file storage (Cloudflare R2 or Supabase Storage)
 
 ### Deployment Scripts (Medium Priority - Week 17)
 
-- [ ] Create deployment script for Google Cloud Run
-- [ ] Set up CI/CD pipeline
-- [ ] Implement database migration scripts
-- [ ] Create backup procedures
-- [ ] Add rollback mechanisms
+- [ ] Create deployment script for Railway
+- [ ] Set up GitHub integration for automatic deployments
+- [ ] Implement database migration scripts for Supabase
+- [ ] Create backup procedures using Supabase backups
+- [ ] Add rollback mechanisms via Railway deployments
 
 ### Documentation (Medium Priority - Week 17-18)
 

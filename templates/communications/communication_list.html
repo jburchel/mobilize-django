@@ -20,8 +20,14 @@
     .communication-card.phone {
         border-left-color: #28a745;
     }
+    .communication-card.text {
+        border-left-color: #17a2b8;
+    }
     .communication-card.meeting {
         border-left-color: #ffc107;
+    }
+    .communication-card.video_call {
+        border-left-color: #dc3545;
     }
     .direction-badge.inbound {
         background-color: #d1ecf1;
@@ -56,6 +62,25 @@
                     <a href="{% url 'communications:gmail_compose' %}" class="btn btn-primary me-2">
                         <i class="fas fa-paper-plane me-2"></i>Compose Email
                     </a>
+                    <div class="btn-group me-2" role="group">
+                        <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-plus-circle me-2"></i>Log Communication
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="openLogModal('phone')">
+                                <i class="fas fa-phone me-2"></i>Phone Call
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="openLogModal('text')">
+                                <i class="fas fa-sms me-2"></i>Text Message
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="openLogModal('meeting')">
+                                <i class="fas fa-users me-2"></i>Meeting
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="openLogModal('video_call')">
+                                <i class="fas fa-video me-2"></i>Video Call
+                            </a></li>
+                        </ul>
+                    </div>
                     <div class="btn-group" role="group">
                         <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-cog me-2"></i>Tools
@@ -91,9 +116,10 @@
                         <select class="form-select" name="type" id="type">
                             <option value="">All Types</option>
                             <option value="email" {% if request.GET.type == 'email' %}selected{% endif %}>Email</option>
-                            <option value="phone" {% if request.GET.type == 'phone' %}selected{% endif %}>Phone</option>
+                            <option value="phone" {% if request.GET.type == 'phone' %}selected{% endif %}>Phone Call</option>
+                            <option value="text" {% if request.GET.type == 'text' %}selected{% endif %}>Text Message</option>
                             <option value="meeting" {% if request.GET.type == 'meeting' %}selected{% endif %}>Meeting</option>
-                            <option value="note" {% if request.GET.type == 'note' %}selected{% endif %}>Note</option>
+                            <option value="video_call" {% if request.GET.type == 'video_call' %}selected{% endif %}>Video Call</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -137,10 +163,14 @@
                                     <i class="fas fa-envelope text-primary me-2"></i>
                                 {% elif communication.type == 'phone' %}
                                     <i class="fas fa-phone text-success me-2"></i>
+                                {% elif communication.type == 'text' %}
+                                    <i class="fas fa-sms text-info me-2"></i>
                                 {% elif communication.type == 'meeting' %}
-                                    <i class="fas fa-calendar text-warning me-2"></i>
+                                    <i class="fas fa-users text-warning me-2"></i>
+                                {% elif communication.type == 'video_call' %}
+                                    <i class="fas fa-video text-danger me-2"></i>
                                 {% else %}
-                                    <i class="fas fa-sticky-note text-info me-2"></i>
+                                    <i class="fas fa-sticky-note text-secondary me-2"></i>
                                 {% endif %}
                                 <span class="badge direction-badge {{ communication.direction }}">
                                     {{ communication.direction|title }}
@@ -192,6 +222,14 @@
                                 </span>
                             </div>
                             {% endif %}
+                            
+                            {% if communication.type == 'video_call' and communication.google_meet_link %}
+                            <div class="mb-2">
+                                <a href="{{ communication.google_meet_link }}" target="_blank" class="btn btn-sm btn-success">
+                                    <i class="fas fa-video me-1"></i>Join Meet
+                                </a>
+                            </div>
+                            {% endif %}
                         </div>
                         <div class="card-footer bg-transparent">
                             <div class="d-flex justify-content-between align-items-center">
@@ -216,6 +254,10 @@
                                     <a href="{% url 'communications:communication_update' communication.pk %}" 
                                        class="btn btn-outline-info btn-sm" title="Edit">
                                         <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'communications:communication_delete' communication.pk %}" 
+                                       class="btn btn-outline-danger btn-sm" title="Delete">
+                                        <i class="fas fa-trash"></i>
                                     </a>
                                 </div>
                             </div>
@@ -280,6 +322,128 @@
     </div>
 </div>
 
+<!-- Log Communication Modal -->
+<div class="modal fade" id="logCommunicationModal" tabindex="-1" aria-labelledby="logCommunicationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="logCommunicationModalLabel">Log Communication</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="logCommunicationForm" method="post" action="{% url 'communications:communication_create' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="communicationType" name="type" value="">
+                    
+                    <!-- Subject/Title -->
+                    <div class="mb-3">
+                        <label for="communicationSubject" class="form-label">Subject/Title</label>
+                        <input type="text" class="form-control" id="communicationSubject" name="subject" required>
+                    </div>
+                    
+                    <!-- Contact Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Related Contact</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="personSelect" class="form-label">Person</label>
+                                <select class="form-select" id="personSelect" name="person">
+                                    <option value="">Select Person...</option>
+                                    <!-- This would be populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="churchSelect" class="form-label">Church</label>
+                                <select class="form-select" id="churchSelect" name="church">
+                                    <option value="">Select Church...</option>
+                                    <!-- This would be populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Direction -->
+                    <div class="mb-3">
+                        <label class="form-label">Direction</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="direction" id="directionInbound" value="inbound" checked>
+                            <label class="form-check-label" for="directionInbound">
+                                Inbound (They contacted me)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="direction" id="directionOutbound" value="outbound">
+                            <label class="form-check-label" for="directionOutbound">
+                                Outbound (I contacted them)
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Date and Time -->
+                    <div class="mb-3">
+                        <label for="communicationDate" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="communicationDate" name="date" required>
+                    </div>
+                    
+                    <!-- Video Call Options (only shown for video_call type) -->
+                    <div class="mb-3" id="videoCallOptions" style="display: none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Google Meet Integration</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="meetOption" id="noMeetLink" value="none" checked>
+                                    <label class="form-check-label" for="noMeetLink">
+                                        No Meet Link (just log the call)
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="meetOption" id="createInstantMeet" value="instant">
+                                    <label class="form-check-label" for="createInstantMeet">
+                                        Create Instant Meet Link (starts now)
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="radio" name="meetOption" id="scheduleForLater" value="scheduled">
+                                    <label class="form-check-label" for="scheduleForLater">
+                                        Schedule for Later
+                                    </label>
+                                </div>
+                                
+                                <!-- Scheduled meeting options -->
+                                <div id="scheduledMeetOptions" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label for="meetDateTime" class="form-label">Date & Time</label>
+                                            <input type="datetime-local" class="form-control" id="meetDateTime" name="meet_datetime">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="meetDuration" class="form-label">Duration (minutes)</label>
+                                            <input type="number" class="form-control" id="meetDuration" name="meet_duration" value="60" min="15" max="480">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Notes -->
+                    <div class="mb-3">
+                        <label for="communicationNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="communicationNotes" name="message" rows="4" required 
+                                  placeholder="Enter details about the communication..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Communication</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Status Toast -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3">
     <div id="statusToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
@@ -300,17 +464,89 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize toast
     const statusToast = new bootstrap.Toast(document.getElementById('statusToast'));
     
-    // Auto-submit search form on input
+    // Auto-submit form when filter dropdowns change
+    const typeSelect = document.getElementById('type');
+    const directionSelect = document.getElementById('direction');
+    const dateFromInput = document.getElementById('date_from');
+    
+    if (typeSelect) {
+        typeSelect.addEventListener('change', function() {
+            this.closest('form').submit();
+        });
+    }
+    
+    if (directionSelect) {
+        directionSelect.addEventListener('change', function() {
+            this.closest('form').submit();
+        });
+    }
+    
+    if (dateFromInput) {
+        dateFromInput.addEventListener('change', function() {
+            this.closest('form').submit();
+        });
+    }
+    
+    // Auto-submit search form on input with delay
     const searchInput = document.getElementById('search');
     let searchTimeout;
     
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            this.closest('form').submit();
-        }, 500);
-    });
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.closest('form').submit();
+            }, 500);
+        });
+    }
+    
+    // Load contacts for dropdowns
+    loadContactsForDropdowns();
+    
+    // Check for URL parameters to auto-open modal
+    const urlParams = new URLSearchParams(window.location.search);
+    const openLogModal = urlParams.get('open_log_modal');
+    const contactId = urlParams.get('contact_id');
+    
+    if (openLogModal) {
+        setTimeout(() => {
+            openLogModalByType(openLogModal);
+            if (contactId) {
+                // Pre-select the contact when modal opens
+                preSelectContact(contactId);
+            }
+        }, 500); // Delay to ensure dropdowns are loaded
+    }
 });
+
+function loadContactsForDropdowns() {
+    fetch('{% url "communications:get_contacts_json" %}')
+    .then(response => response.json())
+    .then(data => {
+        // Populate person dropdown
+        const personSelect = document.getElementById('personSelect');
+        personSelect.innerHTML = '<option value="">Select Person...</option>';
+        data.people.forEach(person => {
+            const option = document.createElement('option');
+            option.value = person.id;
+            option.textContent = person.name;
+            personSelect.appendChild(option);
+        });
+        
+        // Populate church dropdown
+        const churchSelect = document.getElementById('churchSelect');
+        churchSelect.innerHTML = '<option value="">Select Church...</option>';
+        data.churches.forEach(church => {
+            const option = document.createElement('option');
+            option.value = church.id;
+            option.textContent = church.name;
+            churchSelect.appendChild(option);
+        });
+    })
+    .catch(error => {
+        console.error('Error loading contacts:', error);
+    });
+}
 
 function showToast(message, type = 'info') {
     const toastBody = document.getElementById('statusToastBody');
@@ -360,6 +596,199 @@ function checkGmailStatus() {
     })
     .catch(error => {
         showToast('Error checking Gmail status.', 'error');
+        console.error('Error:', error);
+    });
+}
+
+function openLogModal(type) {
+    const modal = new bootstrap.Modal(document.getElementById('logCommunicationModal'));
+    const typeInput = document.getElementById('communicationType');
+    const modalTitle = document.getElementById('logCommunicationModalLabel');
+    const videoCallOptions = document.getElementById('videoCallOptions');
+    
+    // Set the communication type
+    typeInput.value = type;
+    
+    // Update modal title based on type
+    const typeLabels = {
+        'phone': 'Log Phone Call',
+        'text': 'Log Text Message',
+        'meeting': 'Log Meeting',
+        'video_call': 'Log Video Call'
+    };
+    modalTitle.textContent = typeLabels[type] || 'Log Communication';
+    
+    // Show/hide video call options
+    if (type === 'video_call') {
+        videoCallOptions.style.display = 'block';
+    } else {
+        videoCallOptions.style.display = 'none';
+    }
+    
+    // Set today's date as default
+    const dateInput = document.getElementById('communicationDate');
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.value = today;
+    
+    // Show the modal
+    modal.show();
+}
+
+// Alias for URL parameter handling
+function openLogModalByType(type) {
+    openLogModal(type);
+}
+
+// Pre-select contact in modal dropdowns
+function preSelectContact(contactId) {
+    // First, try to find the contact in people dropdown
+    const personSelect = document.getElementById('personSelect');
+    if (personSelect) {
+        for (let option of personSelect.options) {
+            if (option.value == contactId) {
+                option.selected = true;
+                return;
+            }
+        }
+    }
+    
+    // If not found in people, try churches dropdown
+    const churchSelect = document.getElementById('churchSelect');
+    if (churchSelect) {
+        for (let option of churchSelect.options) {
+            if (option.value == contactId) {
+                option.selected = true;
+                return;
+            }
+        }
+    }
+}
+
+// Handle Meet option changes
+document.addEventListener('DOMContentLoaded', function() {
+    const scheduledOptions = document.getElementById('scheduledMeetOptions');
+    const meetOptionRadios = document.querySelectorAll('input[name="meetOption"]');
+    
+    meetOptionRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'scheduled') {
+                scheduledOptions.style.display = 'block';
+                // Set default datetime to 1 hour from now
+                const now = new Date();
+                now.setHours(now.getHours() + 1);
+                const datetimeString = now.toISOString().slice(0, 16);
+                document.getElementById('meetDateTime').value = datetimeString;
+            } else {
+                scheduledOptions.style.display = 'none';
+            }
+        });
+    });
+});
+
+// Handle form submission
+document.getElementById('logCommunicationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const type = formData.get('type');
+    
+    // Add user_id field
+    formData.append('user_id', '{{ request.user.id }}');
+    
+    // Handle Meet link creation for video calls
+    if (type === 'video_call') {
+        const meetOption = formData.get('meetOption');
+        
+        if (meetOption === 'instant' || meetOption === 'scheduled') {
+            // First create the Meet link, then save the communication
+            createMeetLinkThenSave(formData);
+            return;
+        }
+    }
+    
+    // Regular communication save
+    saveCommunication(formData);
+});
+
+function createMeetLinkThenSave(formData) {
+    const meetOption = formData.get('meetOption');
+    const title = formData.get('subject') || 'Video Call';
+    
+    let meetData = {
+        meetOption: meetOption,
+        title: title,
+        duration: parseInt(formData.get('meet_duration')) || 60
+    };
+    
+    if (meetOption === 'scheduled') {
+        const meetDateTime = formData.get('meet_datetime');
+        if (!meetDateTime) {
+            showToast('Please select a date and time for the scheduled meeting.', 'error');
+            return;
+        }
+        meetData.start_datetime = meetDateTime;
+    }
+    
+    // Add related contact info for invitations
+    const personId = formData.get('person');
+    const churchId = formData.get('church');
+    if (personId) meetData.person_id = personId;
+    if (churchId) meetData.church_id = churchId;
+    
+    showToast('Creating Google Meet link...', 'info');
+    
+    fetch('{% url "communications:create_meet_link" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(meetData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Add Meet link info to the communication
+            formData.append('google_meet_link', data.meet_link);
+            formData.append('google_calendar_event_id', data.event_id);
+            
+            // Update the message to include Meet link
+            const currentMessage = formData.get('message') || '';
+            const meetInfo = `\n\nGoogle Meet Link: ${data.meet_link}`;
+            formData.set('message', currentMessage + meetInfo);
+            
+            showToast('Meet link created! Saving communication...', 'success');
+            saveCommunication(formData);
+        } else {
+            showToast(`Error creating Meet link: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Error creating Meet link. Please try again.', 'error');
+        console.error('Error:', error);
+    });
+}
+
+function saveCommunication(formData) {
+    fetch(document.getElementById('logCommunicationForm').action, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        },
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            showToast('Communication logged successfully!', 'success');
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showToast('Error logging communication. Please try again.', 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Error logging communication. Please try again.', 'error');
         console.error('Error:', error);
     });
 }

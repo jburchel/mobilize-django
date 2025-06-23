@@ -159,6 +159,11 @@ def google_auth_callback(request):
             if len(name_parts) > 1:
                 user.last_name = name_parts[1]
             user.save()
+    
+    # Update profile picture URL for both new and existing users
+    if user_info.get('picture'):
+        user.profile_picture_url = user_info.get('picture')
+        user.save()
         
         # Mark as new user for contact sync preference setup
         new_user = True

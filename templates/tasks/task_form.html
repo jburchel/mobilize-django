@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load widget_tweaks %}
+{% load crispy_forms_tags %}
 
 {% block title %}{% if form.instance.pk %}Edit Task{% else %}Create Task{% endif %} - Mobilize CRM{% endblock %}
 
@@ -19,191 +19,7 @@
         <h5 class="mb-0">{% if form.instance.pk %}Edit Task{% else %}Create New Task{% endif %}</h5>
     </div>
     <div class="card-body">
-        <form method="post" id="taskForm">
-            {% csrf_token %}
-            
-            <!-- Basic Information -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h6 class="text-muted mb-3">Basic Information</h6>
-                </div>
-                <div class="col-md-8">
-                    <div class="mb-3">
-                        <label for="{{ form.title.id_for_label }}" class="form-label">Title <span class="text-danger">*</span></label>
-                        {% render_field form.title class="form-control" %}
-                        {% if form.title.errors %}
-                            <div class="text-danger small mt-1">{{ form.title.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="{{ form.priority.id_for_label }}" class="form-label">Priority</label>
-                        {% render_field form.priority class="form-select" %}
-                    </div>
-                </div>
-                <div class="col-12">
-                    <div class="mb-3">
-                        <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
-                        {% render_field form.description class="form-control" rows="3" %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Dates and Times -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h6 class="text-muted mb-3">Dates and Times</h6>
-                </div>
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="{{ form.due_date.id_for_label }}" class="form-label">Due Date</label>
-                        {% render_field form.due_date class="form-control" type="date" %}
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="{{ form.due_time.id_for_label }}" class="form-label">Due Time</label>
-                        {% render_field form.due_time class="form-control" %}
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="{{ form.reminder_option.id_for_label }}" class="form-label">Reminder</label>
-                        {% render_field form.reminder_option class="form-select" %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Assignment -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h6 class="text-muted mb-3">Assignment</h6>
-                </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.assigned_to.id_for_label }}" class="form-label">Assigned To</label>
-                        {% render_field form.assigned_to class="form-select" %}
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
-                        {% render_field form.category class="form-control" %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Related Entities -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h6 class="text-muted mb-3">Related To</h6>
-                </div>
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="{{ form.person.id_for_label }}" class="form-label">Person</label>
-                        {% render_field form.person class="form-select" %}
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="{{ form.church.id_for_label }}" class="form-label">Church</label>
-                        {% render_field form.church class="form-select" %}
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="{{ form.office.id_for_label }}" class="form-label">Office</label>
-                        {% render_field form.office class="form-select" %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recurring Tasks Section -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h6 class="text-muted mb-3">
-                        <i class="fas fa-sync-alt"></i> Recurring Task Settings
-                    </h6>
-                </div>
-                <div class="col-12">
-                    <div class="mb-3">
-                        <div class="form-check">
-                            {% render_field form.is_recurring_template class="form-check-input" id="recurringCheckbox" %}
-                            <label for="recurringCheckbox" class="form-check-label">
-                                Make this a recurring task
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recurring Options (initially hidden) -->
-            <div id="recurringOptions" class="recurring-options" style="display: none;">
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="{{ form.recurrence_frequency.id_for_label }}" class="form-label">Frequency</label>
-                            {% render_field form.recurrence_frequency class="form-select recurrence-field" %}
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="{{ form.recurrence_interval.id_for_label }}" class="form-label">Repeat Every</label>
-                            <div class="input-group">
-                                {% render_field form.recurrence_interval class="form-control recurrence-field" min="1" %}
-                                <span class="input-group-text" id="intervalText">day(s)</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Weekly Options -->
-                <div class="row mb-3 weekly-options" style="display: none;">
-                    <div class="col-12">
-                        <label class="form-label">Repeat On</label>
-                        <div class="d-flex gap-2 flex-wrap">
-                            {% render_field form.recurrence_weekdays class="recurrence-field" %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Monthly Options -->
-                <div class="row mb-3 monthly-options" style="display: none;">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="{{ form.recurrence_day_of_month.id_for_label }}" class="form-label">Day of Month</label>
-                            {% render_field form.recurrence_day_of_month class="form-control recurrence-field" min="1" max="31" %}
-                            <small class="text-muted">Leave blank to repeat on the same day as the original task</small>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="{{ form.recurrence_end_date.id_for_label }}" class="form-label">End Date (Optional)</label>
-                            {% render_field form.recurrence_end_date class="form-control recurrence-field" type="date" %}
-                            <small class="text-muted">Leave blank to repeat indefinitely</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Form Actions -->
-            <div class="row">
-                <div class="col-12">
-                    <hr>
-                    <div class="d-flex justify-content-end gap-2">
-                        <a href="{% url 'tasks:task_list' %}" class="btn btn-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> 
-                            {% if form.instance.pk %}Update Task{% else %}Create Task{% endif %}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </form>
+        {% crispy form %}
     </div>
 </div>
 {% endblock %}
@@ -211,66 +27,59 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const recurringCheckbox = document.getElementById('recurringCheckbox');
-    const recurringOptions = document.getElementById('recurringOptions');
-    const frequencySelect = document.getElementById('{{ form.recurrence_frequency.id_for_label }}');
-    const intervalText = document.getElementById('intervalText');
-    const weeklyOptions = document.querySelector('.weekly-options');
-    const monthlyOptions = document.querySelector('.monthly-options');
+    // Find elements using crispy forms generated IDs and classes
+    const recurringCheckbox = document.getElementById('id_is_recurring_template');
+    const frequencySelect = document.getElementById('id_recurrence_frequency');
+    const weeklyOptions = document.querySelector('.recurrence-weekly-options');
+    const monthlyOptions = document.querySelector('.recurrence-monthly-options');
+    
+    // Get all recurring-related form groups (except the main checkbox)
+    const recurringFormGroups = [
+        document.querySelector('#id_recurrence_frequency').closest('.form-group'),
+        document.querySelector('#id_recurrence_interval').closest('.form-group'),
+        weeklyOptions,
+        monthlyOptions,
+        document.querySelector('#id_recurrence_end_date').closest('.form-group')
+    ].filter(element => element !== null);
 
     // Toggle recurring options visibility
     function toggleRecurringOptions() {
-        if (recurringCheckbox.checked) {
-            recurringOptions.style.display = 'block';
-            // Enable all recurring fields
-            document.querySelectorAll('.recurrence-field').forEach(field => {
-                field.disabled = false;
-            });
-        } else {
-            recurringOptions.style.display = 'none';
-            // Disable all recurring fields
-            document.querySelectorAll('.recurrence-field').forEach(field => {
-                field.disabled = true;
-            });
+        const isRecurring = recurringCheckbox.checked;
+        
+        recurringFormGroups.forEach(group => {
+            if (group) {
+                group.style.display = isRecurring ? 'block' : 'none';
+            }
+        });
+        
+        // Also update frequency-specific options
+        if (isRecurring) {
+            updateFrequencyOptions();
         }
     }
 
-    // Update interval text and show/hide frequency-specific options
+    // Update frequency-specific options visibility
     function updateFrequencyOptions() {
+        if (!recurringCheckbox.checked) return;
+        
         const frequency = frequencySelect.value;
         
-        // Update interval text
-        switch(frequency) {
-            case 'daily':
-                intervalText.textContent = 'day(s)';
-                break;
-            case 'weekly':
-                intervalText.textContent = 'week(s)';
-                break;
-            case 'monthly':
-                intervalText.textContent = 'month(s)';
-                break;
-            default:
-                intervalText.textContent = 'day(s)';
-        }
-
         // Show/hide frequency-specific options
-        weeklyOptions.style.display = frequency === 'weekly' ? 'block' : 'none';
-        monthlyOptions.style.display = frequency === 'monthly' ? 'block' : 'none';
+        if (weeklyOptions) {
+            weeklyOptions.style.display = frequency === 'weekly' ? 'block' : 'none';
+        }
+        if (monthlyOptions) {
+            monthlyOptions.style.display = frequency === 'monthly' ? 'block' : 'none';
+        }
     }
 
-    // Initialize
-    toggleRecurringOptions();
-    updateFrequencyOptions();
-
-    // Event listeners
-    recurringCheckbox.addEventListener('change', toggleRecurringOptions);
-    frequencySelect.addEventListener('change', updateFrequencyOptions);
-
-    // If editing an existing recurring task, show the options
-    if (recurringCheckbox.checked) {
-        recurringOptions.style.display = 'block';
-        updateFrequencyOptions();
+    // Initialize on page load
+    if (recurringCheckbox && frequencySelect) {
+        toggleRecurringOptions();
+        
+        // Event listeners
+        recurringCheckbox.addEventListener('change', toggleRecurringOptions);
+        frequencySelect.addEventListener('change', updateFrequencyOptions);
     }
 });
 </script>

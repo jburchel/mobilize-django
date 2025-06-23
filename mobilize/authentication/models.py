@@ -8,6 +8,7 @@ class User(AbstractUser):
     Custom User model extending Django's AbstractUser.
     
     Adds role-based permissions and user preferences.
+    Every User automatically gets a corresponding Person record.
     """
     role = models.CharField(
         max_length=20, 
@@ -25,6 +26,16 @@ class User(AbstractUser):
     theme_preferences = models.JSONField(blank=True, null=True)
     google_refresh_token = models.TextField(blank=True, null=True)
     profile_picture_url = models.URLField(max_length=255, blank=True, null=True)
+    
+    # Direct relationship to Person record
+    person = models.OneToOneField(
+        'contacts.Person',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='user_account',
+        help_text="The Person record for this user in the CRM system"
+    )
     
     class Meta:
         db_table = 'users'
@@ -102,6 +113,59 @@ class User(AbstractUser):
                 
         # Fall back to default permission check
         return super().has_perm(perm, obj)
+    
+    @property
+    def full_name(self):
+        """Get the user's full name from their Person record or User fields."""
+        if self.person:
+            return self.person.name
+        elif self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        elif self.first_name:
+            return self.first_name
+        else:
+            return self.username
+    
+    def get_or_create_person(self):
+        """Get or create the Person record for this user."""
+        if self.person:
+            return self.person
+        
+        # Import here to avoid circular imports
+        from mobilize.contacts.models import Contact, Person
+        from mobilize.admin_panel.models import Office
+        
+        # Get the first office or create a default one
+        default_office = Office.objects.first()
+        if not default_office:
+            default_office = Office.objects.create(
+                name="Default Office",
+                code="DEFAULT",
+                is_active=True
+            )
+        
+        # Create Contact record first
+        contact = Contact.objects.create(
+            type='person',
+            first_name=self.first_name or '',
+            last_name=self.last_name or '',
+            email=self.email,
+            office=default_office,
+            user=self,  # Set the user as the creator
+            priority='medium',
+            status='active'
+        )
+        
+        # Create Person record linked to Contact
+        person = Person.objects.create(
+            contact=contact
+        )
+        
+        # Link the User to the Person
+        self.person = person
+        self.save(update_fields=['person'])
+        
+        return person
 
 
 class GoogleToken(models.Model):

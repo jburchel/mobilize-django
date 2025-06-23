@@ -36,6 +36,25 @@ class TaskForm(forms.ModelForm):
         required=False, 
         label="End recurrence on"
     )
+    
+    # Reminder option choices
+    reminder_option = forms.ChoiceField(
+        choices=[
+            ('none', 'No reminder'),
+            ('15_min_before', '15 minutes before'),
+            ('30_min_before', '30 minutes before'),
+            ('1_hour_before', '1 hour before'),
+            ('2_hours_before', '2 hours before'),
+            ('1_day_before', '1 day before'),
+            ('2_days_before', '2 days before'),
+            ('1_week_before', '1 week before'),
+            ('on_due_time', 'At due time'),
+            ('custom_on_due_date', 'Custom time on due date'),
+        ],
+        required=False,
+        initial='none',
+        label="Reminder"
+    )
 
     class Meta:
         model = Task
@@ -152,7 +171,16 @@ class TaskForm(forms.ModelForm):
             }
             
             if instance.due_date: # due_date is set on the instance by super().save(commit=False) from cleaned_data
-                time_component = self.cleaned_data.get('due_time') or timezone.datetime.min.time() # Use form's due_time or default to midnight
+                due_time_value = self.cleaned_data.get('due_time')
+                if due_time_value:
+                    # If due_time is a string (from TimeInput widget), convert it to time object
+                    if isinstance(due_time_value, str):
+                        from datetime import datetime
+                        time_component = datetime.strptime(due_time_value, '%H:%M').time()
+                    else:
+                        time_component = due_time_value
+                else:
+                    time_component = timezone.datetime.min.time()
                 naive_datetime = timezone.datetime.combine(instance.due_date, time_component)
                 instance.next_occurrence_date = timezone.make_aware(naive_datetime)
             else:

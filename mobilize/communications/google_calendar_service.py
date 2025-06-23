@@ -49,14 +49,15 @@ class GoogleCalendarService:
             from mobilize.authentication.models import GoogleToken
             token = GoogleToken.objects.filter(user=self.user).first()
             if token and token.access_token:
-                # Check if the token has calendar scope
+                # Use the user's actual scopes, not the service's required scopes
+                user_scopes = token.scopes if token.scopes else self.SCOPES
                 creds_data = {
                     'token': token.access_token,
                     'refresh_token': token.refresh_token,
                     'token_uri': 'https://oauth2.googleapis.com/token',
                     'client_id': settings.GOOGLE_CLIENT_ID,
                     'client_secret': settings.GOOGLE_CLIENT_SECRET,
-                    'scopes': self.SCOPES
+                    'scopes': user_scopes
                 }
                 return Credentials.from_authorized_user_info(creds_data)
         except Exception as e:
@@ -402,7 +403,7 @@ class GoogleCalendarService:
         for event in events:
             # Check if task already exists for this event
             if not Task.objects.filter(
-                calendar_event_id=event['id']
+                google_calendar_event_id=event['id']
             ).exists():
                 
                 # Parse start time
@@ -419,7 +420,7 @@ class GoogleCalendarService:
                     due_date=due_date,
                     assigned_to=self.user,
                     created_by=self.user,
-                    calendar_event_id=event['id'],
+                    google_calendar_event_id=event['id'],
                     status='pending',
                     priority='medium'
                 )
@@ -481,3 +482,148 @@ class GoogleCalendarService:
             return {'success': False, 'error': f'Calendar API error: {error}'}
         except Exception as error:
             return {'success': False, 'error': f'Unexpected error: {error}'}
+    
+    def create_event_from_task(self, task, calendar_id: str = 'primary') -> Dict[str, Any]:
+        """Create a Google Calendar event from a Task object"""
+        if not self.service:
+            return {'success': False, 'error': 'Calendar service not authenticated'}
+        
+        if not task.due_date:
+            return {'success': False, 'error': 'Task must have a due date to create calendar event'}
+        
+        try:
+            # Prepare event details
+            title = task.title or f"Task: {task.id}"
+            description = task.description or ""
+            
+            # Add task details to description
+            task_details = f"\n\nTask Details:\n"
+            task_details += f"Priority: {task.get_priority_display()}\n"
+            task_details += f"Status: {task.get_status_display()}\n"
+            if task.assigned_to:
+                task_details += f"Assigned to: {task.assigned_to.get_full_name() or task.assigned_to.username}\n"
+            if task.person:
+                task_details += f"Related to: {task.person}\n"
+            if task.church:
+                task_details += f"Church: {task.church}\n"
+            
+            description += task_details
+            
+            # Calculate start and end times
+            if task.due_time:
+                # Parse due_time if it's a string
+                if isinstance(task.due_time, str):
+                    try:
+                        from datetime import datetime as dt
+                        due_time_obj = dt.strptime(task.due_time, '%H:%M').time()
+                    except ValueError:
+                        due_time_obj = dt.strptime('09:00', '%H:%M').time()  # Default to 9 AM
+                else:
+                    due_time_obj = task.due_time
+                
+                # Create datetime objects
+                start_datetime = datetime.combine(task.due_date, due_time_obj)
+                end_datetime = start_datetime + timedelta(hours=1)  # Default 1 hour duration
+                all_day = False
+            else:
+                # All-day event
+                start_datetime = datetime.combine(task.due_date, datetime.min.time())
+                end_datetime = start_datetime + timedelta(days=1)
+                all_day = True
+            
+            # Handle recurrence if this is a recurring task template
+            recurrence_rules = None
+            if task.is_recurring_template and task.recurring_pattern:
+                recurrence_rules = self._convert_task_recurrence_to_rrule(task)
+            
+            # Create the calendar event
+            result = self.create_event(
+                calendar_id=calendar_id,
+                title=title,
+                description=description,
+                start_datetime=start_datetime,
+                end_datetime=end_datetime,
+                all_day=all_day,
+                timezone_name=str(timezone.get_current_timezone()),
+                recurrence=recurrence_rules,
+                reminders={
+                    'useDefault': False,
+                    'overrides': [
+                        {'method': 'popup', 'minutes': 30},  # 30 minutes before
+                    ],
+                }
+            )
+            
+            if result['success']:
+                # Update the task with calendar event information
+                task.google_calendar_event_id = result['event_id']
+                task.last_synced_at = timezone.now()
+                task.save(update_fields=['google_calendar_event_id', 'last_synced_at'])
+                
+                return {
+                    'success': True,
+                    'event_id': result['event_id'],
+                    'event_link': result['event_link'],
+                    'message': f'Calendar event created successfully for task: {task.title}'
+                }
+            else:
+                return result
+                
+        except Exception as error:
+            return {'success': False, 'error': f'Error creating calendar event from task: {error}'}
+    
+    def _convert_task_recurrence_to_rrule(self, task) -> List[str]:
+        """Convert task recurring pattern to Google Calendar RRULE format"""
+        try:
+            pattern = task.recurring_pattern
+            frequency = pattern.get('frequency')
+            interval = pattern.get('interval', 1)
+            
+            if not frequency:
+                return None
+            
+            # Build RRULE string
+            rrule_parts = []
+            
+            # Frequency mapping
+            freq_map = {
+                'daily': 'DAILY',
+                'weekly': 'WEEKLY', 
+                'monthly': 'MONTHLY'
+            }
+            
+            if frequency not in freq_map:
+                return None
+                
+            rrule_parts.append(f"FREQ={freq_map[frequency]}")
+            
+            # Interval
+            if interval > 1:
+                rrule_parts.append(f"INTERVAL={interval}")
+            
+            # Weekly: specific days
+            if frequency == 'weekly' and pattern.get('weekdays'):
+                # Convert from task format (0=Mon) to RRULE format (MO, TU, etc.)
+                day_map = {0: 'MO', 1: 'TU', 2: 'WE', 3: 'TH', 4: 'FR', 5: 'SA', 6: 'SU'}
+                weekdays = [day_map[day] for day in pattern['weekdays'] if day in day_map]
+                if weekdays:
+                    rrule_parts.append(f"BYDAY={','.join(weekdays)}")
+            
+            # Monthly: specific day of month
+            if frequency == 'monthly' and pattern.get('day_of_month'):
+                rrule_parts.append(f"BYMONTHDAY={pattern['day_of_month']}")
+            
+            # End date
+            if task.recurrence_end_date:
+                # Convert to RRULE format: YYYYMMDD
+                end_date_str = task.recurrence_end_date.strftime('%Y%m%d')
+                rrule_parts.append(f"UNTIL={end_date_str}")
+            
+            # Build final RRULE
+            rrule = "RRULE:" + ";".join(rrule_parts)
+            
+            return [rrule]
+            
+        except Exception as e:
+            print(f"Error converting recurrence to RRULE: {e}")
+            return None

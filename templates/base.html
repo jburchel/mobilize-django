@@ -1,9 +1,14 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Mobilize CRM{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+    <link rel="shortcut icon" type="image/png" href="{% static 'images/favicon.png' %}">
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -12,9 +17,364 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Custom CSS -->
-    {% load static %}
     <!-- <link rel="stylesheet" href="{% static 'css/base.css' %}"> -->
     <!-- <link rel="stylesheet" href="{% static 'css/responsive.css' %}"> -->
+    
+    <style>
+    /* Global App Styling - Applied to all pages */
+    
+    /* Essential layout fixes */
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .container-fluid {
+        padding: 0;
+        margin: 0;
+    }
+
+    .row {
+        margin: 0;
+    }
+
+    /* Main content area - basic layout */
+    .col-md-9, .col-lg-10 {
+        padding: 20px 30px;
+        background: #f8f9fb;
+    }
+
+    /* Beautiful sidebar with company brand gradient - CONSISTENT ACROSS ALL PAGES */
+    .sidebar, #sidebar {
+        background: linear-gradient(180deg, #183963 0%, #2a4f7a 30%, #39A949 100%);
+        color: white;
+        min-height: 100vh;
+        box-shadow: 2px 0 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    /* Add subtle overlay pattern for texture */
+    .sidebar::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.05) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(255,255,255,0.03) 0%, transparent 50%);
+        pointer-events: none;
+    }
+
+    .sidebar .nav-link {
+        color: rgba(255, 255, 255, 0.9);
+        padding: 14px 20px;
+        margin: 3px 12px;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        font-weight: 500;
+        backdrop-filter: blur(10px);
+    }
+
+    .sidebar .nav-link:hover {
+        color: white;
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateX(6px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        backdrop-filter: blur(20px);
+    }
+
+    .sidebar .nav-link.active {
+        color: white;
+        background: rgba(255, 255, 255, 0.25);
+        border-left: 4px solid white;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        font-weight: 600;
+    }
+
+    .sidebar-brand-link {
+        padding: 20px 0 !important;
+        margin-bottom: 20px !important;
+        justify-content: center !important;
+    }
+
+    .sidebar .navbar-brand {
+        font-weight: 700;
+        font-size: 1.4rem;
+        padding: 0 !important;
+        border: none !important;
+        color: white;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        margin: 0;
+    }
+
+    .sidebar-logo {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+        filter: brightness(1.1) contrast(1.1);
+        transition: transform 0.2s ease;
+        margin-right: 12px;
+    }
+
+    .sidebar-logo:hover {
+        transform: scale(1.05);
+    }
+
+    /* Style the horizontal line */
+    .sidebar hr {
+        border-color: rgba(255, 255, 255, 0.3);
+        margin: 0 15px 20px 15px;
+    }
+
+
+    /* Modern page header with gradient styling */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding: 25px 30px;
+        background: linear-gradient(90deg, #183963 0%, #2a4f7a 50%, #39A949 100%);
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        position: relative;
+        overflow: visible;
+        z-index: 1000;
+    }
+
+    /* Add subtle overlay pattern for texture */
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 0%, transparent 50%);
+        pointer-events: none;
+    }
+
+    .page-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .page-header-actions {
+        position: relative;
+        z-index: 1070;
+    }
+
+    .page-title {
+        font-weight: 600;
+        color: white;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        font-size: 1.8rem;
+    }
+
+    /* Profile section in header */
+    .header-profile {
+        display: flex;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.15);
+        padding: 12px 18px;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        position: relative;
+        z-index: 1050;
+    }
+
+    .header-profile:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+
+    .header-profile .profile-info {
+        margin-right: 15px;
+        text-align: right;
+    }
+
+    .header-profile .profile-name {
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        margin: 0;
+    }
+
+    .header-profile .profile-role {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.75rem;
+        margin: 0;
+    }
+
+    .header-profile .profile-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .header-profile .profile-avatar i {
+        color: white;
+        font-size: 1.2rem;
+    }
+
+    .header-profile .profile-avatar .profile-picture {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        object-position: center;
+    }
+
+    /* Dropdown styling for header profile */
+    .header-profile .dropdown-menu {
+        margin-top: 10px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        border: none;
+        z-index: 1080 !important;
+        position: absolute !important;
+    }
+
+    .header-profile .btn-group {
+        position: relative;
+        z-index: 1080;
+    }
+
+    /* Ensure dropdown shows above all content */
+    .dropdown-menu.show {
+        z-index: 1080 !important;
+        position: absolute !important;
+    }
+
+    /* Button styling */
+    .btn {
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #4e73df, #224abe);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #1cc88a, #13855c);
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, #f6c23e, #dda20a);
+        color: #2c3e50;
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #e74a3b, #c0392b);
+    }
+
+    .btn-outline-secondary {
+        border: 2px solid #e9ecef;
+        color: #6c757d;
+        background: transparent;
+    }
+
+    .btn-outline-secondary:hover {
+        background: #f8f9fa;
+        border-color: #dee2e6;
+        color: #495057;
+    }
+
+    /* Card styling for consistency - lightweight */
+    .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
+
+    /* Badge styling */
+    .badge {
+        border-radius: 20px;
+        padding: 6px 12px;
+        font-weight: 500;
+        font-size: 0.75rem;
+    }
+
+    /* Table styling - lightweight */
+    .table {
+        background: white;
+        border-radius: 8px;
+    }
+
+    .table thead th {
+        background: #f8f9fa;
+        color: #6c757d;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+
+    .table tbody tr:hover {
+        background: #f8f9fb;
+    }
+
+    /* Mobile responsive improvements */
+    @media (max-width: 768px) {
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            z-index: 1050;
+            transition: left 0.3s ease;
+        }
+        
+        .sidebar.show {
+            left: 0;
+        }
+        
+        .card {
+            margin-bottom: 15px;
+        }
+        
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        
+        .col-md-9, .col-lg-10 {
+            padding: 15px;
+        }
+    }
+    </style>
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -24,7 +384,8 @@
             <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 px-0 sidebar" id="sidebar">
                 <div class="d-flex flex-column p-3">
-                    <a href="{% url 'core:dashboard' %}" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+                    <a href="{% url 'core:dashboard' %}" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none sidebar-brand-link">
+                        <img src="{% static 'images/logo.png' %}" alt="Mobilize CRM Logo" class="sidebar-logo">
                         <span class="navbar-brand">Mobilize CRM</span>
                     </a>
                     <hr>
@@ -54,6 +415,13 @@
                                 <i class="fas fa-envelope"></i> Communications
                             </a>
                         </li>
+                        
+                        <!-- Visual separator for admin/configuration functions -->
+                        <li style="margin: 25px 0 20px 0;">
+                            <hr style="border-color: rgba(255,255,255,0.4); border-width: 1px; margin: 0;">
+                        </li>
+                        
+                        <!-- Administrative & Reporting Functions -->
                         <li>
                             <a href="{% url 'core:reports' %}" class="nav-link {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
                                 <i class="fas fa-chart-bar"></i> Reports
@@ -72,26 +440,6 @@
                             </a>
                         </li>
                     </ul>
-                    <hr>
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-user-circle fa-2x text-light"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <strong class="d-block text-light">{{ user.get_full_name|default:user.username }}</strong>
-                            <div class="btn-group dropup">
-                                <button type="button" class="btn btn-link btn-sm text-light p-0 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Profile
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="{% url 'core:profile' %}">View Profile</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'core:settings' %}">Settings</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="{% url 'authentication:logout' %}">Sign out</a></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
             
@@ -114,8 +462,34 @@
                             <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
                             {% block page_subtitle %}{% endblock %}
                         </div>
-                        <div class="page-header-actions">
+                        <div class="page-header-actions d-flex align-items-center">
                             {% block page_actions %}{% endblock %}
+                            
+                            <!-- Profile Section in Header -->
+                            <div class="header-profile ms-3">
+                                <div class="profile-info">
+                                    <p class="profile-name">{{ user.get_full_name|default:user.username }}</p>
+                                    <p class="profile-role">{{ user.role|title|default:"User" }}</p>
+                                </div>
+                                <div class="btn-group dropdown">
+                                    <div class="profile-avatar" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+                                        {% if user.profile_picture_url %}
+                                            <img src="{{ user.profile_picture_url }}" alt="Profile Picture" class="profile-picture">
+                                        {% else %}
+                                            <i class="fas fa-user"></i>
+                                        {% endif %}
+                                    </div>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="{% url 'core:profile' %}">
+                                            <i class="fas fa-user me-2"></i> View Profile
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="{% url 'authentication:logout' %}">
+                                            <i class="fas fa-sign-out-alt me-2"></i> Sign out
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 {% endblock %}

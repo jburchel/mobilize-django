@@ -12,12 +12,12 @@ Create a complete Customer Relationship Management (CRM) system called "Mobilize
 - Django 4.2+ as the web framework
 - Django ORM for database operations
 - Django Migrations for database migrations
-- PostgreSQL for both development and production environments
-  - Local PostgreSQL instance for development  
-  - Supabase PostgreSQL for production  
-  - Firebase Admin SDK for authentication
+- PostgreSQL via Supabase for all environments
+  - Supabase PostgreSQL for development and production
+  - Connection pooling for optimal performance
+  - Built-in backups and monitoring
 - Google API Client Libraries for integration with Google services
-- Django Celery for background jobs and task scheduling
+- Django Celery for background jobs and task scheduling (optional for initial deployment)
 
 ### Authentication
 
@@ -303,11 +303,11 @@ The Mobilize CRM interface is built with a consistent layout structure across al
 
 ### Deployment
 
-- Google Cloud Run for hosting
+- Railway for Django application hosting
 - Supabase for PostgreSQL database
-- Google Cloud Storage for assets
+- Cloudflare CDN for static assets
 - GitHub for version control
-- Continuous Integration/Continuous Deployment pipeline
+- Railway's automatic deployment from GitHub
 
 ## Core Functionality
 
@@ -396,12 +396,13 @@ The following rules define what data users can see and interact with, primarily 
 
 ### Database Overview
 
-The Mobilize CRM uses a relational PostgreSQL database for both development and production environments:
+The Mobilize CRM uses Supabase PostgreSQL for all environments:
 
-- **Development Environment**: Local PostgreSQL database (postgresql://jimburchel@localhost:5432/mobilize)
-- **Production Environment**: Supabase PostgreSQL database (postgresql://postgres@db.fwnitauuyzxnsvgsbrzr.supabase.co:5432/postgres)
+- **Development Environment**: Supabase PostgreSQL (free tier)
+- **Production Environment**: Supabase PostgreSQL (free tier with 500MB storage)
+- **Connection Method**: Direct connection with pooling enabled for optimal performance
 
-The schema is designed around a core contacts table that serves as the base for both people and churches, with additional tables for tasks, communications, and organizational structure.
+The schema is designed around a core contacts table that serves as the base for both people and churches, with additional tables for tasks, communications, and organizational structure. Supabase provides automatic backups, real-time capabilities, and built-in authentication that integrates well with our Django application.
 
 ### Core Models
 
@@ -771,8 +772,8 @@ DJANGO_DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 BASE_URL=http://localhost:8000
 
-# Database Configuration for Local Development
-DATABASE_URL=postgresql://jimburchel@localhost:5432/mobilize
+# Database Configuration - Supabase for all environments
+DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID=your-google-client-id
@@ -863,34 +864,41 @@ LOG_TO_STDOUT=True
 ### Setting up Supabase
 
 1. Create a Supabase account at https://supabase.com/
-2. Create a new project
+2. Create a new project (free tier provides 500MB database)
 3. Get database connection details from Project Settings > Database
-4. Set environment variables:
+4. Enable connection pooling in Database Settings
+5. Set environment variables:
    ```
-   export DB_USER=postgres
-   export DB_PASS=your-supabase-password
-   export DB_NAME=postgres
-   export DB_HOST=db.your-project-ref.supabase.co
-   export DB_PORT=5432
+   export DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres
    ```
-5. Run migration script to set up your Supabase database:
+6. Run migrations to set up your Supabase database:
    ```
    python manage.py migrate
    ```
 
-### Deploying to Google Cloud Run
+### Deploying to Railway
 
-1. Install Google Cloud SDK
-2. Update `PROJECT_ID` and `REGION` in `deploy.sh`
-3. Make the script executable:
-   ```
-   chmod +x deploy.sh
-   ```
-4. Run deployment script:
-   ```
-   ./deploy.sh
-   ```
-5. After first deployment, set up environment variables in Cloud Run console
+1. Create a Railway account at https://railway.app/
+2. Connect your GitHub repository
+3. Create a new project from your repo
+4. Set environment variables in Railway dashboard:
+   - Copy all variables from `.env` file
+   - Ensure DATABASE_URL points to your Supabase instance
+   - Set DJANGO_SETTINGS_MODULE=mobilize.settings
+5. Railway will automatically deploy on each push to main branch
+6. Custom domain setup (optional):
+   - Add your domain in Railway settings
+   - Update DNS records as instructed
+
+### Cost Optimization
+
+- Railway provides $5/month credit (covers Django app hosting)
+- Supabase free tier includes:
+  - 500MB database storage
+  - 2GB bandwidth
+  - Unlimited API requests
+- Use Cloudflare (free) for CDN and static assets
+- Total monthly cost: $0-5 depending on usage
 
 ## Important Deployment Checks
 
@@ -903,11 +911,15 @@ LOG_TO_STDOUT=True
    - Ensure API calls are properly rate-limited
    - Use appropriate caching strategies
 
-3. **Deployment Branch**
-   - Make sure you're on the `stable-working-version` branch before deploying
+3. **Railway-Specific Checks**
+   - Ensure PORT environment variable is not set (Railway provides it)
+   - Verify Procfile or railway.json configuration
+   - Check that static files are properly collected
 
 4. **Emergency Rollback Procedure**
-   - Follow the Rollback Procedure in DeploymentandMaintenenceChecklist.md if deployment fails
+   - Use Railway's deployment history to rollback
+   - Each deployment creates a snapshot for easy rollback
+   - Database changes may need manual rollback via migrations
 
 ## Final Notes
 

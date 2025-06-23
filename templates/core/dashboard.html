@@ -4,153 +4,34 @@
 
 {% block page_title %}
     Dashboard
-    <a href="{% url 'core:customize_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+    <a href="{% url 'core:customize_dashboard' %}" class="btn btn-outline-light btn-sm">
         <i class="fas fa-cog me-1"></i> Customize
     </a>
 {% endblock %}
 
 {% block extra_css %}
 <style>
-/* Essential layout fixes */
-body {
-    margin: 0;
-    padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
+/* Dashboard-specific styling */
 
-.container-fluid {
-    padding: 0;
-    margin: 0;
-}
-
-.row {
-    margin: 0;
-    display: flex;
-    min-height: 100vh;
-}
-
-/* Beautiful sidebar with company brand gradient */
-.sidebar, #sidebar {
-    background: linear-gradient(180deg, #183963 0%, #2a4f7a 30%, #39A949 100%);
-    color: white;
-    min-height: 100vh;
-    box-shadow: 2px 0 15px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-/* Add subtle overlay pattern for texture */
-.sidebar::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.05) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(255,255,255,0.03) 0%, transparent 50%);
-    pointer-events: none;
-}
-
-.sidebar .nav-link {
-    color: rgba(255, 255, 255, 0.9);
-    padding: 14px 20px;
-    margin: 3px 12px;
-    border-radius: 10px;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-    font-weight: 500;
-    backdrop-filter: blur(10px);
-}
-
-.sidebar .nav-link:hover {
-    color: white;
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateX(6px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-    backdrop-filter: blur(20px);
-}
-
-.sidebar .nav-link.active {
-    color: white;
-    background: rgba(255, 255, 255, 0.25);
-    border-left: 4px solid white;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    font-weight: 600;
-}
-
-.sidebar .navbar-brand {
-    font-weight: 700;
-    font-size: 1.4rem;
-    padding: 25px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-
-/* Enhanced user profile in sidebar */
-.sidebar .d-flex.align-items-center {
-    background: rgba(255, 255, 255, 0.15);
-    padding: 18px 15px;
-    margin: 15px 12px;
-    border-radius: 15px;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.sidebar .d-flex.align-items-center:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: scale(1.03);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-}
-
-.sidebar .d-flex.align-items-center strong {
-    color: white;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-}
-
-.sidebar .dropdown-toggle {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.9rem;
-}
-
-.sidebar .dropdown-toggle:hover {
-    color: white;
-}
-
-/* Modern dashboard content styling */
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    padding: 20px 0;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.page-title {
-    font-weight: 300;
-    color: #2c3e50;
-    margin: 0;
-}
-
-/* Compact modern card styling */
+/* Compact modern card styling for dashboard */
 .card {
-    margin-bottom: 15px;
-    border: none;
-    border-radius: 10px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    transition: all 0.3s ease;
-    overflow: hidden;
-    background: white;
     height: auto;
+    margin-bottom: 15px;
+    overflow: hidden;
 }
 
-.card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+/* Dashboard-specific card headers and bodies */
+.card-header {
+    font-weight: 600;
+    padding: 16px 20px 12px;
+    border-bottom: none;
+    background: transparent;
+    position: relative;
+    font-size: 0.95rem;
+}
+
+.card-body {
+    padding: 12px 20px 16px;
 }
 
 /* Top row metric cards - natural height */
@@ -169,15 +50,6 @@ body {
     /* Remove flex: 1 and justify-content - let content flow naturally */
 }
 
-/* Standard card headers */
-.card-header {
-    font-weight: 600;
-    padding: 16px 20px 12px;
-    border-bottom: none;
-    background: transparent;
-    position: relative;
-    font-size: 0.95rem;
-}
 
 .card-header.bg-primary {
     background: linear-gradient(135deg, #4e73df, #224abe) !important;
@@ -199,10 +71,6 @@ body {
     color: white;
 }
 
-/* Standard card body */
-.card-body {
-    padding: 12px 20px 16px;
-}
 
 /* Weekly Summary and other middle cards - much more compact */
 .row:nth-of-type(2) .card {
@@ -277,139 +145,52 @@ body {
     margin-bottom: 0;
 }
 
-/* Button styling */
-.btn {
-    border-radius: 8px;
-    padding: 8px 16px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    border: none;
-}
 
-.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #4e73df, #224abe);
-}
-
-.btn-success {
-    background: linear-gradient(135deg, #1cc88a, #13855c);
-}
-
-.btn-warning {
-    background: linear-gradient(135deg, #f6c23e, #dda20a);
-    color: #2c3e50;
-}
-
-.btn-danger {
-    background: linear-gradient(135deg, #e74a3b, #c0392b);
-}
-
-.btn-outline-secondary {
-    border: 2px solid #e9ecef;
-    color: #6c757d;
-    background: transparent;
-}
-
-.btn-outline-secondary:hover {
-    background: #f8f9fa;
-    border-color: #dee2e6;
-    color: #495057;
-}
-
-/* Main content area layout */
-.col-md-9, .col-lg-10 {
-    flex: 1;
-    padding: 20px 30px;
-    background: #f8f9fb;
-    min-height: 100vh;
-}
-
-/* Content area improvements */
-.content-wrapper, [class*="col-"] {
-    background: #f8f9fb;
-}
-
-/* CRITICAL: Force content visibility to override problematic CSS */
-.content, main, [role="main"] {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    position: relative !important;
-}
-
-.row, .col-12, .col-lg-3, .col-md-6, .card, .card-body, .card-header {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-/* Bootstrap grid fixes - remove equal height forcing */
+/* CRITICAL: Force content and cards to be visible */
 .row {
     display: flex !important;
     flex-wrap: wrap !important;
-    align-items: flex-start !important; /* This prevents equal heights */
+    margin: 0 -15px !important;
 }
 
 .col-lg-3, .col-md-6 {
-    /* Remove flex properties that force equal heights */
     display: block !important;
+    padding: 0 15px !important;
+    flex: 0 0 auto !important;
 }
 
-/* Badge styling */
-.badge {
-    border-radius: 20px;
-    padding: 6px 12px;
-    font-weight: 500;
-    font-size: 0.75rem;
+.card {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background: white !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 0.375rem !important;
+    margin-bottom: 1rem !important;
 }
 
-/* Table styling */
-.table {
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
+.card-header, .card-body {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
-.table thead th {
-    border: none;
-    background: #f8f9fa;
-    color: #6c757d;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.5px;
-    padding: 16px;
-}
-
-.table tbody tr {
-    transition: all 0.2s ease;
-}
-
-.table tbody tr:hover {
-    background: #f8f9fb;
-    transform: scale(1.01);
-}
-
-/* Mobile responsive improvements */
+/* Mobile responsive improvements for dashboard */
 @media (max-width: 768px) {
-    .card {
-        margin-bottom: 15px;
+    .row:first-of-type .card-header {
+        padding: 10px 15px 6px;
+        font-size: 0.85rem;
     }
     
-    .page-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
+    .row:first-of-type .card-body {
+        padding: 6px 15px 10px;
     }
 }
 </style>
 {% endblock %}
 
 {% block content %}
+
 <!-- View Mode Toggle for Admins -->
 {% if can_toggle_view %}
 <div class="row mb-3">
@@ -442,319 +223,483 @@ body {
     </div>
 </div>
 {% endif %}
-<div class="row">
-    <!-- Key Metrics Row 1 -->
-    <div class="col-lg-3 col-md-6 mb-4">
-        <div class="card h-100 border-left-primary">
-            <div class="card-header bg-primary text-white">
-                <i class="fas fa-users me-2"></i> People
-            </div>
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <h2 class="mb-1">{{ people_count }}</h2>
-                        <small class="text-success">+{{ recent_people }} this week</small>
-                    </div>
-                    <a href="{% url 'contacts:person_list' %}" class="btn btn-sm btn-primary">View All</a>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-lg-3 col-md-6 mb-4">
-        <div class="card h-100 border-left-success">
-            <div class="card-header bg-success text-white">
-                <i class="fas fa-church me-2"></i> Churches
-            </div>
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <h2 class="mb-1">{{ churches_count }}</h2>
-                        <small class="text-success">+{{ recent_churches }} this week</small>
-                    </div>
-                    <a href="{% url 'churches:church_list' %}" class="btn btn-sm btn-success">View All</a>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-lg-3 col-md-6 mb-4">
-        <div class="card h-100 border-left-warning">
-            <div class="card-header bg-warning text-dark">
-                <i class="fas fa-tasks me-2"></i> My Tasks
-            </div>
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <h2 class="mb-1">{{ pending_tasks|length }}</h2>
-                        <small class="text-warning">{{ upcoming_tasks }} due this week</small>
-                    </div>
-                    <a href="{% url 'tasks:task_list' %}" class="btn btn-sm btn-warning">View All</a>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-lg-3 col-md-6 mb-4">
-        <div class="card h-100 border-left-danger">
-            <div class="card-header bg-danger text-white">
-                <i class="fas fa-exclamation-triangle me-2"></i> Overdue
-            </div>
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <h2 class="mb-1">{{ overdue_tasks }}</h2>
-                        <small class="text-danger">Tasks past due</small>
-                    </div>
-                    <a href="{% url 'tasks:task_list' %}?status=overdue" class="btn btn-sm btn-danger">View All</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Activity Summary Row -->
+
+<!-- Dynamic Dashboard Widgets -->
+{% for widget_row in widget_rows %}
 <div class="row mb-4">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-chart-bar me-2"></i> Weekly Summary
-            </div>
-            <div class="card-body">
+    {% for widget in widget_row %}
+        <div class="{% if widget.size == 'full' %}col-12{% elif widget.size == 'two_thirds' %}col-lg-8{% elif widget.size == 'half' %}col-lg-6{% elif widget.size == 'one_third' %}col-lg-4{% elif widget.size == 'quarter' %}col-lg-3{% else %}col-12{% endif %} mb-4">
+            {% if widget.id == 'metrics_summary' %}
+                <!-- Metrics Summary Widget (4 cards) -->
                 <div class="row">
-                    <div class="col-6">
-                        <div class="text-center">
-                            <h4 class="text-success">{{ completed_this_week }}</h4>
-                            <p class="text-muted mb-0">Tasks Completed</p>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="text-center">
-                            <h4 class="text-info">{{ recent_communications|length }}</h4>
-                            <p class="text-muted mb-0">Communications</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-chart-pie me-2"></i> Task Priorities
-            </div>
-            <div class="card-body">
-                {% if priority_tasks %}
-                    <canvas id="priorityChart" width="400" height="200"></canvas>
-                {% else %}
-                    <div class="text-center py-3">
-                        <i class="fas fa-chart-pie fa-2x mb-2 text-muted"></i>
-                        <p class="text-muted mb-0">No task data available</p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Analytics and Charts Row -->
-<div class="row mb-4">
-    <!-- Pipeline Distribution -->
-    <div class="col-lg-8 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="fas fa-chart-pie me-2"></i> Pipeline Distribution</span>
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="pipelineDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        Filter
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="pipelineDropdown">
-                        <li><a class="dropdown-item" href="#">All Contacts</a></li>
-                        <li><a class="dropdown-item" href="#">People Only</a></li>
-                        <li><a class="dropdown-item" href="#">Churches Only</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="card-body">
-                {% if pipeline_stages %}
-                    <canvas id="pipelineChart" width="400" height="200"></canvas>
-                {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-chart-pie fa-3x mb-3 text-muted"></i>
-                        <p class="text-muted">No pipeline data available</p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    
-    <!-- Recent Activity -->
-    <div class="col-lg-4 mb-4">
-        <div class="card h-100">
-            <div class="card-header">
-                <i class="fas fa-history me-2"></i> Recent Activity
-            </div>
-            <div class="card-body p-0">
-                {% if recent_communications %}
-                    <ul class="list-group list-group-flush">
-                        {% for comm in recent_communications %}
-                            <li class="list-group-item">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">{{ comm.subject }}</h6>
-                                    <small>{{ comm.sent_at|date:"M d" }}</small>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="card h-100 border-left-primary">
+                            <div class="card-header bg-primary text-white">
+                                <i class="fas fa-users me-2"></i> People
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h2 class="mb-1">{{ people_count }}</h2>
+                                        <small class="text-success">+{{ recent_people }} this week</small>
+                                    </div>
+                                    <a href="{% url 'contacts:person_list' %}" class="btn btn-sm btn-primary">View All</a>
                                 </div>
-                                <p class="mb-1">{{ comm.content|truncatechars:50 }}</p>
-                                <small>To: {{ comm.recipient_contact.name }}</small>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-history fa-3x mb-3 text-muted"></i>
-                        <p class="text-muted">No recent activity</p>
+                            </div>
+                        </div>
                     </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Activity Timeline Chart -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-chart-line me-2"></i> Activity Timeline (Last 7 Days)
-            </div>
-            <div class="card-body">
-                <canvas id="activityChart" height="100"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <!-- Pending Tasks -->
-    <div class="col-12 mb-4">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="fas fa-tasks me-2"></i> Pending Tasks</span>
-                <a href="#" class="btn btn-sm btn-primary">
-                    <i class="fas fa-plus me-1"></i> New Task
-                </a>
-            </div>
-            <div class="card-body p-0">
-                {% if pending_tasks %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Title</th>
-                                    <th>Due Date</th>
-                                    <th>Priority</th>
-                                    <th>Contact</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for task in pending_tasks %}
-                                    <tr>
-                                        <td>{{ task.title }}</td>
-                                        <td>{{ task.due_date|date:"M d, Y" }}</td>
-                                        <td>
-                                            {% if task.priority == 'high' %}
-                                                <span class="badge bg-danger">High</span>
-                                            {% elif task.priority == 'medium' %}
-                                                <span class="badge bg-warning text-dark">Medium</span>
-                                            {% else %}
-                                                <span class="badge bg-info text-dark">Low</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ task.contact.name|default:"N/A" }}</td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm" role="group">
-                                                <a href="#" class="btn btn-outline-primary">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                                <a href="#" class="btn btn-outline-success">
-                                                    <i class="fas fa-check"></i>
-                                                </a>
-                                                <a href="#" class="btn btn-outline-danger">
-                                                    <i class="fas fa-trash"></i>
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="card h-100 border-left-success">
+                            <div class="card-header bg-success text-white">
+                                <i class="fas fa-church me-2"></i> Churches
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h2 class="mb-1">{{ churches_count }}</h2>
+                                        <small class="text-success">+{{ recent_churches }} this week</small>
+                                    </div>
+                                    <a href="{% url 'churches:church_list' %}" class="btn btn-sm btn-success">View All</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="card h-100 border-left-warning">
+                            <div class="card-header bg-warning text-dark">
+                                <i class="fas fa-tasks me-2"></i> My Tasks
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h2 class="mb-1">{{ pending_tasks|length }}</h2>
+                                        <small class="text-warning">{{ upcoming_tasks }} due this week</small>
+                                    </div>
+                                    <a href="{% url 'tasks:task_list' %}" class="btn btn-sm btn-warning">View All</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="card h-100 border-left-danger">
+                            <div class="card-header bg-danger text-white">
+                                <i class="fas fa-exclamation-triangle me-2"></i> Overdue
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h2 class="mb-1">{{ overdue_tasks }}</h2>
+                                        <small class="text-danger">Tasks past due</small>
+                                    </div>
+                                    <a href="{% url 'tasks:task_list' %}?status=overdue" class="btn btn-sm btn-danger">View All</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% elif widget.id == 'weekly_summary' %}
+                <!-- Weekly Summary Widget -->
+                <div class="card h-100">
+                    <div class="card-header">
+                        <i class="fas fa-chart-bar me-2"></i> Weekly Summary
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <h4 class="text-success">{{ completed_this_week }}</h4>
+                                    <p class="text-muted mb-0">Tasks Completed</p>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <h4 class="text-info">{{ recent_communications|length }}</h4>
+                                    <p class="text-muted mb-0">Communications</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% elif widget.id == 'task_priorities' %}
+                <!-- Task Priorities Widget -->
+                <div class="card h-100">
+                    <div class="card-header">
+                        <i class="fas fa-chart-pie me-2"></i> Task Priorities
+                    </div>
+                    <div class="card-body">
+                        {% if priority_tasks %}
+                            <canvas id="priorityChart" width="400" height="200"></canvas>
+                        {% else %}
+                            <div class="text-center py-3">
+                                <i class="fas fa-chart-pie fa-2x mb-2 text-muted"></i>
+                                <p class="text-muted mb-0">No task data available</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% elif widget.id == 'pipeline_distribution' %}
+                <!-- Pipeline Distribution Widget -->
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-chart-pie me-2"></i> Pipeline Distribution</span>
+                        <div class="d-flex gap-2">
+                            <!-- Chart Type Selector -->
+                            <div class="btn-group" role="group" aria-label="Chart type">
+                                <input type="radio" class="btn-check" name="chartType" id="pieChart" autocomplete="off" checked>
+                                <label class="btn btn-outline-primary btn-sm" for="pieChart">
+                                    <i class="fas fa-chart-pie"></i> Pie
+                                </label>
+                                <input type="radio" class="btn-check" name="chartType" id="barChart" autocomplete="off">
+                                <label class="btn btn-outline-primary btn-sm" for="barChart">
+                                    <i class="fas fa-chart-bar"></i> Bar
+                                </label>
+                            </div>
+                            
+                            <!-- Filter Dropdown -->
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="pipelineDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span id="filterLabel">Both</span>
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="pipelineDropdown">
+                                    <li><a class="dropdown-item filter-option" href="#" data-filter="both">Both</a></li>
+                                    <li><a class="dropdown-item filter-option" href="#" data-filter="people">People Only</a></li>
+                                    <li><a class="dropdown-item filter-option" href="#" data-filter="churches">Churches Only</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- People Chart -->
+                            <div class="col-md-6" id="peopleChartContainer">
+                                <h6 class="text-center mb-3">People Pipeline</h6>
+                                <div style="position: relative; height: 300px;">
+                                    <canvas id="peopleChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- Churches Chart -->
+                            <div class="col-md-6" id="churchesChartContainer">
+                                <h6 class="text-center mb-3">Churches Pipeline</h6>
+                                <div style="position: relative; height: 300px;">
+                                    <canvas id="churchesChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- No data message -->
+                        <div id="noPipelineData" class="text-center py-5" style="display: none;">
+                            <i class="fas fa-chart-pie fa-3x mb-3 text-muted"></i>
+                            <p class="text-muted">No pipeline data available</p>
+                        </div>
+                    </div>
+                </div>
+            {% elif widget.id == 'recent_activity' %}
+                <!-- Recent Activity Widget -->
+                <div class="card h-100">
+                    <div class="card-header">
+                        <i class="fas fa-history me-2"></i> Recent Activity
+                    </div>
+                    <div class="card-body p-0">
+                        {% if recent_communications %}
+                            <ul class="list-group list-group-flush">
+                                {% for comm in recent_communications %}
+                                    <li class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ comm.subject }}</h6>
+                                            <small>{{ comm.sent_at|date:"M d" }}</small>
+                                        </div>
+                                        <p class="mb-1">{{ comm.content|truncatechars:50 }}</p>
+                                        <small>To: {{ comm.recipient_contact.name }}</small>
+                                    </li>
                                 {% endfor %}
-                            </tbody>
-                        </table>
+                            </ul>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-history fa-3x mb-3 text-muted"></i>
+                                <p class="text-muted">No recent activity</p>
+                            </div>
+                        {% endif %}
                     </div>
-                {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-tasks fa-3x mb-3 text-muted"></i>
-                        <p class="text-muted">No pending tasks</p>
-                        <a href="#" class="btn btn-primary">
-                            <i class="fas fa-plus me-1"></i> Create Task
+                </div>
+            {% elif widget.id == 'activity_timeline' %}
+                <!-- Activity Timeline Widget -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-line me-2"></i> Activity Timeline (Last 7 Days)
+                    </div>
+                    <div class="card-body">
+                        <canvas id="activityChart" height="100"></canvas>
+                    </div>
+                </div>
+            {% elif widget.id == 'pending_tasks' %}
+                <!-- Pending Tasks Widget -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-tasks me-2"></i> Pending Tasks</span>
+                        <a href="#" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus me-1"></i> New Task
                         </a>
                     </div>
-                {% endif %}
-            </div>
+                    <div class="card-body p-0">
+                        {% if pending_tasks %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Title</th>
+                                            <th>Due Date</th>
+                                            <th>Priority</th>
+                                            <th>Contact</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for task in pending_tasks %}
+                                            <tr>
+                                                <td>{{ task.title }}</td>
+                                                <td>{{ task.due_date|date:"M d, Y" }}</td>
+                                                <td>
+                                                    {% if task.priority == 'high' %}
+                                                        <span class="badge bg-danger">High</span>
+                                                    {% elif task.priority == 'medium' %}
+                                                        <span class="badge bg-warning text-dark">Medium</span>
+                                                    {% else %}
+                                                        <span class="badge bg-info text-dark">Low</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ task.contact.name|default:"N/A" }}</td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <a href="#" class="btn btn-outline-primary">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        <a href="#" class="btn btn-outline-success">
+                                                            <i class="fas fa-check"></i>
+                                                        </a>
+                                                        <a href="#" class="btn btn-outline-danger">
+                                                            <i class="fas fa-trash"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-tasks fa-3x mb-3 text-muted"></i>
+                                <p class="text-muted">No pending tasks</p>
+                                <a href="#" class="btn btn-primary">
+                                    <i class="fas fa-plus me-1"></i> Create Task
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
         </div>
-    </div>
+    {% endfor %}
 </div>
+{% endfor %}
+
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Check if pipeline data and canvas element exist
-        const pipelineCanvas = document.getElementById('pipelineChart');
-        if (pipelineCanvas) {
-            // Pipeline stage data
-            const pipelineData = {
-                labels: [
-                    {% for stage in pipeline_stages %}
-                        '{{ stage.pipeline_stage|title }}',
-                    {% endfor %}
-                ],
-                datasets: [{
-                    label: 'Contacts',
-                    data: [
-                        {% for stage in pipeline_stages %}
-                            {{ stage.count }},
-                        {% endfor %}
-                    ],
-                    backgroundColor: [
-                        '#183963',
-                        '#39A949',
-                        '#7F7F7F',
-                        '#4e73df',
-                        '#1cc88a',
-                        '#36b9cc'
-                    ],
-                    borderWidth: 1
-                }]
+        // Pipeline Distribution Dual Charts
+        let peopleChart = null;
+        let churchesChart = null;
+        let currentChartType = 'pie';
+        let currentFilter = 'both';
+        
+        // Real pipeline data from backend
+        const peopleStages = [
+            {% for item in people_pipeline_data %}
+                '{{ item.stage_name }}',
+            {% endfor %}
+        ];
+        const peopleData = [
+            {% for item in people_pipeline_data %}
+                {{ item.percentage }},
+            {% endfor %}
+        ];
+        const peopleCounts = [
+            {% for item in people_pipeline_data %}
+                {{ item.count }},
+            {% endfor %}
+        ];
+        
+        const churchesStages = [
+            {% for item in churches_pipeline_data %}
+                '{{ item.stage_name }}',
+            {% endfor %}
+        ];
+        const churchesData = [
+            {% for item in churches_pipeline_data %}
+                {{ item.percentage }},
+            {% endfor %}
+        ];
+        const churchesCounts = [
+            {% for item in churches_pipeline_data %}
+                {{ item.count }},
+            {% endfor %}
+        ];
+        
+        const chartColors = ['#183963', '#39A949', '#4e73df', '#1cc88a', '#36b9cc', '#7F7F7F'];
+        
+        function createChartConfig(type, data, counts, stages, label) {
+            const config = {
+                type: type,
+                data: {
+                    labels: stages,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        backgroundColor: chartColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'left',
+                            align: 'start',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 15,
+                                usePointStyle: true,
+                                generateLabels: function(chart) {
+                                    const original = Chart.defaults.plugins.legend.labels.generateLabels;
+                                    const labels = original.call(this, chart);
+                                    
+                                    // Stack labels vertically
+                                    labels.forEach((label, index) => {
+                                        label.text = label.text;
+                                    });
+                                    
+                                    return labels;
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const count = counts[context.dataIndex];
+                                    const percentage = context.parsed;
+                                    return context.label + ': ' + count + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    },
+                    layout: {
+                        padding: {
+                            top: 10,
+                            bottom: 10,
+                            left: 120,
+                            right: 10
+                        }
+                    }
+                }
             };
-
-            // Create the pipeline chart if data exists
-            if (pipelineData.labels.length > 0) {
-                new Chart(pipelineCanvas, {
-                    type: 'pie',
-                    data: pipelineData,
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'right',
+            
+            if (type === 'bar') {
+                config.options.scales = {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
                             }
                         }
                     }
-                });
+                };
+            }
+            
+            return config;
+        }
+        
+        function initializeCharts() {
+            const peopleCanvas = document.getElementById('peopleChart');
+            const churchesCanvas = document.getElementById('churchesChart');
+            
+            if (peopleCanvas && churchesCanvas) {
+                // Destroy existing charts if they exist
+                if (peopleChart) peopleChart.destroy();
+                if (churchesChart) churchesChart.destroy();
+                
+                // Create new charts
+                peopleChart = new Chart(peopleCanvas, createChartConfig(currentChartType, peopleData, peopleCounts, peopleStages, 'People'));
+                churchesChart = new Chart(churchesCanvas, createChartConfig(currentChartType, churchesData, churchesCounts, churchesStages, 'Churches'));
+                
+                updateVisibility();
             }
         }
+        
+        function updateVisibility() {
+            const peopleContainer = document.getElementById('peopleChartContainer');
+            const churchesContainer = document.getElementById('churchesChartContainer');
+            const noDataDiv = document.getElementById('noPipelineData');
+            
+            if (currentFilter === 'both') {
+                peopleContainer.className = 'col-md-6';
+                churchesContainer.className = 'col-md-6';
+                peopleContainer.style.display = 'block';
+                churchesContainer.style.display = 'block';
+                noDataDiv.style.display = 'none';
+            } else if (currentFilter === 'people') {
+                peopleContainer.className = 'col-12';
+                peopleContainer.style.display = 'block';
+                churchesContainer.style.display = 'none';
+                noDataDiv.style.display = 'none';
+            } else if (currentFilter === 'churches') {
+                churchesContainer.className = 'col-12';
+                churchesContainer.style.display = 'block';
+                peopleContainer.style.display = 'none';
+                noDataDiv.style.display = 'none';
+            }
+        }
+        
+        // Initialize charts on page load
+        initializeCharts();
+        
+        // Chart type toggle handlers
+        document.getElementById('pieChart').addEventListener('change', function() {
+            if (this.checked) {
+                currentChartType = 'pie';
+                initializeCharts();
+            }
+        });
+        
+        document.getElementById('barChart').addEventListener('change', function() {
+            if (this.checked) {
+                currentChartType = 'bar';
+                initializeCharts();
+            }
+        });
+        
+        // Filter dropdown handlers
+        const filterOptions = document.querySelectorAll('.filter-option');
+        const filterLabel = document.getElementById('filterLabel');
+        
+        filterOptions.forEach(option => {
+            option.addEventListener('click', function(e) {
+                e.preventDefault();
+                currentFilter = this.dataset.filter;
+                filterLabel.textContent = this.textContent;
+                updateVisibility();
+            });
+        });
 
         // Priority chart
         const priorityCanvas = document.getElementById('priorityChart');

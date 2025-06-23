@@ -143,13 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Double confirmation on form submit
-    deleteForm.addEventListener('submit', function(e) {
-        if (!confirm('Are you absolutely sure you want to delete "{{ object.name }}"? This action cannot be undone.')) {
-            e.preventDefault();
-            return false;
-        }
-    });
+    // Form submission - no additional confirmation needed as checkbox provides confirmation
 });
 </script>
 {% endblock %}

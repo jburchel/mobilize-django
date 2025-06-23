@@ -41,7 +41,7 @@ class EmailTemplateForm(forms.ModelForm):
             ),
             FormActions(
                 Submit('save', 'Save Template', css_class='btn btn-primary'),
-                HTML('<a href="{% url \'communications:template_list\' %}" class="btn btn-secondary">Cancel</a>'),
+                HTML('<a href="{% url \'communications:email_template_list\' %}" class="btn btn-secondary">Cancel</a>'),
             )
         )
     
@@ -78,10 +78,14 @@ class EmailSignatureForm(forms.ModelForm):
                 css_class='form-row'
             ),
             'content',
-            'is_html',
+            HTML('<small class="form-text text-muted">Company logo will be automatically added to all email signatures.</small>'),
+            Row(
+                Column('is_html', css_class='col-md-6'),
+                css_class='form-row'
+            ),
             FormActions(
                 Submit('save', 'Save Signature', css_class='btn btn-primary'),
-                HTML('<a href="{% url \'communications:signature_list\' %}" class="btn btn-secondary">Cancel</a>'),
+                HTML('<a href="{% url \'communications:email_signature_list\' %}" class="btn btn-secondary">Cancel</a>'),
             )
         )
     

@@ -12,7 +12,18 @@ def get_reminder_trigger_time(task):
         return None
 
     # Default due time to 00:00 if not set, for date-based calculations
-    effective_due_time = task.due_time if task.due_time else datetime.time.min
+    if task.due_time:
+        # Handle case where due_time might be a string (from CharField)
+        if isinstance(task.due_time, str):
+            try:
+                effective_due_time = datetime.datetime.strptime(task.due_time, '%H:%M').time()
+            except ValueError:
+                # If parsing fails, default to midnight
+                effective_due_time = datetime.time.min
+        else:
+            effective_due_time = task.due_time
+    else:
+        effective_due_time = datetime.time.min
     
     base_due_datetime = timezone.make_aware(
         datetime.datetime.combine(task.due_date, effective_due_time),
@@ -33,6 +44,10 @@ def get_reminder_trigger_time(task):
         reminder_trigger_time = base_due_datetime - datetime.timedelta(hours=1)
     elif task.reminder_option == '2_hours_before':
         reminder_trigger_time = base_due_datetime - datetime.timedelta(hours=2)
+    elif task.reminder_option == '2_days_before':
+        reminder_trigger_time = base_due_datetime - datetime.timedelta(days=2)
+    elif task.reminder_option == '1_week_before':
+        reminder_trigger_time = base_due_datetime - datetime.timedelta(weeks=1)
     elif task.reminder_option == '1_day_before':
         # Reminder at 9 AM on the day before
         reminder_date = task.due_date - datetime.timedelta(days=1)
@@ -42,8 +57,15 @@ def get_reminder_trigger_time(task):
         )
     elif task.reminder_option == 'custom_on_due_date' and task.reminder_time:
         # Custom reminder time on the due_date
+        if isinstance(task.reminder_time, str):
+            try:
+                reminder_time_obj = datetime.datetime.strptime(task.reminder_time, '%H:%M').time()
+            except ValueError:
+                reminder_time_obj = datetime.time(9, 0)  # Default to 9 AM if parsing fails
+        else:
+            reminder_time_obj = task.reminder_time
         reminder_trigger_time = timezone.make_aware(
-            datetime.datetime.combine(task.due_date, task.reminder_time),
+            datetime.datetime.combine(task.due_date, reminder_time_obj),
             timezone.get_default_timezone()
         )
     
@@ -96,7 +118,7 @@ def send_due_date_notifications():
                 f"Hi {task.assigned_to.get_full_name() or task.assigned_to.username},\n\n"
                 f"This is a reminder for your task: '{task.title}'.\n"
                 f"It is due on {task.due_date.strftime('%Y-%m-%d')}"
-                f"{' at ' + task.due_time.strftime('%H:%M') if task.due_time else ''}.\n\n"
+                f"{' at ' + (task.due_time if isinstance(task.due_time, str) else task.due_time.strftime('%H:%M')) if task.due_time else ''}.\n\n"
                 f"Details: {task.description or 'N/A'}\n\n"
                 f"You can view the task here: {task_url}\n\n"
                 f"Thanks,\nThe Mobilize Team"

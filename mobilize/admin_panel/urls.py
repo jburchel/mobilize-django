@@ -18,5 +18,5 @@ urlpatterns = [
     path('offices/<int:office_id>/users/', views.OfficeUserListView.as_view(), name='office_users'),
     path('offices/<int:office_id>/users/add/', views.AddUserToOfficeView.as_view(), name='add_user_to_office'),
     path('offices/<int:office_id>/users/<int:user_id>/remove/', views.RemoveUserFromOfficeView.as_view(), name='remove_user_from_office'),
-    path('offices/<int:office_id>/users/<int:user_id>/update-role/', views.UpdateUserOfficeRoleView.as_view(), name='update_user_office_role'),
+    path('offices/<int:office_id>/users/<int:user_id>/update-primary/', views.UpdateUserOfficePrimaryView.as_view(), name='update_user_office_primary'),
 ]

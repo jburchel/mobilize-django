@@ -9,6 +9,16 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+# Force load Google OAuth credentials from .env file (override any system env vars)
+env_file = Path(__file__).resolve().parent.parent / '.env'
+if env_file.exists():
+    with open(env_file, 'r') as f:
+        for line in f:
+            if line.startswith('GOOGLE_CLIENT_ID='):
+                os.environ['GOOGLE_CLIENT_ID'] = line.split('=', 1)[1].strip()
+            elif line.startswith('GOOGLE_CLIENT_SECRET='):
+                os.environ['GOOGLE_CLIENT_SECRET'] = line.split('=', 1)[1].strip()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 

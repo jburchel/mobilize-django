@@ -65,10 +65,10 @@
             <thead>
                 <tr>
                     <th>Name</th>
-                    <th>Location</th>
-                    <th>Denomination</th>
+                    <th>Primary Contact</th>
+                    <th>Phone</th>
+                    <th>Email</th>
                     <th>Pipeline Stage</th>
-                    <th>Priority</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -76,35 +76,55 @@
                 {% for church in page_obj %}
                     <tr>
                         <td><a href="{% url 'churches:church_detail' church.pk %}">{{ church.name|default:church.contact.church_name }}</a></td>
-                        <td>{{ church.contact.city }}{% if church.contact.city and church.contact.state %}, {% endif %}{{ church.contact.state }}</td>
-                        <td>{{ church.denomination|default:"-" }}</td>
                         <td>
-                            {% with stage_code=church.contact.get_pipeline_stage_code %}
-                                {% if stage_code == 'promotion' %}
-                                    <span class="badge bg-info">Promotion</span>
-                                {% elif stage_code == 'information' %}
-                                    <span class="badge bg-secondary">Information</span>
-                                {% elif stage_code == 'invitation' %}
-                                    <span class="badge bg-primary">Invitation</span>
-                                {% elif stage_code == 'confirmation' %}
-                                    <span class="badge bg-warning text-dark">Confirmation</span>
-                                {% elif stage_code == 'automation' %}
-                                    <span class="badge bg-success">Automation</span>
-                                {% elif stage_code == 'en42' %}
-                                    <span class="badge bg-success">EN42</span>
+                            {% with primary_contact=church.get_primary_contact %}
+                                {% if primary_contact %}
+                                    {{ primary_contact.contact.first_name }} {{ primary_contact.contact.last_name }}
                                 {% else %}
-                                    {{ church.contact.get_pipeline_stage_name|default:"-" }}
+                                    -
                                 {% endif %}
                             {% endwith %}
                         </td>
                         <td>
-                            {% if church.contact.priority == 'high' %}
-                                <span class="badge bg-danger">High</span>
-                            {% elif church.contact.priority == 'medium' %}
-                                <span class="badge bg-warning text-dark">Medium</span>
-                            {% elif church.contact.priority == 'low' %}
-                                <span class="badge bg-success">Low</span>
-                            {% endif %}
+                            {% with primary_contact=church.get_primary_contact %}
+                                {% if primary_contact and primary_contact.contact.phone %}
+                                    <a href="#" onclick="handlePhoneClick('{{ primary_contact.contact.phone }}', {{ primary_contact.contact.id }})" class="text-decoration-none">
+                                        <i class="fas fa-phone me-1"></i>{{ primary_contact.contact.phone }}
+                                    </a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            {% with primary_contact=church.get_primary_contact %}
+                                {% if primary_contact and primary_contact.contact.email %}
+                                    <a href="#" onclick="openEmailCompose('{{ primary_contact.contact.email }}', '{{ primary_contact.contact.first_name }} {{ primary_contact.contact.last_name }}', {{ primary_contact.contact.id }})" class="text-decoration-none">
+                                        <i class="fas fa-envelope me-1"></i>{{ primary_contact.contact.email }}
+                                    </a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            {% with stage_code=church.contact.get_pipeline_stage_code %}
+                                {% if stage_code == 'promotion' %}
+                                    <span class="badge bg-primary">Promotion</span>
+                                {% elif stage_code == 'information' %}
+                                    <span class="badge bg-info text-dark">Information</span>
+                                {% elif stage_code == 'invitation' %}
+                                    <span class="badge bg-warning text-dark">Invitation</span>
+                                {% elif stage_code == 'confirmation' %}
+                                    <span class="badge bg-success">Confirmation</span>
+                                {% elif stage_code == 'automation' %}
+                                    <span class="badge bg-secondary">Automation</span>
+                                {% elif stage_code == 'en42' %}
+                                    <span class="badge bg-dark">EN42</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            {% endwith %}
                         </td>
                         <td>
                             <div class="btn-group">
@@ -195,4 +215,23 @@
         <p>No churches match your search criteria. Try adjusting your filters or <a href="{% url 'churches:church_create' %}" class="alert-link">add a new church</a>.</p>
     </div>
 {% endif %}
+
+<script>
+// Handle email click - open Gmail compose in app
+function openEmailCompose(email, name, contactId) {
+    const composeUrl = `/communications/gmail/compose/?recipient=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}&contact_id=${contactId}`;
+    window.location.href = composeUrl;
+}
+
+// Handle phone click - detect mobile and either dial or open communication log
+function handlePhoneClick(phoneNumber, contactId) {
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        window.location.href = `tel:${phoneNumber}`;
+    } else {
+        window.location.href = `/communications/?open_log_modal=phone&contact_id=${contactId}`;
+    }
+}
+</script>
 {% endblock %}

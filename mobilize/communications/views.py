@@ -80,10 +80,10 @@ class EmailSignatureListView(LoginRequiredMixin, ListView):
     context_object_name = 'email_signatures'
     
     def get_queryset(self):
-        # Users can only see their own signatures or shared ones
+        # Users can only see their own signatures
         return EmailSignature.objects.filter(
-            created_by=self.request.user
-        ) | EmailSignature.objects.filter(is_shared=True)
+            user=self.request.user
+        )
 
 
 class EmailSignatureDetailView(LoginRequiredMixin, DetailView):
@@ -99,8 +99,13 @@ class EmailSignatureCreateView(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy('communications:email_signature_list')
     
     def form_valid(self, form):
-        form.instance.created_by = self.request.user
+        form.instance.user = self.request.user
         return super().form_valid(form)
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
 
 class EmailSignatureUpdateView(LoginRequiredMixin, UpdateView):
@@ -109,11 +114,26 @@ class EmailSignatureUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'communications/email_signature_form.html'
     
     def get_success_url(self):
-        return reverse('communications:email_signature_detail', kwargs={'pk': self.object.pk})
+        return reverse('communications:email_signature_list')
     
     def get_queryset(self):
         # Users can only edit their own signatures
-        return EmailSignature.objects.filter(created_by=self.request.user)
+        return EmailSignature.objects.filter(user=self.request.user)
+    
+    def form_valid(self, form):
+        # Add logging to see if form is valid
+        print(f"Form is valid, saving signature: {form.cleaned_data}")
+        return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        # Add logging to see form errors
+        print(f"Form is invalid, errors: {form.errors}")
+        return super().form_invalid(form)
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
 
 class EmailSignatureDeleteView(LoginRequiredMixin, DeleteView):
@@ -123,7 +143,7 @@ class EmailSignatureDeleteView(LoginRequiredMixin, DeleteView):
     
     def get_queryset(self):
         # Users can only delete their own signatures
-        return EmailSignature.objects.filter(created_by=self.request.user)
+        return EmailSignature.objects.filter(user=self.request.user)
 
 
 # Communication Views
@@ -136,6 +156,28 @@ class CommunicationListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         # Filter by user's access with optimized queries
         queryset = Communication.objects.select_related('person', 'church', 'office')
+        
+        # Apply filters from GET parameters
+        type_filter = self.request.GET.get('type')
+        if type_filter:
+            queryset = queryset.filter(type=type_filter)
+        
+        direction_filter = self.request.GET.get('direction')
+        if direction_filter:
+            queryset = queryset.filter(direction=direction_filter)
+        
+        date_from = self.request.GET.get('date_from')
+        if date_from:
+            queryset = queryset.filter(date__gte=date_from)
+        
+        search_query = self.request.GET.get('search')
+        if search_query:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(subject__icontains=search_query) |
+                Q(sender__icontains=search_query) |
+                Q(message__icontains=search_query)
+            )
         
         if hasattr(self.request.user, 'role') and self.request.user.role == 'super_admin':
             return queryset.order_by('-date')
@@ -792,3 +834,131 @@ def calendar_disconnect(request):
             messages.error(request, f'Error disconnecting Calendar: {str(e)}')
     
     return redirect('communications:communication_list')
+
+
+@login_required
+def get_contacts_json(request):
+    """Get contacts (people and churches) as JSON for dropdowns"""
+    from mobilize.contacts.models import Person
+    from mobilize.churches.models import Church
+    
+    people = Person.objects.select_related('contact').all()
+    churches = Church.objects.select_related('contact').all()
+    
+    people_data = [
+        {
+            'id': person.contact.id,
+            'name': f"{person.contact.first_name} {person.contact.last_name}".strip() or person.contact.email or f"Person {person.contact.id}"
+        } 
+        for person in people
+    ]
+    
+    churches_data = [
+        {
+            'id': church.contact.id,
+            'name': church.contact.church_name or church.contact.email or f"Church {church.contact.id}"
+        }
+        for church in churches
+    ]
+    
+    return JsonResponse({
+        'people': people_data,
+        'churches': churches_data
+    })
+
+
+@login_required
+def create_meet_link(request):
+    """Create a Google Meet link for video calls"""
+    if request.method == 'POST':
+        from .google_meet_service import GoogleMeetService
+        from datetime import datetime, timedelta
+        import json
+        
+        meet_service = GoogleMeetService(request.user)
+        
+        if not meet_service.is_authenticated():
+            return JsonResponse({
+                'success': False, 
+                'error': 'Google Calendar not connected. Please authorize Google access first.'
+            })
+        
+        try:
+            data = json.loads(request.body)
+            meet_option = data.get('meetOption', 'none')
+            title = data.get('title', 'Video Call')
+            
+            if meet_option == 'instant':
+                # Create instant meet
+                duration = data.get('duration', 60)
+                result = meet_service.create_instant_meet_link(title, duration)
+                
+            elif meet_option == 'scheduled':
+                # Create scheduled meet
+                start_datetime_str = data.get('start_datetime')
+                duration = data.get('duration', 60)
+                
+                if not start_datetime_str:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Start datetime is required for scheduled meetings'
+                    })
+                
+                # Parse the datetime
+                start_datetime = datetime.fromisoformat(start_datetime_str.replace('Z', '+00:00'))
+                end_datetime = start_datetime + timedelta(minutes=duration)
+                
+                # Get attendee emails from related contacts
+                attendee_emails = []
+                person_id = data.get('person_id')
+                church_id = data.get('church_id')
+                
+                if person_id:
+                    try:
+                        from mobilize.contacts.models import Person
+                        person = Person.objects.select_related('contact').get(contact__id=person_id)
+                        if person.contact.email:
+                            attendee_emails.append(person.contact.email)
+                    except Person.DoesNotExist:
+                        pass
+                
+                if church_id:
+                    try:
+                        from mobilize.churches.models import Church
+                        church = Church.objects.select_related('contact').get(contact__id=church_id)
+                        if church.contact.email:
+                            attendee_emails.append(church.contact.email)
+                    except Church.DoesNotExist:
+                        pass
+                
+                result = meet_service.create_scheduled_meet(
+                    title=title,
+                    start_datetime=start_datetime,
+                    end_datetime=end_datetime,
+                    description=data.get('description', ''),
+                    attendee_emails=attendee_emails
+                )
+                
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid meet option'
+                })
+            
+            return JsonResponse(result)
+            
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid JSON data'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'Error creating Meet link: {str(e)}'
+            })
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Invalid request method'
+    })

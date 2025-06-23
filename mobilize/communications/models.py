@@ -44,6 +44,8 @@ class EmailSignature(models.Model):
     )
     name = models.CharField(max_length=50)
     content = models.TextField()
+    logo_url = models.URLField(max_length=255, blank=True, null=True, help_text="URL to logo image for signature")
+    logo_file = models.ImageField(upload_to='signature_logos/', blank=True, null=True, help_text="Upload logo image file (PNG, JPG)")
     is_default = models.BooleanField(default=False)
     is_html = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now)
@@ -55,6 +57,13 @@ class EmailSignature(models.Model):
         indexes = [
             models.Index(fields=['user', 'is_default']),
         ]
+    
+    @property
+    def logo_source(self):
+        """Return the logo file URL if available, otherwise the logo URL"""
+        if self.logo_file:
+            return self.logo_file.url
+        return self.logo_url
     
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.name}"

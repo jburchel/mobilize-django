@@ -51,4 +51,8 @@ urlpatterns = [
     path('calendar/sync/', views.CalendarSyncView.as_view(), name='calendar_sync'),
     path('calendar/status/', views.calendar_status, name='calendar_status'),
     path('calendar/disconnect/', views.calendar_disconnect, name='calendar_disconnect'),
+    
+    # API endpoints
+    path('api/contacts/', views.get_contacts_json, name='get_contacts_json'),
+    path('api/create-meet/', views.create_meet_link, name='create_meet_link'),
 ]

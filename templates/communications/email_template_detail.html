@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Email Template Detail{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">{{ email_template.name }}</h4>
+                    <div class="card-tools">
+                        <a href="{% url 'communications:email_template_list' %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Templates
+                        </a>
+                        <a href="{% url 'communications:email_template_update' email_template.pk %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="{% url 'communications:email_template_delete' email_template.pk %}" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th>Name:</th>
+                                    <td>{{ email_template.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Subject:</th>
+                                    <td>{{ email_template.subject }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Category:</th>
+                                    <td>
+                                        {% if email_template.category %}
+                                            <span class="badge badge-info">{{ email_template.category }}</span>
+                                        {% else %}
+                                            <span class="text-muted">No category</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td>
+                                        {% if email_template.is_active %}
+                                            <span class="badge badge-success">Active</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th>Type:</th>
+                                    <td>
+                                        {% if email_template.is_html %}
+                                            <span class="badge badge-info">HTML</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Plain Text</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Created:</th>
+                                    <td>{{ email_template.created_at|date:"M d, Y g:i A" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Updated:</th>
+                                    <td>{{ email_template.updated_at|date:"M d, Y g:i A" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Created By:</th>
+                                    <td>
+                                        {% if email_template.created_by %}
+                                            {{ email_template.created_by.get_full_name|default:email_template.created_by.username }}
+                                        {% else %}
+                                            <span class="text-muted">System</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Template Variables -->
+                    {% if email_template.variables %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5>Available Variables:</h5>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        <small>
+                                            <strong>Usage:</strong> You can use these variables in your template content by wrapping them in double curly braces, e.g., <code>{% verbatim %}{{variable_name}}{% endverbatim %}</code>
+                                        </small>
+                                    </div>
+                                    <pre>{{ email_template.variables }}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Template Content -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5>Template Content:</h5>
+                            <div class="card">
+                                <div class="card-body">
+                                    {% if email_template.is_html %}
+                                        {{ email_template.body|safe }}
+                                    {% else %}
+                                        <pre>{{ email_template.body }}</pre>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Email Preview -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5>Email Preview:</h5>
+                            <div class="card">
+                                <div class="card-body" style="background-color: #f8f9fa;">
+                                    <div class="border p-3 bg-white">
+                                        <div class="email-header mb-3">
+                                            <strong>Subject:</strong> {{ email_template.subject }}
+                                            <hr>
+                                        </div>
+                                        <div class="email-body">
+                                            {% if email_template.is_html %}
+                                                {{ email_template.body|safe }}
+                                            {% else %}
+                                                <pre style="font-family: inherit; margin: 0; white-space: pre-wrap;">{{ email_template.body }}</pre>
+                                            {% endif %}
+                                        </div>
+                                        <hr class="my-3">
+                                        <div class="email-signature text-muted">
+                                            <small><em>Company logo will be automatically added to all emails</em></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Usage Instructions -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="alert alert-light">
+                                <h6><i class="fas fa-info-circle"></i> How to Use This Template:</h6>
+                                <ol class="mb-0">
+                                    <li>Go to the Gmail Compose page</li>
+                                    <li>Select this template from the "Email Template" dropdown</li>
+                                    <li>The subject and content will be automatically filled in</li>
+                                    <li>Customize the message as needed before sending</li>
+                                    <li>Your signature and company logo will be automatically added</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

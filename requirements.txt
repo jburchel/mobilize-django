@@ -20,3 +20,4 @@ flake8==7.0.0
 isort==5.13.2
 django-crontab==0.7.1 # Or the version pip installed
 python-dateutil==2.8.2 # Or latest compatible version
+pytz==2024.1 # For timezone handling in Google Calendar service

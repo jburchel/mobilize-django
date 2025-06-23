@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Profile - Mobilize CRM{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Breadcrumb styling for better visibility */
+.breadcrumb {
+    background-color: transparent;
+    padding: 0.5rem 0;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.breadcrumb-item a {
+    color: white !important; /* White for good contrast on sidebar */
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease-in-out;
+}
+
+.breadcrumb-item a:hover {
+    color: #2a4f7a !important; /* Darker blue on hover */
+    text-decoration: underline;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "/";
+    color: #6c757d;
+    margin: 0 0.5rem;
+}
+
+.breadcrumb-item.active {
+    color: #495057;
+    font-weight: 500;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Profile</li>
+                </ol>
+            </nav>
+            
+            <h1 class="h3 text-dark mb-0">My Profile</h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Profile Information -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user me-2"></i>Personal Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-muted border-bottom pb-2 mb-3">Basic Information</h6>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">First Name</label>
+                                <div class="fw-medium">{{ user.first_name|default:"Not set" }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Last Name</label>
+                                <div class="fw-medium">{{ user.last_name|default:"Not set" }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Email</label>
+                                <div class="fw-medium">{{ user.email }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Username</label>
+                                <div class="fw-medium">{{ user.username }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Account Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-muted border-bottom pb-2 mb-3">Account Information</h6>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Role</label>
+                                <div class="fw-medium">
+                                    {% if user.role == 'super_admin' %}
+                                        <span class="badge bg-danger">Super Admin</span>
+                                    {% elif user.role == 'office_admin' %}
+                                        <span class="badge bg-warning">Office Admin</span>
+                                    {% elif user.role == 'standard_user' %}
+                                        <span class="badge bg-primary">Standard User</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Limited User</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Date Joined</label>
+                                <div class="fw-medium">{{ user.date_joined|date:"F j, Y" }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Last Login</label>
+                                <div class="fw-medium">
+                                    {% if user.last_login %}
+                                        {{ user.last_login|date:"F j, Y g:i A" }}
+                                    {% else %}
+                                        Never
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Account Status</label>
+                                <div class="fw-medium">
+                                    {% if user.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Office Assignments -->
+                    {% if user.useroffice_set.exists %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-muted border-bottom pb-2 mb-3">Office Assignments</h6>
+                        </div>
+                        {% for user_office in user.useroffice_set.all %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light border-0">
+                                <div class="card-body py-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="card-title mb-1">{{ user_office.office.name }}</h6>
+                                            <p class="card-text small text-muted mb-1">
+                                                <strong>Assigned:</strong> {{ user_office.assigned_at|date:"M j, Y" }}
+                                            </p>
+                                            {% if user_office.is_primary %}
+                                                <span class="badge bg-primary small">Primary Office</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-end">
+                                            <small class="text-muted">{{ user_office.office.code }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'core:settings' %}" class="btn btn-primary">
+                            <i class="fas fa-edit me-2"></i>Edit Profile & Settings
+                        </a>
+                        <a href="{% url 'core:dashboard' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Stats -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">My Activity</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h4 class="text-primary mb-1">
+                                    {{ user.contact_set.count|default:0 }}
+                                </h4>
+                                <small class="text-muted">Contacts</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success mb-1">
+                                {{ user.created_tasks.count|default:0 }}
+                            </h4>
+                            <small class="text-muted">Tasks Created</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Tips -->
+            <div class="card bg-light border-0">
+                <div class="card-body">
+                    <h6 class="card-title">Profile Tips</h6>
+                    <ul class="small mb-0">
+                        <li class="mb-2">Keep your profile information up to date for better collaboration</li>
+                        <li class="mb-2">Configure your settings to customize your experience</li>
+                        <li class="mb-2">Contact your office admin if you need role changes</li>
+                        <li class="mb-2">Your primary office determines default permissions</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

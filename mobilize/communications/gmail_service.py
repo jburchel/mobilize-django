@@ -28,7 +28,9 @@ class GmailService:
     SCOPES = [
         'https://www.googleapis.com/auth/gmail.send',
         'https://www.googleapis.com/auth/gmail.readonly',
-        'https://www.googleapis.com/auth/gmail.modify'
+        'https://www.googleapis.com/auth/gmail.modify',
+        'https://www.googleapis.com/auth/calendar',
+        'https://www.googleapis.com/auth/calendar.events'
     ]
     
     def __init__(self, user):
@@ -57,13 +59,15 @@ class GmailService:
             from mobilize.authentication.models import GoogleToken
             token = GoogleToken.objects.filter(user=self.user).first()
             if token and token.access_token:
+                # Use the actual stored scopes instead of hardcoded ones
+                stored_scopes = token.scopes if token.scopes else self.SCOPES
                 creds_data = {
                     'token': token.access_token,
                     'refresh_token': token.refresh_token,
                     'token_uri': 'https://oauth2.googleapis.com/token',
                     'client_id': settings.GOOGLE_CLIENT_ID,
                     'client_secret': settings.GOOGLE_CLIENT_SECRET,
-                    'scopes': self.SCOPES
+                    'scopes': stored_scopes
                 }
                 return Credentials.from_authorized_user_info(creds_data)
         except Exception as e:
@@ -168,9 +172,17 @@ class GmailService:
                 try:
                     signature = EmailSignature.objects.get(id=signature_id, user=self.user)
                     if is_html:
-                        email_body += f"<br><br>{signature.content}"
+                        # Always convert line breaks to <br> for HTML emails
+                        signature_html = signature.content.replace('\n', '<br>')
+                        email_body += f"<br><br>{signature_html}"
+                        
+                        # Add company logo at the bottom of all HTML signatures
+                        company_logo_url = "https://drive.google.com/uc?export=view&id=1s2fLid4Q686r1bGzb6JA84eC2E6N9zj2"
+                        email_body += f'<br><br><img src="{company_logo_url}" alt="Crossover Global Logo" style="max-width: 200px; height: auto;">'
                     else:
                         email_body += f"\n\n{signature.content}"
+                        # For plain text, just add a note about the logo
+                        email_body += f"\n\n[Company Logo]"
                 except EmailSignature.DoesNotExist:
                     pass
             
