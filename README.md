@@ -19,11 +19,13 @@ Mobilize CRM is designed to help missionaries and church organizations manage th
 ## Technology Stack
 
 - **Backend**: Django 4.2, Python 3.9+
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL (Supabase)
+- **Hosting**: Railway
 - **Authentication**: Google OAuth
 - **Frontend**: HTML5, CSS3, Bootstrap 5, JavaScript
 - **Email Integration**: Gmail API
 - **Calendar Integration**: Google Calendar API
+- **CDN**: Cloudflare (optional)
 
 ## Setup Instructions
 
@@ -85,6 +87,26 @@ python manage.py runserver
 ```
 
 The application will be available at http://localhost:8000
+
+## Deployment
+
+### Quick Deploy to Railway
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/yourusername/mobilize-django)
+
+### Manual Deployment
+
+1. **Set up Supabase Database**
+   - Create a free account at [Supabase](https://supabase.com)
+   - Create a new project and copy the database URL
+
+2. **Deploy to Railway**
+   - Create account at [Railway](https://railway.app)
+   - Connect your GitHub repository
+   - Add environment variables from `.env.example`
+   - Deploy!
+
+For detailed deployment instructions, see [Railway Deployment Guide](docs/deployment/railway-deployment-guide.md).
 
 ## Project Structure
 

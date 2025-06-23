@@ -169,17 +169,17 @@ class ReportGenerator:
         
         for person in queryset:
             writer.writerow([
-                person.id,
-                person.first_name or '',
-                person.last_name or '',
-                person.email or '',
-                person.phone or '',
-                person.pipeline_stage or '',
-                person.priority or '',
-                person.assigned_to or '',
-                person.church_id or '',
-                person.status or '',
-                person.last_contact.strftime('%Y-%m-%d') if person.last_contact else '',
+                person.contact.id,
+                person.contact.first_name or '',
+                person.contact.last_name or '',
+                person.contact.email or '',
+                person.contact.phone or '',
+                person.contact.get_pipeline_stage_name() or '',
+                person.contact.get_priority_display() or '',
+                person.contact.user.username if person.contact.user else '',
+                person.primary_church.name if person.primary_church else '',
+                person.contact.get_status_display() or '',
+                person.contact.last_contact_date.strftime('%Y-%m-%d') if person.contact.last_contact_date else '',
                 person.contact.created_at.strftime('%Y-%m-%d') if person.contact.created_at else '',
             ])
         
@@ -198,7 +198,7 @@ class ReportGenerator:
         
         for church in queryset:
             writer.writerow([
-                church.id,
+                church.contact.id,
                 church.name or '',
                 church.denomination or '',
                 church.website or '',
@@ -206,7 +206,7 @@ class ReportGenerator:
                 church.pastor_name or '',
                 church.pastor_email or '',
                 church.pastor_phone or '',
-                church.street_address or '',
+                church.contact.street_address or '',
                 church.contact.created_at.strftime('%Y-%m-%d') if church.contact.created_at else '',
             ])
         
