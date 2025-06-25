@@ -1,7 +1,8 @@
 from functools import wraps
-from django.shortcuts import redirect
-from django.http import HttpResponseForbidden
-from django.contrib.auth.decorators import user_passes_test
+from django.shortcuts import redirect, get_object_or_404
+from django.http import HttpResponseForbidden, Http404
+from django.contrib.auth.decorators import user_passes_test, login_required
+from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 
 
@@ -110,3 +111,157 @@ def office_permission_required(permission_type='view'):
         return _wrapped_view
     
     return decorator
+
+
+def office_data_filter(queryset, user, office_field='office'):
+    """
+    Filter queryset based on user's office permissions.
+    
+    Args:
+        queryset: The queryset to filter
+        user: The user to check permissions for
+        office_field: The field name for office filtering
+    
+    Returns:
+        Filtered queryset based on user's office access
+    """
+    # Super admins see everything
+    if user.role == 'super_admin':
+        return queryset
+    
+    # Get user's office assignments
+    user_offices = user.useroffice_set.values_list('office_id', flat=True)
+    
+    if not user_offices:
+        # User not assigned to any office - return empty queryset
+        return queryset.none()
+    
+    # Filter to only objects in user's offices
+    filter_kwargs = {f'{office_field}__in': user_offices}
+    return queryset.filter(**filter_kwargs)
+
+
+def office_object_permission_required(model_class, lookup_field='office'):
+    """
+    Decorator to check office-level permissions for specific object access.
+    
+    Args:
+        model_class: The model class to check
+        lookup_field: The field to use for office lookup (default: 'office')
+    
+    Usage:
+        @office_object_permission_required(Contact, 'office')
+        def contact_detail(request, pk):
+            pass
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        @login_required
+        def _wrapped_view(request, *args, **kwargs):
+            # Super admins have access to everything
+            if request.user.role == 'super_admin':
+                return view_func(request, *args, **kwargs)
+            
+            # Get user's office assignments
+            user_offices = request.user.useroffice_set.values_list('office_id', flat=True)
+            
+            if not user_offices:
+                raise PermissionDenied("User not assigned to any office")
+            
+            # Check object-level permissions if pk is provided
+            if 'pk' in kwargs:
+                try:
+                    obj = get_object_or_404(model_class, pk=kwargs['pk'])
+                    
+                    # Handle nested field lookups (e.g., 'contact__office')
+                    office_value = obj
+                    for field in lookup_field.split('__'):
+                        office_value = getattr(office_value, field, None)
+                        if office_value is None:
+                            break
+                    
+                    # Handle different office field types
+                    if hasattr(office_value, 'id'):
+                        office_id = office_value.id
+                    elif office_value:
+                        office_id = office_value
+                    else:
+                        # No office assigned - only super_admin can access
+                        raise Http404("Object not found")
+                    
+                    if office_id not in user_offices:
+                        raise Http404("Object not found")  # Hide existence from other offices
+                        
+                except model_class.DoesNotExist:
+                    raise Http404("Object not found")
+            
+            return view_func(request, *args, **kwargs)
+        return _wrapped_view
+    return decorator
+
+
+def limited_user_check(action='view'):
+    """
+    Decorator to prevent limited users from performing unauthorized actions.
+    
+    Args:
+        action: The action being attempted ('view', 'create', 'edit', 'delete')
+    
+    Usage:
+        @limited_user_check('create')
+        def create_contact(request):
+            pass
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        @login_required
+        def _wrapped_view(request, *args, **kwargs):
+            if request.user.role == 'limited_user' and action != 'view':
+                raise PermissionDenied("Limited users can only view data, not modify it")
+            
+            return view_func(request, *args, **kwargs)
+        return _wrapped_view
+    return decorator
+
+
+def can_create_edit_delete(view_func):
+    """
+    Decorator to prevent limited users from creating, editing, or deleting.
+    
+    Usage:
+        @can_create_edit_delete
+        def create_contact(request):
+            pass
+    """
+    @wraps(view_func)
+    @login_required
+    def _wrapped_view(request, *args, **kwargs):
+        if request.user.role == 'limited_user':
+            raise PermissionDenied("Limited users cannot create, edit, or delete data")
+        
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
+
+def ensure_user_office_assignment(view_func):
+    """
+    Decorator to ensure user has at least one office assignment.
+    
+    Usage:
+        @ensure_user_office_assignment
+        def dashboard_view(request):
+            pass
+    """
+    @wraps(view_func)
+    @login_required
+    def _wrapped_view(request, *args, **kwargs):
+        # Super admins don't need office assignments
+        if request.user.role == 'super_admin':
+            return view_func(request, *args, **kwargs)
+        
+        # Check if user has office assignments
+        if not request.user.useroffice_set.exists():
+            raise PermissionDenied("Access denied. User not assigned to any office. Please contact an administrator.")
+        
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view

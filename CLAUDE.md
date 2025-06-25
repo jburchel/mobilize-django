@@ -39,4 +39,16 @@ mobilize/
 #### Server Management
 - **Important Server Tip**: After each change go ahead and kill the processes on port 8000 and restart the server
 
+#### Background Task Management (Celery)
+- **Start Redis** (required for Celery): `brew services start redis` or `redis-server`
+- **Start Celery Worker**: `./start_celery.sh worker` or `celery -A mobilize worker --loglevel=info`
+- **Start Celery Beat** (scheduler): `./start_celery.sh beat` or `celery -A mobilize beat --loglevel=info`
+- **Start Flower** (monitoring): `./start_celery.sh flower` (access at http://localhost:5555)
+- **Test Celery Tasks**: `python manage.py test_celery --task=debug`
+
+**Celery Task Categories:**
+- **Email Processing**: `mobilize.communications.tasks.*` (queue: email)
+- **Notifications**: `mobilize.tasks.tasks.*` (queue: notifications) 
+- **Data Sync**: `mobilize.utils.tasks.*` (queue: sync)
+
 [Rest of the existing content remains unchanged...]

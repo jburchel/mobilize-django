@@ -125,9 +125,11 @@ def church_create(request):
     if request.method == 'POST':
         form = ChurchForm(request.POST)
         if form.is_valid():
-            church = form.save(commit=False)
-            church.created_by = request.user
-            church.save()
+            # Get the user's first office assignment (or could be from form data)
+            user_office = request.user.useroffice_set.first()
+            office = user_office.office if user_office else None
+            
+            church = form.save(user=request.user, office=office)
             messages.success(request, f"Successfully created {church.name}")
             return redirect('churches:church_detail', pk=church.pk)
     else:

@@ -236,7 +236,7 @@ class ChurchForm(forms.ModelForm):
             )
         )
     
-    def save(self, commit=True):
+    def save(self, commit=True, user=None, office=None):
         # Handle Contact creation/update
         if self.instance.pk:
             # Editing existing church
@@ -244,6 +244,10 @@ class ChurchForm(forms.ModelForm):
         else:
             # Creating new church
             contact = Contact(type='church')
+            if user:
+                contact.user = user
+            if office:
+                contact.office = office
         
         # Update contact fields
         contact.church_name = self.cleaned_data.get('name')
@@ -255,7 +259,6 @@ class ChurchForm(forms.ModelForm):
         contact.zip_code = self.cleaned_data.get('zip_code')
         contact.country = self.cleaned_data.get('country')
         contact.notes = self.cleaned_data.get('notes')
-        contact.pipeline_stage = self.cleaned_data.get('pipeline_stage')
         contact.priority = self.cleaned_data.get('priority')
         contact.status = self.cleaned_data.get('status') or 'active'
         
