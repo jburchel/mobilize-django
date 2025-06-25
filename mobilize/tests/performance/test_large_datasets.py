@@ -338,7 +338,7 @@ class LargeDatasetPerformanceTest(TransactionTestCase):
         connection.queries_log.clear()
         
         # Access contact list (should use optimized queries)
-        with self.assertNumQueries(4):  # Adjust based on actual optimizations
+        with self.assertNumQueries(3):  # Adjust based on actual optimizations
             response = self.client.get(reverse('contacts:person_list'))
             self.assertEqual(response.status_code, 200)
         
