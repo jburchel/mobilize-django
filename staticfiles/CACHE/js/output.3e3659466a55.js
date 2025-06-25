@@ -1,0 +1,13 @@
+if('serviceWorker'in navigator){window.addEventListener('load',()=>{registerServiceWorker();});}
+async function registerServiceWorker(){try{const registration=await navigator.serviceWorker.register('/static/sw.js',{scope:'/'});console.log('Service Worker registered successfully:',registration);registration.addEventListener('updatefound',()=>{const newWorker=registration.installing;newWorker.addEventListener('statechange',()=>{if(newWorker.state==='installed'&&navigator.serviceWorker.controller){showUpdateNotification();}});});setInterval(()=>{registration.update();},60*60*1000);}catch(error){console.error('Service Worker registration failed:',error);}}
+function showUpdateNotification(){const notification=document.createElement('div');notification.className='sw-update-notification';notification.innerHTML=`
+        <div class="alert alert-info alert-dismissible fade show position-fixed bottom-0 end-0 m-3" role="alert" style="z-index: 9999;">
+            <strong>Update Available!</strong> A new version of the app is available.
+            <button type="button" class="btn btn-sm btn-primary ms-2" onclick="updateServiceWorker()">Update Now</button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;document.body.appendChild(notification);}
+window.updateServiceWorker=function(){if('serviceWorker'in navigator){navigator.serviceWorker.ready.then(registration=>{registration.waiting.postMessage({type:'SKIP_WAITING'});});navigator.serviceWorker.addEventListener('controllerchange',()=>{window.location.reload();});}};window.clearAppCache=async function(){if('serviceWorker'in navigator){const registration=await navigator.serviceWorker.ready;registration.active.postMessage({type:'CLEAR_CACHE'});console.log('Cache cleared');}};window.addEventListener('online',()=>{document.body.classList.remove('offline');showNotification('You are back online!','success');});window.addEventListener('offline',()=>{document.body.classList.add('offline');showNotification('You are currently offline. Some features may be limited.','warning');});function showNotification(message,type='info'){const alertDiv=document.createElement('div');alertDiv.className=`alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;alertDiv.style.zIndex='9999';alertDiv.innerHTML=`
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;document.body.appendChild(alertDiv);setTimeout(()=>{alertDiv.remove();},5000);};

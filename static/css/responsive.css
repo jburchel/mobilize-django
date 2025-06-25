@@ -561,3 +561,18 @@ h6 { font-size: clamp(0.9rem, 1.5vw, 1.125rem); }
         background-color: rgba(255, 255, 255, 0.1);
     }
 }
+
+/* DEBUG: Ensure dashboard content is always visible */
+.content {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    min-height: 100px !important;
+    padding: 20px !important;
+}
+
+.row, .col-12, .col-lg-3, .col-md-6, .card {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}

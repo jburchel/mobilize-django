@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Task Overdue</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #e74a3b, #c0392b); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+        .content { background: #f8f9fa; padding: 20px; border-radius: 0 0 8px 8px; }
+        .task-card { background: white; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #e74a3b; }
+        .btn { display: inline-block; padding: 10px 20px; background: #e74a3b; color: white; text-decoration: none; border-radius: 4px; margin: 10px 0; }
+        .overdue-badge { background: #e74a3b; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚨 Task Overdue</h1>
+            <p>Hi {{ user.get_full_name|default:user.username }},</p>
+            <p>You have an overdue task that needs immediate attention.</p>
+        </div>
+        
+        <div class="content">
+            <div class="task-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h2 style="margin: 0;">{{ task.title }}</h2>
+                    <span class="overdue-badge">OVERDUE</span>
+                </div>
+                
+                <p><strong>Due Date:</strong> {{ task.due_date|date:"F j, Y \a\t g:i A" }}</p>
+                <p><strong>Priority:</strong> {{ task.get_priority_display }}</p>
+                {% if task.contact %}
+                <p><strong>Related Contact:</strong> {{ task.contact.first_name }} {{ task.contact.last_name }}</p>
+                {% endif %}
+                {% if task.description %}
+                <p><strong>Description:</strong></p>
+                <p>{{ task.description|linebreaks }}</p>
+                {% endif %}
+                
+                <p style="color: #e74a3b; font-weight: bold;">
+                    This task was due {{ task.due_date|timesince }} ago.
+                </p>
+                
+                <a href="{{ site_url }}/tasks/{{ task.id }}/" class="btn">Complete Task Now</a>
+            </div>
+            
+            <p>Please complete this task as soon as possible to avoid further delays.</p>
+            
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+            <p style="font-size: 12px; color: #666;">
+                This is an automated notification from Mobilize CRM.<br>
+                You can manage your notification preferences in your <a href="{{ site_url }}/settings/">account settings</a>.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

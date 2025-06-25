@@ -1,4 +1,4 @@
-{% load static %}
+{% load static compress %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,9 +16,11 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    {% compress css %}
     <!-- Custom CSS -->
     <!-- <link rel="stylesheet" href="{% static 'css/base.css' %}"> -->
     <!-- <link rel="stylesheet" href="{% static 'css/responsive.css' %}"> -->
+    {% endcompress %}
     
     <style>
     /* Global App Styling - Applied to all pages */
@@ -28,6 +30,7 @@
         margin: 0;
         padding: 0;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #f8f9fb;
     }
 
     .container-fluid {
@@ -40,19 +43,66 @@
     }
 
     /* Main content area - basic layout */
-    .col-md-9, .col-lg-10 {
-        padding: 20px 30px;
+    .main-content {
+        padding: 35px 45px 20px 30px;
         background: #f8f9fb;
+        transition: all 0.3s ease;
+    }
+
+    /* Sidebar column container styling */
+    .sidebar-container {
+        padding: 15px 15px 15px 15px !important;
+        transition: all 0.3s ease;
+    }
+
+    .sidebar-container.collapsed {
+        width: 100px !important;
+        max-width: 100px !important;
+        min-width: 100px !important;
     }
 
     /* Beautiful sidebar with company brand gradient - CONSISTENT ACROSS ALL PAGES */
     .sidebar, #sidebar {
         background: linear-gradient(180deg, #183963 0%, #2a4f7a 30%, #39A949 100%);
         color: white;
-        min-height: 100vh;
-        box-shadow: 2px 0 15px rgba(0,0,0,0.1);
+        min-height: calc(100vh - 30px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         transition: all 0.3s ease;
         position: relative;
+        border-radius: 15px;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    /* Collapsed sidebar styles */
+    .sidebar.collapsed {
+        width: 100px;
+    }
+
+
+    .sidebar.collapsed .sidebar-text {
+        opacity: 0;
+        width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .sidebar.collapsed .navbar-brand {
+        font-size: 0;
+    }
+
+    .sidebar.collapsed .nav-link {
+        justify-content: center;
+        padding: 14px 10px;
+        margin: 3px 6px;
+    }
+
+    .sidebar.collapsed .nav-link i {
+        margin-right: 0;
+    }
+
+    .sidebar.collapsed .sidebar-brand-link {
+        justify-content: center;
     }
 
     /* Add subtle overlay pattern for texture */
@@ -78,6 +128,19 @@
         overflow: hidden;
         font-weight: 500;
         backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+    }
+
+    .sidebar .nav-link i {
+        margin-right: 12px;
+        width: 20px;
+        text-align: center;
+        transition: margin-right 0.3s ease;
+    }
+
+    .sidebar-text {
+        transition: all 0.3s ease;
     }
 
     .sidebar .nav-link:hover {
@@ -100,6 +163,8 @@
         padding: 20px 0 !important;
         margin-bottom: 20px !important;
         justify-content: center !important;
+        width: 100% !important;
+        display: flex !important;
     }
 
     .sidebar .navbar-brand {
@@ -129,6 +194,35 @@
     .sidebar hr {
         border-color: rgba(255, 255, 255, 0.3);
         margin: 0 15px 20px 15px;
+    }
+
+    /* Sidebar collapse toggle button */
+    .sidebar-toggle-btn {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+
+    .sidebar-toggle-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateX(-50%) scale(1.1);
+    }
+
+    .sidebar.collapsed .sidebar-toggle-btn {
+        transform: translateX(-50%) rotate(180deg);
     }
 
 
@@ -348,16 +442,31 @@
 
     /* Mobile responsive improvements */
     @media (max-width: 768px) {
+        .sidebar-container {
+            padding: 0 !important;
+        }
+        
         .sidebar {
             position: fixed;
             top: 0;
             left: -100%;
             z-index: 1050;
             transition: left 0.3s ease;
+            border-radius: 0;
+            min-height: 100vh;
+            width: 100% !important;
         }
         
         .sidebar.show {
             left: 0;
+        }
+        
+        .sidebar.collapsed {
+            width: 100% !important;
+        }
+        
+        .sidebar-toggle-btn {
+            display: none;
         }
         
         .card {
@@ -370,7 +479,7 @@
             gap: 15px;
         }
         
-        .col-md-9, .col-lg-10 {
+        .main-content {
             padding: 15px;
         }
     }
@@ -382,37 +491,38 @@
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 px-0 sidebar" id="sidebar">
+            <div class="col-md-2 col-lg-2 sidebar-container">
+                <div class="sidebar" id="sidebar">
                 <div class="d-flex flex-column p-3">
-                    <a href="{% url 'core:dashboard' %}" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none sidebar-brand-link">
+                    <a href="{% url 'core:dashboard' %}" class="d-flex align-items-center text-white text-decoration-none sidebar-brand-link">
                         <img src="{% static 'images/logo.png' %}" alt="Mobilize CRM Logo" class="sidebar-logo">
-                        <span class="navbar-brand">Mobilize CRM</span>
+                        <span class="navbar-brand sidebar-text">Mobilize CRM</span>
                     </a>
                     <hr>
                     <ul class="nav nav-pills flex-column mb-auto">
                         <li class="nav-item">
                             <a href="{% url 'core:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                                <i class="fas fa-tachometer-alt"></i> <span class="sidebar-text">Dashboard</span>
                             </a>
                         </li>
                         <li>
                             <a href="{% url 'contacts:person_list' %}" class="nav-link {% if 'contacts' in request.resolver_match.namespace %}active{% endif %}">
-                                <i class="fas fa-user"></i> People
+                                <i class="fas fa-user"></i> <span class="sidebar-text">People</span>
                             </a>
                         </li>
                         <li>
                             <a href="{% url 'churches:church_list' %}" class="nav-link {% if 'churches' in request.resolver_match.namespace %}active{% endif %}">
-                                <i class="fas fa-church"></i> Churches
+                                <i class="fas fa-church"></i> <span class="sidebar-text">Churches</span>
                             </a>
                         </li>
                         <li>
                             <a href="{% url 'tasks:task_list' %}" class="nav-link {% if 'tasks' in request.resolver_match.namespace %}active{% endif %}">
-                                <i class="fas fa-tasks"></i> Tasks
+                                <i class="fas fa-tasks"></i> <span class="sidebar-text">Tasks</span>
                             </a>
                         </li>
                         <li>
                             <a href="{% url 'communications:communication_list' %}" class="nav-link {% if 'communications' in request.resolver_match.namespace %}active{% endif %}">
-                                <i class="fas fa-envelope"></i> Communications
+                                <i class="fas fa-envelope"></i> <span class="sidebar-text">Communications</span>
                             </a>
                         </li>
                         
@@ -424,27 +534,33 @@
                         <!-- Administrative & Reporting Functions -->
                         <li>
                             <a href="{% url 'core:reports' %}" class="nav-link {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
-                                <i class="fas fa-chart-bar"></i> Reports
+                                <i class="fas fa-chart-bar"></i> <span class="sidebar-text">Reports</span>
                             </a>
                         </li>
                         {% if user.role == 'super_admin' or user.role == 'office_admin' %}
                         <li>
                             <a href="{% url 'admin_panel:office_list' %}" class="nav-link {% if 'admin_panel' in request.resolver_match.namespace %}active{% endif %}">
-                                <i class="fas fa-building"></i> Offices
+                                <i class="fas fa-building"></i> <span class="sidebar-text">Offices</span>
                             </a>
                         </li>
                         {% endif %}
                         <li>
                             <a href="{% url 'core:settings' %}" class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
-                                <i class="fas fa-cog"></i> Settings
+                                <i class="fas fa-cog"></i> <span class="sidebar-text">Settings</span>
                             </a>
                         </li>
                     </ul>
                 </div>
+                
+                <!-- Sidebar collapse toggle button -->
+                <button class="sidebar-toggle-btn" id="sidebarCollapseBtn" title="Toggle Sidebar">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                </div>
             </div>
             
             <!-- Main Content -->
-            <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="col-md-10 col-lg-10 main-content" id="mainContent">
                 <!-- Top Navigation -->
                 <nav class="navbar navbar-expand-lg navbar-light bg-light d-md-none mb-4">
                     <div class="container-fluid">
@@ -524,17 +640,60 @@
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
+    {% compress js %}
+    <!-- Service Worker Registration -->
+    <script src="{% static 'js/sw-register.js' %}"></script>
+    
     <!-- Custom JavaScript -->
     <script>
-        // Mobile sidebar toggle
+        // Mobile sidebar toggle and desktop collapse
         document.addEventListener('DOMContentLoaded', function() {
             const sidebarToggle = document.getElementById('sidebarToggle');
             const sidebar = document.getElementById('sidebar');
+            const sidebarCollapseBtn = document.getElementById('sidebarCollapseBtn');
             
+            // Mobile sidebar toggle
             if (sidebarToggle) {
                 sidebarToggle.addEventListener('click', function() {
                     sidebar.classList.toggle('show');
                 });
+            }
+            
+            // Desktop sidebar collapse
+            if (sidebarCollapseBtn) {
+                sidebarCollapseBtn.addEventListener('click', function() {
+                    const sidebarContainer = sidebar.closest('.sidebar-container');
+                    const mainContent = document.getElementById('mainContent');
+                    
+                    sidebar.classList.toggle('collapsed');
+                    sidebarContainer.classList.toggle('collapsed');
+                    
+                    // Adjust main content
+                    if (sidebar.classList.contains('collapsed')) {
+                        mainContent.classList.remove('col-md-10');
+                        mainContent.classList.add('col-md-11');
+                    } else {
+                        mainContent.classList.remove('col-md-11');
+                        mainContent.classList.add('col-md-10');
+                    }
+                    
+                    // Save collapse state to localStorage
+                    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+                });
+            }
+            
+            // Restore sidebar collapse state from localStorage
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (isCollapsed) {
+                const sidebarContainer = sidebar.closest('.sidebar-container');
+                const mainContent = document.getElementById('mainContent');
+                
+                sidebar.classList.add('collapsed');
+                sidebarContainer.classList.add('collapsed');
+                
+                // Adjust main content
+                mainContent.classList.remove('col-md-10');
+                mainContent.classList.add('col-md-11');
             }
             
             // Close sidebar when clicking outside on mobile
@@ -548,6 +707,7 @@
             });
         });
     </script>
+    {% endcompress %}
     
     {% block extra_js %}{% endblock %}
 </body>

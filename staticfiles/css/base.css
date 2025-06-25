@@ -172,7 +172,6 @@ h6 { font-size: 1.125rem; }
     .content-wrapper {
         width: 100% !important;
         margin: 0 !important;
-        padding: 0 !important;
     }
     
     .card {
@@ -364,6 +363,56 @@ h6 { font-size: 1.125rem; }
 .alert {
     border-radius: var(--border-radius-md);
     border: none;
+}
+
+/* Breadcrumb Components */
+.breadcrumb {
+    background-color: transparent;
+    padding: var(--space-sm) 0;
+    margin-bottom: var(--space-md);
+    font-size: var(--font-size-sm);
+    border-radius: 0;
+}
+
+.breadcrumb-item {
+    color: var(--gray);
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "/";
+    color: var(--gray);
+    margin: 0 var(--space-sm);
+}
+
+.breadcrumb-item a {
+    color: var(--primary-blue) !important;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all var(--transition-base);
+}
+
+.breadcrumb-item a:hover {
+    color: var(--blue-dark) !important;
+    text-decoration: underline;
+}
+
+.breadcrumb-item.active {
+    color: var(--black);
+    font-weight: 500;
+}
+
+/* Mobile breadcrumb responsiveness */
+@media (max-width: 768px) {
+    .breadcrumb {
+        font-size: var(--font-size-xs);
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    .breadcrumb-item {
+        flex-shrink: 0;
+    }
 }
 
 /* Accessibility Improvements */

@@ -35,7 +35,6 @@
                 </button>
             </form>
             
-            
             <!-- Bulk Priority Update -->
             <form method="post" action="{% url 'contacts:bulk_update_priority' %}" style="display: inline;">
                 {% csrf_token %}
@@ -55,13 +54,13 @@
 <div class="card">
     <div class="card-body">
         <!-- Search and Filter -->
-        <form method="get" class="mb-3">
+        <form method="get" class="mb-3" id="filter-form" onsubmit="return false;">
             <div class="row g-3">
                 <div class="col-md-4">
-                    <input type="text" name="q" value="{{ query }}" placeholder="Search people..." class="form-control">
+                    <input type="text" name="q" value="{{ query }}" placeholder="Search people..." class="form-control" id="search-input">
                 </div>
                 <div class="col-md-3">
-                    <select name="priority" class="form-select">
+                    <select name="priority" class="form-select" id="priority-filter">
                         <option value="">All Priorities</option>
                         {% for priority_value, priority_label in priorities %}
                         <option value="{{ priority_value }}" {% if priority == priority_value %}selected{% endif %}>{{ priority_label }}</option>
@@ -69,7 +68,7 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <select name="pipeline_stage" class="form-select">
+                    <select name="pipeline_stage" class="form-select" id="pipeline-stage-filter">
                         <option value="">All Pipeline Stages</option>
                         {% for stage_value, stage_label in pipeline_stages %}
                         <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
@@ -77,11 +76,14 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-outline-primary w-100">Filter</button>
+                    <button type="button" class="btn btn-outline-primary w-100" onclick="location.reload();">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
                 </div>
             </div>
         </form>
 
+        <!-- Data Table with Lazy Loading -->
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
@@ -97,98 +99,75 @@
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {% for person in page_obj %}
-                    <tr>
-                        <td>
-                            <input type="checkbox" name="contact_ids" value="{{ person.contact.id }}" class="form-check-input contact-checkbox">
-                        </td>
-                        <td>
-                            <a href="{% url 'contacts:person_detail' person.pk %}">
-                                {{ person.contact.first_name }} {{ person.contact.last_name }}
-                            </a>
-                        </td>
-                        <td>
-                            {% if person.contact.email %}
-                                <a href="#" onclick="openEmailCompose('{{ person.contact.email }}', '{{ person.contact.first_name }} {{ person.contact.last_name }}', {{ person.contact.id }})" class="text-decoration-none">
-                                    <i class="fas fa-envelope me-1"></i>{{ person.contact.email }}
-                                </a>
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if person.contact.phone %}
-                                <a href="#" onclick="handlePhoneClick('{{ person.contact.phone }}', {{ person.contact.id }})" class="text-decoration-none">
-                                    <i class="fas fa-phone me-1"></i>{{ person.contact.phone }}
-                                </a>
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>
-                            <span class="badge {% if person.contact.priority == 'high' %}bg-danger{% elif person.contact.priority == 'medium' %}bg-warning{% else %}bg-success{% endif %}">
-                                {{ person.contact.get_priority_display|default:'-' }}
-                            </span>
-                        </td>
-                        <td>
-                            {% with stage_code=person.contact.get_pipeline_stage_code %}
-                                {% if stage_code == 'promotion' %}
-                                    <span class="badge bg-primary">Promotion</span>
-                                {% elif stage_code == 'information' %}
-                                    <span class="badge bg-info text-dark">Information</span>
-                                {% elif stage_code == 'invitation' %}
-                                    <span class="badge bg-warning text-dark">Invitation</span>
-                                {% elif stage_code == 'confirmation' %}
-                                    <span class="badge bg-success">Confirmation</span>
-                                {% elif stage_code == 'automation' %}
-                                    <span class="badge bg-secondary">Automation</span>
-                                {% elif stage_code == 'en42' %}
-                                    <span class="badge bg-dark">EN42</span>
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            {% endwith %}
-                        </td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <a href="{% url 'contacts:person_detail' person.pk %}" class="btn btn-outline-primary btn-sm">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{% url 'contacts:person_edit' person.pk %}" class="btn btn-outline-secondary btn-sm">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="{% url 'contacts:person_delete' person.pk %}" class="btn btn-outline-danger btn-sm">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
-                            No people found. <a href="{% url 'contacts:person_create' %}">Add the first person</a>.
-                        </td>
-                    </tr>
-                    {% endfor %}
+                <tbody id="person-table-body">
+                    {% comment %}
+                    Initial rows will be loaded by JavaScript using lazy loading
+                    {% endcomment %}
                 </tbody>
             </table>
         </div>
-
-        <!-- Pagination -->
-        {% include 'partials/_pagination.html' with page_obj=page_obj per_page=per_page %}
+        
+        <!-- No Results Message -->
+        <div id="no-results" class="text-center text-muted py-4" style="display: none;">
+            No people found. <a href="{% url 'contacts:person_create' %}">Add the first person</a>.
+        </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
+<script src="{% static 'js/lazy-loading.js' %}?v=1750793996"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize lazy loader for person list
+    const personLoader = new LazyLoader({
+        tableBody: document.getElementById('person-table-body'),
+        apiUrl: '{% url "contacts:person_list_api" %}',
+        perPage: 25,
+        filters: {
+            q: '{{ query }}',
+            priority: '{{ priority }}',
+            pipeline_stage: '{{ pipeline_stage }}'
+        }
+    });
+    
+    // Override the row template for person-specific rendering
+    personLoader.getRowTemplate = function(item) {
+        return `
+            <td>
+                <input type="checkbox" name="contact_ids" value="${item.id}" class="form-check-input contact-checkbox">
+            </td>
+            <td>
+                <a href="${item.detail_url}">${item.name}</a>
+            </td>
+            <td>
+                ${item.email ? 
+                    `<a href="#" onclick="openEmailCompose('${item.email}', '${item.name}', ${item.id})" class="text-decoration-none">
+                        <i class="fas fa-envelope me-1"></i>${item.email}
+                    </a>` : '-'}
+            </td>
+            <td>
+                ${item.phone ? 
+                    `<a href="#" onclick="handlePhoneClick('${item.phone}', ${item.id})" class="text-decoration-none">
+                        <i class="fas fa-phone me-1"></i>${item.phone}
+                    </a>` : '-'}
+            </td>
+            <td>${this.getPriorityBadge(item.priority_display || item.priority)}</td>
+            <td>${this.getPipelineBadge(item.pipeline_stage)}</td>
+            <td>${this.getActionButtons(item)}</td>
+        `;
+    };
+    
+    // Load initial data
+    personLoader.loadMore();
+    
+    // Bulk operations management
     const selectAll = document.getElementById('select-all');
-    const checkboxes = document.querySelectorAll('.contact-checkbox');
     const bulkOpsBar = document.getElementById('bulk-operations');
     const selectedCount = document.getElementById('selected-count');
     
-    // Update bulk operations visibility and selected count
-    function updateBulkOperations() {
+    window.updateBulkOperations = function() {
+        const checkboxes = document.querySelectorAll('.contact-checkbox');
         const selected = document.querySelectorAll('.contact-checkbox:checked');
         const count = selected.length;
         
@@ -199,25 +178,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const ids = Array.from(selected).map(cb => cb.value).join(',');
         document.getElementById('bulk-delete-ids').value = ids;
         document.getElementById('bulk-priority-ids').value = ids;
-    }
+        
+        // Update select all checkbox state
+        const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+        const noneChecked = Array.from(checkboxes).every(cb => !cb.checked);
+        
+        selectAll.checked = allChecked;
+        selectAll.indeterminate = !allChecked && !noneChecked;
+    };
     
     // Select all functionality
     selectAll.addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.contact-checkbox');
         checkboxes.forEach(cb => cb.checked = this.checked);
         updateBulkOperations();
-    });
-    
-    // Individual checkbox functionality
-    checkboxes.forEach(cb => {
-        cb.addEventListener('change', function() {
-            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-            const noneChecked = Array.from(checkboxes).every(cb => !cb.checked);
-            
-            selectAll.checked = allChecked;
-            selectAll.indeterminate = !allChecked && !noneChecked;
-            
-            updateBulkOperations();
-        });
     });
     
     // Handle bulk operation form submissions
@@ -232,21 +206,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Handle email click - open Gmail compose in app
 function openEmailCompose(email, name, contactId) {
-    // Redirect to Gmail compose with pre-populated recipient
     const composeUrl = `/communications/gmail/compose/?recipient=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}&contact_id=${contactId}`;
     window.location.href = composeUrl;
 }
 
 // Handle phone click - detect mobile and either dial or open communication log
 function handlePhoneClick(phoneNumber, contactId) {
-    // Check if we're on a mobile device
     const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
     if (isMobile) {
-        // On mobile, dial the number
         window.location.href = `tel:${phoneNumber}`;
     } else {
-        // On desktop, redirect to communications page and open the log modal
         window.location.href = `/communications/?open_log_modal=phone&contact_id=${contactId}`;
     }
 }

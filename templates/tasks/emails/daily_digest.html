@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Daily Task Digest</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #4e73df, #224abe); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+        .content { background: #f8f9fa; padding: 20px; border-radius: 0 0 8px 8px; }
+        .section { background: white; padding: 15px; border-radius: 6px; margin: 15px 0; }
+        .task-item { padding: 10px; border-bottom: 1px solid #eee; }
+        .task-item:last-child { border-bottom: none; }
+        .btn { display: inline-block; padding: 10px 20px; background: #4e73df; color: white; text-decoration: none; border-radius: 4px; margin: 10px 0; }
+        .overdue { border-left: 4px solid #e74a3b; }
+        .due-today { border-left: 4px solid #f6c23e; }
+        .due-tomorrow { border-left: 4px solid #36b9cc; }
+        .completed { border-left: 4px solid #1cc88a; }
+        .count-badge { background: #4e73df; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .overdue-badge { background: #e74a3b; }
+        .due-today-badge { background: #f6c23e; }
+        .due-tomorrow-badge { background: #36b9cc; }
+        .completed-badge { background: #1cc88a; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 Daily Task Digest</h1>
+            <p>Hi {{ user.get_full_name|default:user.username }},</p>
+            <p>Here's your task summary for {{ date|date:"F j, Y" }}</p>
+        </div>
+        
+        <div class="content">
+            <!-- Overdue Tasks -->
+            {% if tasks_data.overdue %}
+            <div class="section overdue">
+                <h3>🚨 Overdue Tasks <span class="count-badge overdue-badge">{{ tasks_data.overdue.count }}</span></h3>
+                {% for task in tasks_data.overdue %}
+                <div class="task-item">
+                    <strong>{{ task.title }}</strong><br>
+                    <small>Due: {{ task.due_date|date:"M j, Y g:i A" }} | Priority: {{ task.get_priority_display }}</small>
+                    {% if task.contact %}
+                    <br><small>Contact: {{ task.contact.first_name }} {{ task.contact.last_name }}</small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Due Today -->
+            {% if tasks_data.due_today %}
+            <div class="section due-today">
+                <h3>⏰ Due Today <span class="count-badge due-today-badge">{{ tasks_data.due_today.count }}</span></h3>
+                {% for task in tasks_data.due_today %}
+                <div class="task-item">
+                    <strong>{{ task.title }}</strong><br>
+                    <small>Due: {{ task.due_date|date:"g:i A" }} | Priority: {{ task.get_priority_display }}</small>
+                    {% if task.contact %}
+                    <br><small>Contact: {{ task.contact.first_name }} {{ task.contact.last_name }}</small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Due Tomorrow -->
+            {% if tasks_data.due_tomorrow %}
+            <div class="section due-tomorrow">
+                <h3>📋 Due Tomorrow <span class="count-badge due-tomorrow-badge">{{ tasks_data.due_tomorrow.count }}</span></h3>
+                {% for task in tasks_data.due_tomorrow %}
+                <div class="task-item">
+                    <strong>{{ task.title }}</strong><br>
+                    <small>Due: {{ task.due_date|date:"M j, g:i A" }} | Priority: {{ task.get_priority_display }}</small>
+                    {% if task.contact %}
+                    <br><small>Contact: {{ task.contact.first_name }} {{ task.contact.last_name }}</small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Completed Yesterday -->
+            {% if tasks_data.completed_yesterday %}
+            <div class="section completed">
+                <h3>✅ Completed Yesterday <span class="count-badge completed-badge">{{ tasks_data.completed_yesterday.count }}</span></h3>
+                {% for task in tasks_data.completed_yesterday %}
+                <div class="task-item">
+                    <strong>{{ task.title }}</strong><br>
+                    <small>Completed: {{ task.completed_at|date:"g:i A" }} | Priority: {{ task.get_priority_display }}</small>
+                    {% if task.contact %}
+                    <br><small>Contact: {{ task.contact.first_name }} {{ task.contact.last_name }}</small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div style="text-align: center; margin: 20px 0;">
+                <a href="{{ site_url }}/tasks/" class="btn">View All Tasks</a>
+            </div>
+            
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+            <p style="font-size: 12px; color: #666;">
+                This is your daily task digest from Mobilize CRM.<br>
+                You can manage your notification preferences in your <a href="{{ site_url }}/settings/">account settings</a>.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

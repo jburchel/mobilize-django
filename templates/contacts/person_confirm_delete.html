@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Person - Mobilize CRM{% endblock %}
+
+{% block page_title %}Delete Person{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'contacts:person_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to People
+    </a>
+    <a href="{{ person.get_absolute_url }}" class="btn btn-info">
+        <i class="fas fa-eye"></i> View Person
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Confirm Person Deletion
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning" role="alert">
+                        <strong>Warning:</strong> This action cannot be undone.
+                    </div>
+
+                    <h6>Person Details:</h6>
+                    <div class="mb-3">
+                        <strong>Name:</strong> {{ person.name }}<br>
+                        {% if person.contact.email %}
+                        <strong>Email:</strong> {{ person.contact.email }}<br>
+                        {% endif %}
+                        {% if person.contact.phone %}
+                        <strong>Phone:</strong> {{ person.contact.phone }}<br>
+                        {% endif %}
+                        {% if person.title %}
+                        <strong>Title:</strong> {{ person.title }}<br>
+                        {% endif %}
+                        {% if person.primary_church %}
+                        <strong>Church:</strong> {{ person.primary_church.name }}<br>
+                        {% endif %}
+                        <strong>Status:</strong> {{ person.contact.get_status_display }}<br>
+                    </div>
+
+                    {% if person.contact.notes %}
+                    <div class="alert alert-info" role="alert">
+                        <strong>Notes:</strong> {{ person.contact.notes|truncatewords:30 }}
+                    </div>
+                    {% endif %}
+
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ person.get_absolute_url }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Yes, Delete Person
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

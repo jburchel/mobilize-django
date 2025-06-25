@@ -138,7 +138,7 @@
                         <label for="search" class="form-label">Search</label>
                         <div class="input-group">
                             <input type="text" class="form-control" name="search" id="search" 
-                                placeholder="Search subject, sender..." value="{{ request.GET.search }}">
+                                placeholder="Search subject, sender, person, church..." value="{{ request.GET.search }}">
                             <button class="btn btn-outline-secondary" type="submit">
                                 <i class="fas fa-search"></i>
                             </button>
@@ -683,6 +683,34 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    
+    // Add dynamic search functionality
+    const searchInput = document.getElementById('search');
+    const searchForm = searchInput.closest('form');
+    let searchTimer;
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function() {
+            searchForm.submit();
+        }, 300); // 300ms delay
+    });
+    
+    // Auto-submit form when filters change
+    const filterSelects = searchForm.querySelectorAll('select');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            searchForm.submit();
+        });
+    });
+    
+    // Auto-submit when date changes
+    const dateInput = document.getElementById('date_from');
+    if (dateInput) {
+        dateInput.addEventListener('change', function() {
+            searchForm.submit();
+        });
+    }
 });
 
 // Handle form submission

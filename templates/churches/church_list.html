@@ -29,12 +29,7 @@
     <div class="card-body">
         <form method="get" class="row g-3">
             <div class="col-md-4">
-                <div class="input-group">
-                    <input type="text" name="q" class="form-control" placeholder="Search churches..." value="{{ query }}">
-                    <button class="btn btn-outline-secondary" type="submit">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
+                <input type="text" name="q" class="form-control" placeholder="Search churches..." value="{{ query }}" autocomplete="off">
             </div>
             <div class="col-md-3">
                 <select name="pipeline_stage" class="form-select" onchange="this.form.submit()">
@@ -233,5 +228,26 @@ function handlePhoneClick(phoneNumber, contactId) {
         window.location.href = `/communications/?open_log_modal=phone&contact_id=${contactId}`;
     }
 }
+
+// Dynamic search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[name="q"]');
+    const searchForm = searchInput.closest('form');
+    let searchTimer;
+    
+    // Add event listener for input changes
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function() {
+            searchForm.submit();
+        }, 300); // 300ms delay to avoid too many requests
+    });
+    
+    // Remove the magnifying glass button since search is now automatic
+    const searchButton = searchInput.nextElementSibling;
+    if (searchButton && searchButton.classList.contains('btn')) {
+        searchButton.style.display = 'none';
+    }
+});
 </script>
 {% endblock %}

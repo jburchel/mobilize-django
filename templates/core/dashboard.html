@@ -146,6 +146,38 @@
 }
 
 
+/* Custom chart legend styling */
+.chart-legend {
+    padding: 10px 0;
+    font-size: 0.85rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 4px 0;
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.legend-text {
+    flex: 1;
+    line-height: 1.2;
+}
+
+.legend-count {
+    font-weight: 600;
+    color: #495057;
+    margin-left: 4px;
+}
+
 /* CRITICAL: Force content and cards to be visible */
 .row {
     display: flex !important;
@@ -203,20 +235,42 @@
                         <span class="text-muted me-3">View Mode:</span>
                         <span class="badge bg-primary">{{ view_mode_display }}</span>
                     </div>
+                    {% if user_role == 'super_admin' %}
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="btn-group" role="group" aria-label="View mode toggle">
+                            <a href="?view_mode=default" 
+                               class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                <i class="fas fa-globe me-1"></i> All Offices
+                            </a>
+                            <a href="?view_mode=my_only" 
+                               class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                <i class="fas fa-user me-1"></i> My Contacts Only
+                            </a>
+                        </div>
+                        <div class="ms-3">
+                            <select id="office-selector" class="form-select form-select-sm" style="min-width: 200px;">
+                                <option value="">Select Specific Office...</option>
+                                {% for office in all_offices %}
+                                <option value="office_{{ office.id }}" 
+                                    {% if current_view_mode == 'office_'|add:office.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ office.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    {% else %}
                     <div class="btn-group" role="group" aria-label="View mode toggle">
                         <a href="?view_mode=default" 
                            class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            {% if user_role == 'super_admin' %}
-                                <i class="fas fa-globe me-1"></i> All Offices
-                            {% else %}
-                                <i class="fas fa-building me-1"></i> My Office
-                            {% endif %}
+                            <i class="fas fa-building me-1"></i> My Office
                         </a>
                         <a href="?view_mode=my_only" 
                            class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                             <i class="fas fa-user me-1"></i> My Contacts Only
                         </a>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -327,11 +381,13 @@
                     <div class="card-header">
                         <i class="fas fa-chart-pie me-2"></i> Task Priorities
                     </div>
-                    <div class="card-body">
+                    <div class="card-body" style="height: 350px; position: relative; padding: 20px;">
                         {% if priority_tasks %}
-                            <canvas id="priorityChart" width="400" height="200"></canvas>
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 250px;">
+                                <canvas id="priorityChart"></canvas>
+                            </div>
                         {% else %}
-                            <div class="text-center py-3">
+                            <div class="text-center" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
                                 <i class="fas fa-chart-pie fa-2x mb-2 text-muted"></i>
                                 <p class="text-muted mb-0">No task data available</p>
                             </div>
@@ -374,16 +430,30 @@
                             <!-- People Chart -->
                             <div class="col-md-6" id="peopleChartContainer">
                                 <h6 class="text-center mb-3">People Pipeline</h6>
-                                <div style="position: relative; height: 300px;">
-                                    <canvas id="peopleChart"></canvas>
+                                <div class="row">
+                                    <div class="col-8">
+                                        <div style="position: relative; height: 280px;">
+                                            <canvas id="peopleChart"></canvas>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div id="peopleLegend" class="chart-legend"></div>
+                                    </div>
                                 </div>
                             </div>
                             
                             <!-- Churches Chart -->
                             <div class="col-md-6" id="churchesChartContainer">
                                 <h6 class="text-center mb-3">Churches Pipeline</h6>
-                                <div style="position: relative; height: 300px;">
-                                    <canvas id="churchesChart"></canvas>
+                                <div class="row">
+                                    <div class="col-8">
+                                        <div style="position: relative; height: 280px;">
+                                            <canvas id="churchesChart"></canvas>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div id="churchesLegend" class="chart-legend"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -552,6 +622,44 @@
         
         const chartColors = ['#183963', '#39A949', '#4e73df', '#1cc88a', '#36b9cc', '#7F7F7F'];
         
+        // Define all pipeline stages with their colors
+        const allPeopleStages = ['Promotion', 'Information', 'Invitation', 'Confirmation', 'Automation'];
+        const allChurchStages = ['Promotion', 'Information', 'Invitation', 'Confirmation', 'EN42', 'Automation'];
+        
+        function createCustomLegend(containerId, allStages, backendStages, backendData, backendCounts, colors) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            // Create a mapping from backend data
+            const stageDataMap = {};
+            backendStages.forEach((stage, index) => {
+                stageDataMap[stage] = {
+                    count: backendCounts[index] || 0,
+                    percentage: backendData[index] || 0
+                };
+            });
+            
+            allStages.forEach((stage, index) => {
+                const stageData = stageDataMap[stage] || { count: 0, percentage: 0 };
+                const color = colors[index] || '#ccc';
+                
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                
+                legendItem.innerHTML = `
+                    <div class="legend-color" style="background-color: ${color};"></div>
+                    <div class="legend-text">
+                        ${stage}
+                        <div class="legend-count">${stageData.count} (${stageData.percentage}%)</div>
+                    </div>
+                `;
+                
+                container.appendChild(legendItem);
+            });
+        }
+        
         function createChartConfig(type, data, counts, stages, label) {
             const config = {
                 type: type,
@@ -572,24 +680,7 @@
                     },
                     plugins: {
                         legend: {
-                            position: 'left',
-                            align: 'start',
-                            labels: {
-                                boxWidth: 12,
-                                padding: 15,
-                                usePointStyle: true,
-                                generateLabels: function(chart) {
-                                    const original = Chart.defaults.plugins.legend.labels.generateLabels;
-                                    const labels = original.call(this, chart);
-                                    
-                                    // Stack labels vertically
-                                    labels.forEach((label, index) => {
-                                        label.text = label.text;
-                                    });
-                                    
-                                    return labels;
-                                }
-                            }
+                            display: false  // Disable built-in legend, we'll create custom ones
                         },
                         tooltip: {
                             callbacks: {
@@ -605,7 +696,7 @@
                         padding: {
                             top: 10,
                             bottom: 10,
-                            left: 120,
+                            left: 10,
                             right: 10
                         }
                     }
@@ -641,6 +732,10 @@
                 // Create new charts
                 peopleChart = new Chart(peopleCanvas, createChartConfig(currentChartType, peopleData, peopleCounts, peopleStages, 'People'));
                 churchesChart = new Chart(churchesCanvas, createChartConfig(currentChartType, churchesData, churchesCounts, churchesStages, 'Churches'));
+                
+                // Create custom legends showing all stages
+                createCustomLegend('peopleLegend', allPeopleStages, peopleStages, peopleData, peopleCounts, chartColors);
+                createCustomLegend('churchesLegend', allChurchStages, churchesStages, churchesData, churchesCounts, chartColors);
                 
                 updateVisibility();
             }
@@ -814,5 +909,16 @@
             });
         }
     });
+
+    // Handle office selector change for super admins
+    const officeSelector = document.getElementById('office-selector');
+    if (officeSelector) {
+        officeSelector.addEventListener('change', function() {
+            if (this.value) {
+                // Redirect to the selected office view mode
+                window.location.href = '?view_mode=' + this.value;
+            }
+        });
+    }
 </script>
 {% endblock %}
