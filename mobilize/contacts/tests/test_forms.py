@@ -29,14 +29,13 @@ class PersonFormTest(TestCase):
             'birthday': '1990-01-01',
             'spouse_first_name': 'John',
             'spouse_last_name': 'Smith',
-            'occupation': 'Engineer',
-            'employer': 'Tech Corp',
+            'profession': 'Engineer',
+            'organization': 'Tech Corp',
             'street_address': '456 Oak Ave',
             'city': 'Somewhere',
             'state': 'NY',
             'zip_code': '54321',
-            'status': 'Active',
-            'source': 'Website'
+            'status': 'active',
         }
         form = PersonForm(data=form_data)
         self.assertTrue(form.is_valid())
@@ -55,18 +54,18 @@ class PersonFormTest(TestCase):
             'email': 'jane.smith@example.com',
             'phone': '123-456-7890',
             'birthday': '1990-01-01',
-            'status': 'Active'
+            'status': 'active'
         }
         form = PersonForm(data=form_data)
         self.assertTrue(form.is_valid())
         
         person = form.save()
-        self.assertEqual(person.first_name, 'Jane')
-        self.assertEqual(person.last_name, 'Smith')
-        self.assertEqual(person.email, 'jane.smith@example.com')
+        # Access Contact fields through relationship
+        self.assertEqual(person.contact.first_name, 'Jane')
+        self.assertEqual(person.contact.last_name, 'Smith')
+        self.assertEqual(person.contact.email, 'jane.smith@example.com')
         self.assertEqual(str(person.birthday), '1990-01-01')
-        self.assertEqual(person.status, 'Active')
-        # user_id not set automatically in form save
+        self.assertEqual(person.contact.status, 'active')
 
     def test_person_form_invalid_birthday(self):
         """Test PersonForm with invalid birthday format."""
@@ -81,13 +80,16 @@ class PersonFormTest(TestCase):
 
     def test_person_form_update_existing(self):
         """Test PersonForm updating an existing person."""
-        # Create an existing person
-        person = Person.objects.create(
-            first_name='Original',
-            last_name='Name',
-            email='original@example.com',
-            user_id=self.user.id
-        )
+        # Create Contact first, then Person
+        contact_data = {
+            'type': 'person',
+            'first_name': 'Original',
+            'last_name': 'Name',
+            'email': 'original@example.com',
+            'user': self.user,
+        }
+        contact = Contact.objects.create(**contact_data)
+        person = Person.objects.create(contact=contact)
         
         # Update with form
         form_data = {
@@ -99,7 +101,6 @@ class PersonFormTest(TestCase):
         self.assertTrue(form.is_valid())
         
         updated_person = form.save()
-        self.assertEqual(updated_person.id, person.id)  # Same instance
-        self.assertEqual(updated_person.first_name, 'Updated')
-        self.assertEqual(updated_person.email, 'updated@example.com')
-        # Form updated successfully
+        self.assertEqual(updated_person.contact_id, person.contact_id)  # Same instance
+        self.assertEqual(updated_person.contact.first_name, 'Updated')
+        self.assertEqual(updated_person.contact.email, 'updated@example.com')

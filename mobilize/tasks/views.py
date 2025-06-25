@@ -6,9 +6,11 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.db import models
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 
 from .models import Task
 from .forms import TaskForm
+from mobilize.authentication.decorators import office_data_filter
 
 
 class TaskListView(LoginRequiredMixin, ListView):
@@ -17,11 +19,76 @@ class TaskListView(LoginRequiredMixin, ListView):
     context_object_name = 'tasks'
     paginate_by = 15
 
+    def dispatch(self, request, *args, **kwargs):
+        # Check if user has office assignment (except super_admin)
+        if request.user.role != 'super_admin' and not request.user.useroffice_set.exists():
+            raise PermissionDenied("Access denied. User not assigned to any office.")
+        return super().dispatch(request, *args, **kwargs)
+
     def get_queryset(self):
         # Order by due date (nulls last), then priority
         queryset = Task.objects.select_related(
             'created_by', 'assigned_to', 'person', 'church', 'office'
         ).prefetch_related('contact')
+        
+        # Apply office-level filtering based on person/church office or task office
+        if self.request.user.role != 'super_admin':
+            user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
+            
+            # Filter tasks based on:
+            # 1. Tasks assigned to user
+            # 2. Tasks created by user
+            # 3. Tasks where person/church belongs to user's office
+            # 4. Tasks directly assigned to user's office
+            queryset = queryset.filter(
+                models.Q(assigned_to=self.request.user) |
+                models.Q(created_by=self.request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            ).distinct()
+        
+        # Apply filters from GET parameters
+        status_filter = self.request.GET.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        priority_filter = self.request.GET.get('priority')
+        if priority_filter:
+            queryset = queryset.filter(priority=priority_filter)
+        
+        assigned_filter = self.request.GET.get('assigned_to')
+        if assigned_filter:
+            if assigned_filter == 'me':
+                queryset = queryset.filter(assigned_to=self.request.user)
+            elif assigned_filter == 'unassigned':
+                queryset = queryset.filter(assigned_to__isnull=True)
+        
+        due_filter = self.request.GET.get('due')
+        if due_filter:
+            from datetime import date, timedelta
+            today = date.today()
+            if due_filter == 'overdue':
+                queryset = queryset.filter(due_date__lt=today, status__in=['pending', 'in_progress'])
+            elif due_filter == 'today':
+                queryset = queryset.filter(due_date=today)
+            elif due_filter == 'week':
+                queryset = queryset.filter(due_date__gte=today, due_date__lte=today + timedelta(days=7))
+            elif due_filter == 'month':
+                queryset = queryset.filter(due_date__gte=today, due_date__lte=today + timedelta(days=30))
+        
+        # General search
+        search_query = self.request.GET.get('search')
+        if search_query:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(title__icontains=search_query) |
+                Q(description__icontains=search_query) |
+                Q(person__contact__first_name__icontains=search_query) |
+                Q(person__contact__last_name__icontains=search_query) |
+                Q(church__contact__church_name__icontains=search_query) |
+                Q(church__name__icontains=search_query)
+            )
         
         # Custom sort: incomplete tasks first, then completed tasks.
         # Within incomplete, sort by due_date (nulls last), then priority.
@@ -34,6 +101,16 @@ class TaskListView(LoginRequiredMixin, ListView):
             )
         ).order_by('is_completed_val', models.F('due_date').asc(nulls_last=True), 'priority', models.F('completed_at').desc(nulls_last=True))
         return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Pass filter values to template
+        context['current_status'] = self.request.GET.get('status', '')
+        context['current_priority'] = self.request.GET.get('priority', '')
+        context['current_assigned'] = self.request.GET.get('assigned_to', '')
+        context['current_due'] = self.request.GET.get('due', '')
+        context['search_query'] = self.request.GET.get('search', '')
+        return context
 
 
 class TaskDetailView(LoginRequiredMixin, DetailView):
@@ -42,12 +119,37 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'task'
     
     def get_queryset(self):
-        return Task.objects.select_related(
+        queryset = Task.objects.select_related(
             'created_by', 'assigned_to', 'person', 'church', 'office', 'contact'
         )
+        
+        # Apply office-level filtering
+        if self.request.user.role != 'super_admin':
+            user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
+            
+            queryset = queryset.filter(
+                models.Q(assigned_to=self.request.user) |
+                models.Q(created_by=self.request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            ).distinct()
+        
+        return queryset
 
 
 class TaskCreateView(LoginRequiredMixin, CreateView):
+    
+    def dispatch(self, request, *args, **kwargs):
+        # Prevent limited users from creating
+        if request.user.role == 'limited_user':
+            raise PermissionDenied("Limited users cannot create tasks")
+        
+        # Check office assignment
+        if request.user.role != 'super_admin' and not request.user.useroffice_set.exists():
+            raise PermissionDenied("Access denied. User not assigned to any office.")
+        
+        return super().dispatch(request, *args, **kwargs)
     model = Task
     form_class = TaskForm
     template_name = 'tasks/task_form.html'
@@ -142,6 +244,37 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
     model = Task
     form_class = TaskForm
     template_name = 'tasks/task_form.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        # Prevent limited users from editing
+        if request.user.role == 'limited_user':
+            raise PermissionDenied("Limited users cannot edit tasks")
+        
+        # Check office assignment
+        if request.user.role != 'super_admin' and not request.user.useroffice_set.exists():
+            raise PermissionDenied("Access denied. User not assigned to any office.")
+        
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        """Filter tasks based on office permissions"""
+        queryset = Task.objects.select_related(
+            'created_by', 'assigned_to', 'person', 'church', 'office'
+        )
+        
+        # Apply office-level filtering
+        if self.request.user.role != 'super_admin':
+            user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
+            
+            queryset = queryset.filter(
+                models.Q(assigned_to=self.request.user) |
+                models.Q(created_by=self.request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            ).distinct()
+        
+        return queryset
 
     def get_form_kwargs(self):
         """Pass the request object to the form's keyword arguments."""
@@ -225,6 +358,37 @@ class TaskDeleteView(LoginRequiredMixin, DeleteView):
     template_name = 'tasks/task_confirm_delete.html'
     success_url = reverse_lazy('tasks:task_list')
     context_object_name = 'task'
+    
+    def dispatch(self, request, *args, **kwargs):
+        # Prevent limited users from deleting
+        if request.user.role == 'limited_user':
+            raise PermissionDenied("Limited users cannot delete tasks")
+        
+        # Check office assignment
+        if request.user.role != 'super_admin' and not request.user.useroffice_set.exists():
+            raise PermissionDenied("Access denied. User not assigned to any office.")
+        
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        """Filter tasks based on office permissions"""
+        queryset = Task.objects.select_related(
+            'created_by', 'assigned_to', 'person', 'church', 'office'
+        )
+        
+        # Apply office-level filtering
+        if self.request.user.role != 'super_admin':
+            user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
+            
+            queryset = queryset.filter(
+                models.Q(assigned_to=self.request.user) |
+                models.Q(created_by=self.request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            ).distinct()
+        
+        return queryset
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

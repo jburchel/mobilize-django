@@ -1,6 +1,9 @@
 from django.test import TestCase
+from django.contrib.auth import get_user_model
 from mobilize.contacts.models import Contact
 from mobilize.utils.supabase_mapper import SupabaseMapper
+
+User = get_user_model()
 
 
 class ContactModelTest(TestCase):
@@ -8,6 +11,13 @@ class ContactModelTest(TestCase):
 
     def setUp(self):
         """Set up test data."""
+        # Create a test user first
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+        
         self.contact_data = {
             'first_name': 'John',
             'last_name': 'Doe',
@@ -18,9 +28,9 @@ class ContactModelTest(TestCase):
             'state': 'CA',
             'zip_code': '12345',
             'country': 'USA',
-            'user_id': 1,  # Integer in Contact model
+            'user': self.user,  # Use User instance, not user_id
             'notes': 'Test notes',
-            'type': 'Person',  # Contact has 'type' field, not 'status'
+            'type': 'person',  # Use lowercase
         }
         
         self.contact = Contact.objects.create(**self.contact_data)
@@ -37,9 +47,9 @@ class ContactModelTest(TestCase):
             'state': 'CA',
             'zip_code': '12345',
             'country': 'USA',
-            'user_id': 1,  # Integer in contacts table
+            'user_id': str(self.user.id),  # String in Supabase
             'notes': 'Test notes',
-            'type': 'Person',
+            'type': 'person',
             'created_at': '2025-06-05',
             'updated_at': '2025-06-05',
         }
@@ -55,9 +65,9 @@ class ContactModelTest(TestCase):
         self.assertEqual(self.contact.state, 'CA')
         self.assertEqual(self.contact.zip_code, '12345')
         self.assertEqual(self.contact.country, 'USA')
-        self.assertEqual(self.contact.user_id, 1)
+        self.assertEqual(self.contact.user, self.user)
         self.assertEqual(self.contact.notes, 'Test notes')
-        self.assertEqual(self.contact.type, 'Person')
+        self.assertEqual(self.contact.type, 'person')
     
     def test_contact_to_supabase_conversion(self):
         """Test converting a Contact model instance to Supabase format."""
@@ -70,7 +80,7 @@ class ContactModelTest(TestCase):
         self.assertEqual(supabase_dict['email'], self.contact.email)
         self.assertEqual(supabase_dict['phone'], self.contact.phone)
         self.assertEqual(supabase_dict['street_address'], self.contact.street_address)
-        self.assertEqual(supabase_dict['user_id'], self.contact.user_id)
+        self.assertEqual(supabase_dict['user_id'], str(self.contact.user.id))
         
     def test_contact_from_supabase_conversion(self):
         """Test converting Supabase data to Contact model format."""
@@ -83,7 +93,7 @@ class ContactModelTest(TestCase):
         self.assertEqual(django_dict['email'], self.supabase_data['email'])
         self.assertEqual(django_dict['phone'], self.supabase_data['phone'])
         self.assertEqual(django_dict['street_address'], self.supabase_data['street_address'])
-        self.assertEqual(django_dict['user_id'], self.supabase_data['user_id'])
+        self.assertEqual(django_dict['user_id'], int(self.supabase_data['user_id']))
         
     def test_contact_create_from_supabase(self):
         """Test creating a new Contact instance from Supabase data."""
@@ -99,7 +109,7 @@ class ContactModelTest(TestCase):
         self.assertEqual(new_contact.email, self.supabase_data['email'])
         self.assertEqual(new_contact.phone, self.supabase_data['phone'])
         self.assertEqual(new_contact.street_address, self.supabase_data['street_address'])
-        self.assertEqual(new_contact.user_id, self.supabase_data['user_id'])
+        self.assertEqual(new_contact.user_id, int(self.supabase_data['user_id']))
         
     def test_contact_update_from_supabase(self):
         """Test updating an existing Contact instance from Supabase data."""

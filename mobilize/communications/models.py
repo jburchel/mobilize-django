@@ -111,9 +111,26 @@ class Communication(models.Model):
     sender = models.CharField(max_length=255, blank=True, null=True)
     
     # Assignment and Ownership
-    user_id = models.CharField(max_length=255, blank=True, null=True)  # Firebase UID
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, blank=True, null=True, related_name='communications')
     owner_id = models.IntegerField(blank=True, null=True)  # Legacy user ID
     office = models.ForeignKey(Office, on_delete=models.SET_NULL, blank=True, null=True, related_name='communications', db_column='office_id')
+    
+    # Email processing fields for Celery tasks
+    content = models.TextField(blank=True, null=True, help_text="Email body content")
+    status = models.CharField(max_length=50, default='pending', choices=[
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('sent', 'Sent'),
+        ('delivered', 'Delivered'),
+        ('failed', 'Failed'),
+    ])
+    external_id = models.CharField(max_length=255, blank=True, null=True, help_text="External message ID (e.g., Gmail message ID)")
+    error_message = models.TextField(blank=True, null=True, help_text="Error message if sending failed")
+    template_used = models.ForeignKey(EmailTemplate, on_delete=models.SET_NULL, blank=True, null=True, related_name='communications')
+    cc_recipients = models.TextField(blank=True, null=True, help_text="CC recipients as comma-separated emails")
+    bcc_recipients = models.TextField(blank=True, null=True, help_text="BCC recipients as comma-separated emails")
+    is_notification = models.BooleanField(default=False, help_text="Whether this is a system notification")
+    archived = models.BooleanField(default=False, help_text="Whether this communication is archived")
     
     # Google Calendar Integration
     google_calendar_event_id = models.CharField(max_length=255, blank=True, null=True)
@@ -132,12 +149,13 @@ class Communication(models.Model):
         indexes = [
             models.Index(fields=['date'], name='comm_date_idx'),
             models.Index(fields=['type'], name='comm_type_idx'),
-            models.Index(fields=['user_id'], name='comm_user_id_idx'),
+            models.Index(fields=['user'], name='comm_user_idx'),
             models.Index(fields=['email_status'], name='comm_email_status_idx'),
-            models.Index(fields=['user_id', 'date']),         # Composite for user communications
+            models.Index(fields=['user', 'date']),         # Composite for user communications
             models.Index(fields=['type', 'date']),            # Composite for type filtering
             models.Index(fields=['office', 'date']),          # Composite for office communications
             models.Index(fields=['gmail_message_id']),        # For Gmail sync lookups
+            models.Index(fields=['status']),                  # For Celery task processing
         ]
     
     def __str__(self):

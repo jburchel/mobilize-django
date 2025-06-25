@@ -5,60 +5,113 @@ from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.views.decorators.http import require_POST
+from django.urls import reverse
 import csv
 from datetime import datetime
 
 from .models import Person, Contact
 from .forms import PersonForm, ImportContactsForm
+from mobilize.authentication.decorators import (
+    office_data_filter,
+    office_object_permission_required,
+    can_create_edit_delete,
+    ensure_user_office_assignment
+)
 
 
 @login_required
+@ensure_user_office_assignment
 def person_list(request):
     """
     Display a list of people with filtering and pagination.
+    Uses lazy loading for better performance.
+    Only shows contacts from user's assigned offices.
     """
     # Get query parameters for filtering
     query = request.GET.get('q', '')
     priority = request.GET.get('priority', '')
+    pipeline_stage = request.GET.get('pipeline_stage', '')
     
-    # Start with all people - use select_related to optimize queries
-    people = Person.objects.select_related('contact', 'contact__office').all()
+    # Check if lazy loading is disabled (for backwards compatibility)
+    use_lazy_loading = request.GET.get('lazy', 'true').lower() == 'true'
     
-    # Apply filters if provided
-    if query:
-        people = people.filter(
-            Q(contact__first_name__icontains=query) | 
-            Q(contact__last_name__icontains=query) | 
-            Q(contact__email__icontains=query) | 
-            Q(contact__phone__icontains=query)
-        )
+    # Get pipeline stages for the dropdown
+    from mobilize.pipeline.models import MAIN_PEOPLE_PIPELINE_STAGES
     
-    if priority:
-        people = people.filter(contact__priority=priority)
-    
-    # Pagination
-    paginator = Paginator(people, 25)  # Show 25 people per page
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
-    
-    # Get priorities for filter dropdowns
-    priorities = Contact.PRIORITY_CHOICES
-    
-    context = {
-        'page_obj': page_obj,
-        'query': query,
-        'priority': priority,
-        'priorities': priorities,
-    }
-    
-    return render(request, 'contacts/person_list.html', context)
+    if use_lazy_loading:
+        # Use lazy loading template
+        context = {
+            'query': query,
+            'priority': priority,
+            'pipeline_stage': pipeline_stage,
+            'priorities': Contact.PRIORITY_CHOICES,
+            'pipeline_stages': MAIN_PEOPLE_PIPELINE_STAGES,
+        }
+        return render(request, 'contacts/person_list_lazy.html', context)
+    else:
+        # Fallback to traditional pagination
+        # Start with all people - use select_related to optimize queries
+        people = Person.objects.select_related('contact', 'contact__office').all()
+        
+        # Apply office-level filtering
+        people = office_data_filter(people, request.user, 'contact__office')
+        
+        # Apply filters if provided
+        if query:
+            people = people.filter(
+                Q(contact__first_name__icontains=query) | 
+                Q(contact__last_name__icontains=query) | 
+                Q(contact__email__icontains=query) | 
+                Q(contact__phone__icontains=query)
+            )
+        
+        if priority:
+            people = people.filter(contact__priority=priority)
+        
+        if pipeline_stage:
+            # Filter by pipeline stage
+            from mobilize.pipeline.models import PipelineContact, Pipeline
+            main_pipeline = Pipeline.get_main_people_pipeline()
+            if main_pipeline:
+                # Get all contacts in the specified stage
+                pipeline_contacts = PipelineContact.objects.filter(
+                    pipeline=main_pipeline,
+                    current_stage__name__iexact=pipeline_stage.replace('_', ' ').title()
+                ).values_list('contact_id', flat=True)
+                people = people.filter(contact__id__in=pipeline_contacts)
+        
+        # Get items per page from request
+        per_page = int(request.GET.get('per_page', 25))
+        
+        # Pagination
+        paginator = Paginator(people, per_page)
+        page_number = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+        
+        # Get priorities for filter dropdowns
+        priorities = Contact.PRIORITY_CHOICES
+        
+        context = {
+            'page_obj': page_obj,
+            'query': query,
+            'priority': priority,
+            'pipeline_stage': pipeline_stage,
+            'priorities': priorities,
+            'pipeline_stages': MAIN_PEOPLE_PIPELINE_STAGES,
+            'per_page': per_page,
+        }
+        
+        return render(request, 'contacts/person_list.html', context)
 
 
 @login_required
+@office_object_permission_required(Person, 'contact__office')
 def person_detail(request, pk):
     """
     Display detailed information about a person.
+    Only accessible if user has office permission.
     """
+    # Get the person (office filtering is handled by decorator)
     person = get_object_or_404(Person.objects.select_related('contact', 'contact__office'), pk=pk)
     # Get recent communications for this person
     from mobilize.communications.models import Communication
@@ -79,9 +132,12 @@ def person_detail(request, pk):
 
 
 @login_required
+@can_create_edit_delete
+@ensure_user_office_assignment
 def person_create(request):
     """
     Create a new person.
+    Only accessible for users with create permissions.
     """
     if request.method == 'POST':
         form = PersonForm(request.POST)
@@ -99,11 +155,15 @@ def person_create(request):
 
 
 @login_required
+@can_create_edit_delete
+@office_object_permission_required(Person, 'contact__office')
 def person_edit(request, pk):
     """
     Edit an existing person.
+    Only accessible for users with edit permissions and office access.
     """
-    person = get_object_or_404(Person, pk=pk)
+    # Get the person (office filtering is handled by decorator)
+    person = get_object_or_404(Person.objects.select_related('contact', 'contact__office'), pk=pk)
     
     if request.method == 'POST':
         form = PersonForm(request.POST, instance=person)
@@ -122,11 +182,15 @@ def person_edit(request, pk):
 
 
 @login_required
+@can_create_edit_delete
+@office_object_permission_required(Person, 'contact__office')
 def person_delete(request, pk):
     """
     Delete a person.
+    Only accessible for users with delete permissions and office access.
     """
-    person = get_object_or_404(Person, pk=pk)
+    # Get the person (office filtering is handled by decorator)
+    person = get_object_or_404(Person.objects.select_related('contact', 'contact__office'), pk=pk)
     
     if request.method == 'POST':
         name = person.name
@@ -136,6 +200,84 @@ def person_delete(request, pk):
     
     return render(request, 'contacts/person_confirm_delete.html', {
         'person': person,
+    })
+
+
+@login_required
+def person_list_api(request):
+    """
+    JSON API endpoint for lazy loading person list data.
+    """
+    # Get query parameters
+    query = request.GET.get('q', '')
+    priority = request.GET.get('priority', '')
+    pipeline_stage = request.GET.get('pipeline_stage', '')
+    page = int(request.GET.get('page', 1))
+    per_page = int(request.GET.get('per_page', 25))
+    
+    # Build queryset with optimizations
+    people = Person.objects.select_related(
+        'contact', 
+        'contact__office',
+        'primary_church'
+    ).prefetch_related(
+        'contact__pipeline_entries__current_stage'
+    )
+    
+    # Apply filters
+    if query:
+        people = people.filter(
+            Q(contact__first_name__icontains=query) | 
+            Q(contact__last_name__icontains=query) | 
+            Q(contact__email__icontains=query) | 
+            Q(contact__phone__icontains=query)
+        )
+    
+    if priority:
+        people = people.filter(contact__priority=priority)
+    
+    if pipeline_stage:
+        # Filter by pipeline stage
+        from mobilize.pipeline.models import PipelineContact, Pipeline
+        main_pipeline = Pipeline.get_main_people_pipeline()
+        if main_pipeline:
+            # Get all contacts in the specified stage
+            pipeline_contacts = PipelineContact.objects.filter(
+                pipeline=main_pipeline,
+                current_stage__name__iexact=pipeline_stage.replace('_', ' ').title()
+            ).values_list('contact_id', flat=True)
+            people = people.filter(contact__id__in=pipeline_contacts)
+    
+    # Order by most recently updated
+    people = people.order_by('-contact__updated_at')
+    
+    # Paginate
+    paginator = Paginator(people, per_page)
+    page_obj = paginator.get_page(page)
+    
+    # Build JSON response
+    results = []
+    for person in page_obj:
+        results.append({
+            'id': person.contact.id,
+            'name': f"{person.contact.first_name} {person.contact.last_name}",
+            'email': person.contact.email,
+            'phone': person.contact.phone,
+            'priority': person.contact.priority,
+            'priority_display': person.contact.get_priority_display(),
+            'pipeline_stage': person.contact.get_pipeline_stage_code(),
+            'detail_url': reverse('contacts:person_detail', args=[person.pk]),
+            'edit_url': reverse('contacts:person_edit', args=[person.pk]),
+            'delete_url': reverse('contacts:person_delete', args=[person.pk]),
+        })
+    
+    return JsonResponse({
+        'results': results,
+        'page': page,
+        'per_page': per_page,
+        'total': paginator.count,
+        'has_next': page_obj.has_next(),
+        'has_previous': page_obj.has_previous(),
     })
 
 
@@ -259,9 +401,9 @@ def import_contacts(request):
                     f"Import complete: {created_count} created, {updated_count} updated, {error_count} errors"
                 )
                 return redirect('contacts:person_list')
-                
+            
             except Exception as e:
-                messages.error(request, f"Error processing CSV: {str(e)}")
+                messages.error(request, f"Error processing CSV file: {str(e)}")
                 return redirect('contacts:import_contacts')
     else:
         form = ImportContactsForm()
@@ -379,7 +521,6 @@ def bulk_delete(request):
         messages.error(request, f"Error deleting contacts: {str(e)}")
     
     return redirect('contacts:person_list')
-
 
 
 @login_required

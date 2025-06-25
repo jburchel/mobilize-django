@@ -88,8 +88,13 @@ class Task(models.Model):
     recurrence_end_date = models.DateField(blank=True, null=True, help_text="Date when the recurring series should end.")
     parent_task = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='occurrences', help_text="Link to the master recurring task if this is an occurrence.")
     next_occurrence_date = models.DateTimeField(blank=True, null=True, help_text="For template tasks, when the next occurrence should be generated.")
+    recurring_template = models.ForeignKey('RecurringTaskTemplate', on_delete=models.SET_NULL, null=True, blank=True, related_name='generated_tasks', help_text="Link to the recurring template that created this task")
 
 
+    # Notification fields for Celery tasks
+    notification_sent = models.BooleanField(default=False, help_text="Whether due date notification has been sent")
+    overdue_notification_sent = models.BooleanField(default=False, help_text="Whether overdue notification has been sent")
+    
     # Timestamps
     created_at = models.DateTimeField(default=timezone.now, blank=True, null=True)
     updated_at = models.DateTimeField(default=timezone.now, blank=True, null=True)
@@ -240,3 +245,142 @@ class Task(models.Model):
                     break
                     
         return generated_count
+
+
+class RecurringTaskTemplate(models.Model):
+    """
+    Template for creating recurring tasks.
+    
+    This model stores the configuration for recurring tasks and is used
+    by Celery tasks to generate new task instances.
+    """
+    # Basic Information
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    
+    # Task properties
+    priority = models.CharField(max_length=50, choices=Task.PRIORITY_CHOICES, default='medium')
+    category = models.CharField(max_length=255, blank=True, null=True)
+    type = models.CharField(max_length=50, default='general')
+    
+    # Assignment defaults
+    default_assignee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='recurring_task_templates'
+    )
+    default_contact = models.ForeignKey(
+        'contacts.Contact',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='recurring_task_templates'
+    )
+    
+    # Recurrence configuration
+    recurrence_pattern = models.JSONField(help_text="Recurrence pattern configuration")
+    is_active = models.BooleanField(default=True)
+    last_created = models.DateTimeField(null=True, blank=True, help_text="When the last task was created from this template")
+    
+    # Notification settings
+    send_notifications = models.BooleanField(default=True, help_text="Send assignment notifications for created tasks")
+    
+    # Meta information
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='created_recurring_templates'
+    )
+    office = models.ForeignKey(Office, on_delete=models.SET_NULL, blank=True, null=True, related_name='recurring_task_templates')
+    
+    # Timestamps
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'recurring_task_templates'
+        verbose_name = 'Recurring Task Template'
+        verbose_name_plural = 'Recurring Task Templates'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['is_active']),
+            models.Index(fields=['last_created']),
+            models.Index(fields=['created_by']),
+        ]
+    
+    def __str__(self):
+        return f"Recurring: {self.title}"
+    
+    def should_create_new_task(self, current_time):
+        """
+        Check if it's time to create a new task based on the recurrence pattern.
+        
+        Args:
+            current_time: The current datetime to check against
+            
+        Returns:
+            bool: True if a new task should be created
+        """
+        if not self.is_active:
+            return False
+        
+        pattern = self.recurrence_pattern
+        frequency = pattern.get('frequency', 'daily')
+        interval = pattern.get('interval', 1)
+        
+        # If this is the first time, create immediately
+        if not self.last_created:
+            return True
+        
+        # Calculate time since last creation
+        time_diff = current_time - self.last_created
+        
+        if frequency == 'daily':
+            return time_diff.days >= interval
+        elif frequency == 'weekly':
+            return time_diff.days >= (interval * 7)
+        elif frequency == 'monthly':
+            # Check if enough months have passed
+            months_diff = (current_time.year - self.last_created.year) * 12 + (current_time.month - self.last_created.month)
+            return months_diff >= interval
+        elif frequency == 'yearly':
+            years_diff = current_time.year - self.last_created.year
+            return years_diff >= interval
+        
+        return False
+    
+    def calculate_next_due_date(self, base_time):
+        """
+        Calculate the due date for the next task instance.
+        
+        Args:
+            base_time: The base time to calculate from
+            
+        Returns:
+            datetime: The calculated due date
+        """
+        pattern = self.recurrence_pattern
+        due_time = pattern.get('due_time', 'end_of_day')  # 'start_of_day', 'end_of_day', or specific time
+        days_ahead = pattern.get('days_ahead', 0)  # How many days ahead to set the due date
+        
+        # Calculate the base due date
+        due_date = base_time + timedelta(days=days_ahead)
+        
+        # Set the specific time
+        if due_time == 'start_of_day':
+            due_datetime = due_date.replace(hour=9, minute=0, second=0, microsecond=0)
+        elif due_time == 'end_of_day':
+            due_datetime = due_date.replace(hour=17, minute=0, second=0, microsecond=0)
+        elif isinstance(due_time, str) and ':' in due_time:
+            # Parse specific time (e.g., "14:30")
+            try:
+                hour, minute = map(int, due_time.split(':'))
+                due_datetime = due_date.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            except ValueError:
+                # Default to end of day if parsing fails
+                due_datetime = due_date.replace(hour=17, minute=0, second=0, microsecond=0)
+        else:
+            # Default to end of day
+            due_datetime = due_date.replace(hour=17, minute=0, second=0, microsecond=0)
+        
+        return due_datetime

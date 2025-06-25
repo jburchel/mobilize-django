@@ -19,11 +19,19 @@ class DataAccessManager:
         
         Args:
             user: The current user
-            view_mode: 'default', 'my_only' - controls viewing scope for admins
+            view_mode: 'default', 'my_only', or 'office_<office_id>' - controls viewing scope for admins
         """
         self.user = user
         self.view_mode = view_mode
         self.user_role = getattr(user, 'role', 'standard_user')
+        
+        # Parse office-specific view mode for super admins
+        self.selected_office_id = None
+        if view_mode.startswith('office_'):
+            try:
+                self.selected_office_id = int(view_mode.split('_')[1])
+            except (ValueError, IndexError):
+                self.selected_office_id = None
         
     def get_people_queryset(self):
         """
@@ -38,6 +46,9 @@ class DataAccessManager:
             if self.view_mode == 'my_only':
                 # Super admin viewing only their assigned people
                 return Person.objects.filter(contact__user=self.user)
+            elif self.selected_office_id:
+                # Super admin viewing people from a specific office
+                return Person.objects.filter(contact__office_id=self.selected_office_id)
             else:
                 # Super admin viewing all people across all offices
                 return Person.objects.all()
@@ -68,8 +79,12 @@ class DataAccessManager:
         from mobilize.churches.models import Church
         
         if self.user_role == 'super_admin':
-            # Super admin sees all churches
-            return Church.objects.all()
+            if self.selected_office_id:
+                # Super admin viewing churches from a specific office
+                return Church.objects.filter(contact__office_id=self.selected_office_id)
+            else:
+                # Super admin sees all churches
+                return Church.objects.all()
             
         elif self.user_role in ['office_admin', 'standard_user', 'limited_user']:
             # Office admin and standard users see churches in their office(s)
@@ -81,29 +96,59 @@ class DataAccessManager:
     
     def get_tasks_queryset(self):
         """
-        Get tasks queryset - all users only see their own tasks.
+        Get tasks queryset based on user role and view mode.
         
         Returns:
-            QuerySet filtered for the user's tasks
+            QuerySet filtered for the user's access
         """
         from mobilize.tasks.models import Task
         
-        # All users only see their own tasks (assigned to them or created by them)
-        return Task.objects.filter(
-            Q(assigned_to=self.user) | Q(created_by=self.user)
-        )
+        if self.user_role == 'super_admin':
+            if self.view_mode == 'my_only':
+                # Super admin viewing only their own tasks
+                return Task.objects.filter(Q(assigned_to=self.user) | Q(created_by=self.user))
+            elif self.selected_office_id:
+                # Super admin viewing tasks related to a specific office
+                return Task.objects.filter(
+                    Q(office_id=self.selected_office_id) |
+                    Q(person__contact__office_id=self.selected_office_id) |
+                    Q(church__contact__office_id=self.selected_office_id)
+                )
+            else:
+                # Super admin viewing all tasks
+                return Task.objects.all()
+        else:
+            # All other users only see their own tasks (assigned to them or created by them)
+            return Task.objects.filter(
+                Q(assigned_to=self.user) | Q(created_by=self.user)
+            )
     
     def get_communications_queryset(self):
         """
-        Get communications queryset - all users only see their own communications.
+        Get communications queryset based on user role and view mode.
         
         Returns:
-            QuerySet filtered for the user's communications
+            QuerySet filtered for the user's access
         """
         from mobilize.communications.models import Communication
         
-        # All users only see their own communications
-        return Communication.objects.filter(user_id=str(self.user.id))
+        if self.user_role == 'super_admin':
+            if self.view_mode == 'my_only':
+                # Super admin viewing only their own communications
+                return Communication.objects.filter(user_id=str(self.user.id))
+            elif self.selected_office_id:
+                # Super admin viewing communications related to a specific office
+                return Communication.objects.filter(
+                    Q(office_id=self.selected_office_id) |
+                    Q(person__contact__office_id=self.selected_office_id) |
+                    Q(church__contact__office_id=self.selected_office_id)
+                )
+            else:
+                # Super admin viewing all communications
+                return Communication.objects.all()
+        else:
+            # All other users only see their own communications
+            return Communication.objects.filter(user_id=str(self.user.id))
     
     def _get_user_offices(self):
         """
@@ -146,6 +191,14 @@ class DataAccessManager:
             
         if self.view_mode == 'my_only':
             return "My Contacts Only"
+        elif self.selected_office_id:
+            # Get office name for display
+            try:
+                from mobilize.admin_panel.models import Office
+                office = Office.objects.get(id=self.selected_office_id)
+                return f"{office.name} Office"
+            except:
+                return "Selected Office"
         elif self.user_role == 'super_admin':
             return "All Offices"
         else:

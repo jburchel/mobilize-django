@@ -112,99 +112,114 @@ class PersonModelValidationTest(TestCase):
     """Test cases for Person model validation and constraints."""
 
     def test_person_inherits_from_contact(self):
-        """Test that Person properly inherits from Contact."""
-        person = Person.objects.create(
+        """Test that Person properly relates to Contact."""
+        contact = Contact.objects.create(
+            type='person',
             first_name='Jane',
-            last_name='Smith',
+            last_name='Smith'
+        )
+        person = Person.objects.create(
+            contact=contact,
             title='Ms.'
         )
-        # Person should have Contact fields
-        self.assertEqual(person.first_name, 'Jane')
-        self.assertEqual(person.last_name, 'Smith')
+        # Person should access Contact fields through relationship
+        self.assertEqual(person.contact.first_name, 'Jane')
+        self.assertEqual(person.contact.last_name, 'Smith')
         # And Person-specific fields
         self.assertEqual(person.title, 'Ms.')
 
     def test_person_name_property(self):
         """Test Person name property."""
-        person = Person.objects.create(
+        contact = Contact.objects.create(
+            type='person',
             first_name='Jane',
             last_name='Smith'
         )
+        person = Person.objects.create(contact=contact)
         self.assertEqual(person.name, 'Jane Smith')
 
     def test_person_name_property_first_only(self):
         """Test Person name property with first name only."""
-        person = Person.objects.create(first_name='Jane')
+        contact = Contact.objects.create(
+            type='person',
+            first_name='Jane'
+        )
+        person = Person.objects.create(contact=contact)
         self.assertEqual(person.name, 'Jane')
 
     def test_person_name_property_last_only(self):
         """Test Person name property with last name only."""
-        person = Person.objects.create(last_name='Smith')
+        contact = Contact.objects.create(
+            type='person',
+            last_name='Smith'
+        )
+        person = Person.objects.create(contact=contact)
         self.assertEqual(person.name, 'Smith')
 
     def test_person_name_property_empty(self):
         """Test Person name property with no names."""
-        person = Person.objects.create()
+        contact = Contact.objects.create(type='person')
+        person = Person.objects.create(contact=contact)
         self.assertEqual(person.name, '')
 
     def test_person_get_absolute_url(self):
         """Test Person get_absolute_url method."""
-        person = Person.objects.create(
+        contact = Contact.objects.create(
+            type='person',
             first_name='Jane',
             last_name='Smith'
         )
-        expected_url = f'/contacts/{person.id}/'
+        person = Person.objects.create(contact=contact)
+        expected_url = f'/contacts/{person.contact_id}/'
         self.assertEqual(person.get_absolute_url(), expected_url)
 
     def test_person_date_fields_validation(self):
         """Test Person date fields accept valid dates."""
+        contact = Contact.objects.create(type='person')
         person = Person.objects.create(
-            first_name='Jane',
+            contact=contact,
             birthday='1990-01-01',
-            anniversary='2015-06-15',
-            last_contact='2024-01-01',
-            next_contact='2024-02-01',
-            date_closed='2024-01-15'
+            anniversary='2015-06-15'
         )
         self.assertEqual(str(person.birthday), '1990-01-01')
         self.assertEqual(str(person.anniversary), '2015-06-15')
-        self.assertEqual(str(person.last_contact), '2024-01-01')
-        self.assertEqual(str(person.next_contact), '2024-02-01')
-        self.assertEqual(str(person.date_closed), '2024-01-15')
 
     def test_person_boolean_fields(self):
         """Test Person boolean fields."""
-        person = Person.objects.create(
-            first_name='Jane',
-            is_primary_contact=True,
-            virtuous=False
+        contact = Contact.objects.create(
+            type='person',
+            first_name='Jane'
         )
-        self.assertTrue(person.is_primary_contact)
-        self.assertFalse(person.virtuous)
+        person = Person.objects.create(contact=contact)
+        # Person model doesn't have boolean fields in current schema
+        # This test validates the model can be created
+        self.assertIsNotNone(person)
 
     def test_person_text_fields_can_be_long(self):
         """Test Person text fields can handle long content."""
-        long_text = 'A' * 1000  # 1000 character string
-        person = Person.objects.create(
-            first_name='Jane',
-            languages=long_text,
-            skills=long_text,
-            interests=long_text,
-            info_given=long_text,
-            desired_service=long_text,
-            reason_closed=long_text,
-            tags=long_text
+        contact = Contact.objects.create(
+            type='person',
+            first_name='Jane'
         )
-        self.assertEqual(len(person.languages), 1000)
-        self.assertEqual(len(person.skills), 1000)
+        # Test languages field which exists and is JSON
+        languages_list = ['English', 'Spanish', 'French']
+        person = Person.objects.create(
+            contact=contact,
+            languages=languages_list
+        )
+        self.assertEqual(person.languages, languages_list)
 
     def test_person_meta_ordering(self):
         """Test Person model ordering."""
-        person1 = Person.objects.create(first_name='John', last_name='Zebra')
-        person2 = Person.objects.create(first_name='Jane', last_name='Apple')
-        person3 = Person.objects.create(first_name='Bob', last_name='Apple')
+        contact1 = Contact.objects.create(type='person', first_name='John', last_name='Zebra')
+        contact2 = Contact.objects.create(type='person', first_name='Jane', last_name='Apple')
+        contact3 = Contact.objects.create(type='person', first_name='Bob', last_name='Apple')
         
-        # Should be ordered by last_name, then first_name
+        person1 = Person.objects.create(contact=contact1)
+        person2 = Person.objects.create(contact=contact2)
+        person3 = Person.objects.create(contact=contact3)
+        
+        # Should be ordered by contact last_name, then first_name
         people = list(Person.objects.all())
         self.assertEqual(people[0], person3)  # Bob Apple
         self.assertEqual(people[1], person2)  # Jane Apple

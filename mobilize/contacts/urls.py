@@ -5,6 +5,7 @@ app_name = 'contacts'
 
 urlpatterns = [
     path('', views.person_list, name='person_list'),
+    path('api/list/', views.person_list_api, name='person_list_api'),  # API endpoint for lazy loading
     path('create/', views.person_create, name='person_create'),
     path('<int:pk>/', views.person_detail, name='person_detail'),
     path('<int:pk>/edit/', views.person_edit, name='person_edit'),

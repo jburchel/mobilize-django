@@ -3,6 +3,7 @@ Django settings for mobilize project.
 """
 
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -46,6 +47,9 @@ INSTALLED_APPS = [
     'crispy_bootstrap5',
     'debug_toolbar',
     'django_crontab',
+    'compressor',  # Django-compressor for CSS/JS minification
+    'django_celery_beat',  # Celery Beat for scheduled tasks
+    'django_celery_results',  # Celery Results backend
     
     # Project apps
     'mobilize.core',
@@ -62,6 +66,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Serve static files efficiently
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -101,6 +106,8 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASS', ''),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
+        'CONN_MAX_AGE': 600,  # Connection pooling - keep connections for 10 minutes
+        'CONN_HEALTH_CHECKS': True,  # Enable connection health checks
     }
 }
 
@@ -145,6 +152,40 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
+# Static file compression and optimization
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    'compressor.finders.CompressorFinder',
+]
+
+# Whitenoise configuration for efficient static file serving
+WHITENOISE_AUTOREFRESH = DEBUG  # Only auto-refresh in development
+WHITENOISE_USE_FINDERS = DEBUG  # Use finders in development
+WHITENOISE_COMPRESS_OFFLINE = not DEBUG  # Compress static files in production
+
+# Django-compressor settings
+COMPRESS_ENABLED = not DEBUG  # Enable compression in production
+COMPRESS_CSS_FILTERS = [
+    'compressor.filters.css_default.CssAbsoluteFilter',
+    'compressor.filters.cssmin.rCSSMinFilter',
+]
+COMPRESS_JS_FILTERS = ['compressor.filters.jsmin.rJSMinFilter']
+COMPRESS_OFFLINE = not DEBUG  # Pre-compress files in production
+
+# Caching Configuration for Performance
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'django_cache_table',
+        'TIMEOUT': 3600,  # 1 hour default timeout
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+            'CULL_FREQUENCY': 3,  # Fraction of entries that are culled
+        },
+    }
+}
+
 # Media files
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -165,6 +206,7 @@ INTERNAL_IPS = [
 
 # Authentication settings
 AUTHENTICATION_BACKENDS = [
+    'mobilize.authentication.backends.EmailOrUsernameModelBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
@@ -238,3 +280,133 @@ CRONJOBS = [
 
 # Crontab settings
 CRONTAB_COMMAND_PREFIX = 'DJANGO_SETTINGS_MODULE=mobilize.settings'
+
+# ============================
+# CELERY CONFIGURATION
+# ============================
+
+# Celery Configuration Options
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = 'django-db'  # Store results in Django database
+CELERY_CACHE_BACKEND = 'django-cache'  # Use Django cache for result caching
+
+# Task serialization
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+
+# Timezone configuration
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = True
+
+# Task routing and queues
+CELERY_TASK_ROUTES = {
+    'mobilize.communications.tasks.*': {'queue': 'email'},
+    'mobilize.tasks.tasks.*': {'queue': 'notifications'},
+    'mobilize.utils.tasks.*': {'queue': 'sync'},
+}
+
+# Default queue configuration
+CELERY_TASK_DEFAULT_QUEUE = 'default'
+CELERY_TASK_QUEUES = {
+    'default': {
+        'exchange': 'default',
+        'routing_key': 'default',
+    },
+    'email': {
+        'exchange': 'email',
+        'routing_key': 'email',
+    },
+    'notifications': {
+        'exchange': 'notifications',
+        'routing_key': 'notifications',
+    },
+    'sync': {
+        'exchange': 'sync',
+        'routing_key': 'sync',
+    },
+}
+
+# Task execution configuration
+CELERY_TASK_ALWAYS_EAGER = os.environ.get('CELERY_ALWAYS_EAGER', 'False') == 'True'  # For testing
+CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Disable prefetching for better task distribution
+CELERY_TASK_ACKS_LATE = True  # Acknowledge tasks after completion
+CELERY_WORKER_DISABLE_RATE_LIMITS = False
+
+# Task retry configuration
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+CELERY_TASK_DEFAULT_RETRY_DELAY = 60  # 1 minute
+CELERY_TASK_MAX_RETRIES = 3
+
+# Beat scheduler configuration (for periodic tasks)
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_BEAT_SCHEDULE = {
+    'sync-supabase-hourly': {
+        'task': 'mobilize.utils.tasks.sync_supabase_task',
+        'schedule': 3600.0,  # Every hour
+        'options': {'queue': 'sync'},
+    },
+    'send-due-date-notifications': {
+        'task': 'mobilize.tasks.tasks.send_due_date_notifications',
+        'schedule': 1800.0,  # Every 30 minutes
+        'options': {'queue': 'notifications'},
+    },
+    'process-pending-emails': {
+        'task': 'mobilize.communications.tasks.process_pending_emails',
+        'schedule': 300.0,  # Every 5 minutes
+        'options': {'queue': 'email'},
+    },
+}
+
+# Worker configuration
+CELERY_WORKER_SEND_TASK_EVENTS = True
+CELERY_TASK_SEND_SENT_EVENT = True
+
+# Security
+CELERY_WORKER_HIJACK_ROOT_LOGGER = False
+CELERY_WORKER_LOG_COLOR = False
+
+# Results backend configuration
+CELERY_RESULT_EXPIRES = 3600  # Results expire after 1 hour
+
+# ============================
+# TESTING CONFIGURATION
+# ============================
+
+# Speed up tests by using in-memory database and simpler password hashing
+if 'test' in sys.argv or 'pytest' in sys.modules:
+    # Use in-memory SQLite for tests
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:',
+    }
+    
+    # Use simple password hasher for tests
+    PASSWORD_HASHERS = [
+        'django.contrib.auth.hashers.MD5PasswordHasher',
+    ]
+    
+    # Disable migrations for faster test setup
+    class DisableMigrations:
+        def __contains__(self, item):
+            return True
+        def __getitem__(self, item):
+            return None
+    
+    MIGRATION_MODULES = DisableMigrations()
+    
+    # Use simple cache for tests
+    CACHES['default'] = {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+    
+    # Make Celery run synchronously in tests
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
+    
+    # Disable compressor in tests
+    COMPRESS_ENABLED = False
+    
+    # Use simple email backend for tests
+    EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'

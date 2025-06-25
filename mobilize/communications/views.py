@@ -9,11 +9,14 @@ from django.utils.html import strip_tags
 from django.conf import settings
 from django.contrib import messages
 from django.views import View
+from django.core.exceptions import PermissionDenied
+from django.db import models
 
 from .models import EmailTemplate, EmailSignature, Communication, EmailAttachment
 from .forms import EmailTemplateForm, EmailSignatureForm, CommunicationForm, ComposeEmailForm
 from .gmail_service import GmailService
 from .google_contacts_service import GoogleContactsService
+from mobilize.authentication.decorators import office_data_filter
 
 
 # Email Template Views
@@ -23,12 +26,27 @@ class EmailTemplateListView(LoginRequiredMixin, ListView):
     context_object_name = 'email_templates'
     paginate_by = 10
     
+    def dispatch(self, request, *args, **kwargs):
+        # Check office assignment
+        if request.user.role != 'super_admin' and not request.user.useroffice_set.exists():
+            raise PermissionDenied("Access denied. User not assigned to any office.")
+        return super().dispatch(request, *args, **kwargs)
+    
     def get_queryset(self):
-        # Filter templates by user's office if not super_admin
-        if hasattr(self.request.user, 'role') and self.request.user.role == 'super_admin':
-            return EmailTemplate.objects.all()
-        # For now, return all templates - office filtering will be added later
-        return EmailTemplate.objects.filter(created_by=self.request.user)
+        queryset = EmailTemplate.objects.all()
+        
+        # Super admins see all templates
+        if self.request.user.role == 'super_admin':
+            return queryset
+        
+        # Other users see templates from their offices or created by them
+        user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
+        
+        # Templates are shared within offices
+        return queryset.filter(
+            models.Q(created_by=self.request.user) |
+            models.Q(created_by__useroffice__office__in=user_offices)
+        ).distinct()
 
 
 class EmailTemplateDetailView(LoginRequiredMixin, DetailView):
@@ -42,6 +60,17 @@ class EmailTemplateCreateView(LoginRequiredMixin, CreateView):
     form_class = EmailTemplateForm
     template_name = 'communications/email_template_form.html'
     success_url = reverse_lazy('communications:email_template_list')
+    
+    def dispatch(self, request, *args, **kwargs):
+        # Prevent limited users from creating
+        if request.user.role == 'limited_user':
+            raise PermissionDenied("Limited users cannot create email templates")
+        
+        # Check office assignment
+        if request.user.role != 'super_admin' and not request.user.useroffice_set.exists():
+            raise PermissionDenied("Access denied. User not assigned to any office.")
+        
+        return super().dispatch(request, *args, **kwargs)
     
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -153,9 +182,30 @@ class CommunicationListView(LoginRequiredMixin, ListView):
     context_object_name = 'communications'
     paginate_by = 20
     
+    def dispatch(self, request, *args, **kwargs):
+        # Check office assignment
+        if request.user.role != 'super_admin' and not request.user.useroffice_set.exists():
+            raise PermissionDenied("Access denied. User not assigned to any office.")
+        return super().dispatch(request, *args, **kwargs)
+    
     def get_queryset(self):
         # Filter by user's access with optimized queries
-        queryset = Communication.objects.select_related('person', 'church', 'office')
+        queryset = Communication.objects.select_related('person', 'church', 'office', 'user')
+        
+        # Apply office-level filtering
+        if self.request.user.role != 'super_admin':
+            user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
+            
+            # Communications visible if:
+            # 1. User created the communication
+            # 2. Person/church belongs to user's office
+            # 3. Communication office matches user's office
+            queryset = queryset.filter(
+                models.Q(user=self.request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            ).distinct()
         
         # Apply filters from GET parameters
         type_filter = self.request.GET.get('type')
@@ -176,12 +226,15 @@ class CommunicationListView(LoginRequiredMixin, ListView):
             queryset = queryset.filter(
                 Q(subject__icontains=search_query) |
                 Q(sender__icontains=search_query) |
-                Q(message__icontains=search_query)
+                Q(message__icontains=search_query) |
+                # Search in person names
+                Q(person__contact__first_name__icontains=search_query) |
+                Q(person__contact__last_name__icontains=search_query) |
+                # Search in church names
+                Q(church__contact__church_name__icontains=search_query) |
+                Q(church__name__icontains=search_query)
             )
         
-        if hasattr(self.request.user, 'role') and self.request.user.role == 'super_admin':
-            return queryset.order_by('-date')
-        # For now, return all communications - proper filtering will be added later
         return queryset.order_by('-date')
 
 
@@ -191,13 +244,37 @@ class CommunicationDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'communication'
     
     def get_queryset(self):
-        return Communication.objects.select_related('person', 'church', 'office')
+        queryset = Communication.objects.select_related('person', 'church', 'office', 'user')
+        
+        # Apply office-level filtering
+        if self.request.user.role != 'super_admin':
+            user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
+            
+            queryset = queryset.filter(
+                models.Q(user=self.request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            ).distinct()
+        
+        return queryset
 
 
 class CommunicationCreateView(LoginRequiredMixin, CreateView):
     model = Communication
     form_class = CommunicationForm
     template_name = 'communications/communication_form.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        # Prevent limited users from creating
+        if request.user.role == 'limited_user':
+            raise PermissionDenied("Limited users cannot create communications")
+        
+        # Check office assignment
+        if request.user.role != 'super_admin' and not request.user.useroffice_set.exists():
+            raise PermissionDenied("Access denied. User not assigned to any office.")
+        
+        return super().dispatch(request, *args, **kwargs)
     
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -217,6 +294,29 @@ class CommunicationUpdateView(LoginRequiredMixin, UpdateView):
     form_class = CommunicationForm
     template_name = 'communications/communication_form.html'
     
+    def dispatch(self, request, *args, **kwargs):
+        # Prevent limited users from editing
+        if request.user.role == 'limited_user':
+            raise PermissionDenied("Limited users cannot edit communications")
+        
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        queryset = Communication.objects.select_related('person', 'church', 'office', 'user')
+        
+        # Apply office-level filtering
+        if self.request.user.role != 'super_admin':
+            user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
+            
+            queryset = queryset.filter(
+                models.Q(user=self.request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            ).distinct()
+        
+        return queryset
+    
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
@@ -230,6 +330,29 @@ class CommunicationDeleteView(LoginRequiredMixin, DeleteView):
     model = Communication
     template_name = 'communications/communication_confirm_delete.html'
     success_url = reverse_lazy('communications:communication_list')
+    
+    def dispatch(self, request, *args, **kwargs):
+        # Prevent limited users from deleting
+        if request.user.role == 'limited_user':
+            raise PermissionDenied("Limited users cannot delete communications")
+        
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        queryset = Communication.objects.select_related('person', 'church', 'office', 'user')
+        
+        # Apply office-level filtering
+        if self.request.user.role != 'super_admin':
+            user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
+            
+            queryset = queryset.filter(
+                models.Q(user=self.request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            ).distinct()
+        
+        return queryset
 
 
 # Email Composition

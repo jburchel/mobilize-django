@@ -440,9 +440,9 @@ class GoogleCalendarService:
                 direction='outbound',
                 date=kwargs['start_datetime'].date(),
                 date_sent=timezone.now(),
-                calendar_event_id=kwargs.get('event_id'),
-                calendar_event_link=kwargs.get('event_link'),
-                user_id=str(self.user.id)
+                google_calendar_event_id=kwargs.get('event_id'),
+                google_meet_link=kwargs.get('event_link'),
+                user=self.user
             )
         except Exception as e:
             print(f"Error creating communication record: {e}")

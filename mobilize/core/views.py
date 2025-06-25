@@ -2,10 +2,14 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
 from django.contrib import messages
+from django.core.cache import cache
+from django.utils.http import urlencode
 from datetime import datetime, timedelta
+from mobilize.authentication.decorators import ensure_user_office_assignment
 
 
 @login_required
+@ensure_user_office_assignment
 def dashboard(request):
     """
     Main dashboard view displaying key metrics and pending tasks.
@@ -36,15 +40,34 @@ def dashboard(request):
     # Get data access manager based on user role and view preferences
     access_manager = get_data_access_manager(request)
     
-    # Get filtered querysets based on user permissions
-    people_queryset = access_manager.get_people_queryset()
-    churches_queryset = access_manager.get_churches_queryset()
-    tasks_queryset = access_manager.get_tasks_queryset()
-    communications_queryset = access_manager.get_communications_queryset()
+    # Create cache key based on user and view mode for performance
+    cache_key = f'dashboard_data_{request.user.id}_{access_manager.view_mode}_{datetime.now().strftime("%Y%m%d_%H")}'
+    cached_data = cache.get(cache_key)
     
-    # Get counts for dashboard widgets
-    people_count = people_queryset.count()
-    churches_count = churches_queryset.count()
+    if cached_data:
+        # Use cached data for better performance (1-hour cache)
+        people_count = cached_data['people_count']
+        churches_count = cached_data['churches_count']
+        people_queryset = access_manager.get_people_queryset()
+        churches_queryset = access_manager.get_churches_queryset()
+        tasks_queryset = access_manager.get_tasks_queryset()
+        communications_queryset = access_manager.get_communications_queryset()
+    else:
+        # Get filtered querysets based on user permissions
+        people_queryset = access_manager.get_people_queryset()
+        churches_queryset = access_manager.get_churches_queryset()
+        tasks_queryset = access_manager.get_tasks_queryset()
+        communications_queryset = access_manager.get_communications_queryset()
+        
+        # Get counts for dashboard widgets
+        people_count = people_queryset.count()
+        churches_count = churches_queryset.count()
+        
+        # Cache the basic counts for 1 hour
+        cache.set(cache_key, {
+            'people_count': people_count,
+            'churches_count': churches_count,
+        }, 3600)
     
     # Get pending tasks for current user (always user-specific) with optimization
     pending_tasks = tasks_queryset.select_related(
@@ -55,15 +78,15 @@ def dashboard(request):
     
     # Get task counts using aggregation for efficiency
     task_stats = tasks_queryset.aggregate(
-        overdue_tasks=Count('id', filter=Q(
+        overdue_tasks=Count('pk', filter=Q(
             status='pending',
             due_date__lt=datetime.now().date()
         )),
-        upcoming_tasks=Count('id', filter=Q(
+        upcoming_tasks=Count('pk', filter=Q(
             status='pending',
             due_date__range=[datetime.now().date(), datetime.now().date() + timedelta(days=7)]
         )),
-        completed_this_week=Count('id', filter=Q(
+        completed_this_week=Count('pk', filter=Q(
             status='completed',
             completed_at__gte=datetime.now() - timedelta(days=7)
         ))
@@ -78,30 +101,54 @@ def dashboard(request):
     from mobilize.pipeline.models import MAIN_PEOPLE_PIPELINE_STAGES, MAIN_CHURCH_PIPELINE_STAGES
     from django.db.models import Count, Case, When, CharField, Value
     
-    # Get people pipeline distribution
+    # Get people pipeline distribution - OPTIMIZED with database aggregation
+    from mobilize.pipeline.models import PipelineContact, PipelineStage
+    
+    # Get all pipeline stage names for mapping
+    stage_name_map = dict(MAIN_PEOPLE_PIPELINE_STAGES)
+    
+    # Use database aggregation instead of Python loops
+    people_pipeline_raw = people_queryset.select_related('contact').prefetch_related(
+        'contact__pipeline_entries__current_stage'
+    ).annotate(
+        pipeline_stage_name=Case(
+            *[When(contact__pipeline_entries__current_stage__name=stage_name, then=Value(stage_code))
+              for stage_code, stage_name in MAIN_PEOPLE_PIPELINE_STAGES],
+            default=Value('unknown'),
+            output_field=CharField()
+        )
+    ).values('pipeline_stage_name').annotate(count=Count('contact_id'))
+    
+    # Convert to expected format
     people_pipeline_data = []
+    pipeline_counts = {item['pipeline_stage_name']: item['count'] for item in people_pipeline_raw}
     for stage_code, stage_name in MAIN_PEOPLE_PIPELINE_STAGES:
-        # Count contacts that have this pipeline stage through the pipeline system
-        count = 0
-        for person in people_queryset:
-            stage_code_from_contact = person.contact.get_pipeline_stage_code()
-            if stage_code_from_contact == stage_code:
-                count += 1
+        count = pipeline_counts.get(stage_code, 0)
         people_pipeline_data.append({
             'stage_code': stage_code,
             'stage_name': stage_name,
             'count': count
         })
     
-    # Get churches pipeline distribution
+    # Get churches pipeline distribution - OPTIMIZED with database aggregation
+    church_stage_name_map = dict(MAIN_CHURCH_PIPELINE_STAGES)
+    
+    churches_pipeline_raw = churches_queryset.select_related('contact').prefetch_related(
+        'contact__pipeline_entries__current_stage'
+    ).annotate(
+        pipeline_stage_name=Case(
+            *[When(contact__pipeline_entries__current_stage__name=stage_name, then=Value(stage_code))
+              for stage_code, stage_name in MAIN_CHURCH_PIPELINE_STAGES],
+            default=Value('unknown'),
+            output_field=CharField()
+        )
+    ).values('pipeline_stage_name').annotate(count=Count('contact_id'))
+    
+    # Convert to expected format
     churches_pipeline_data = []
+    church_pipeline_counts = {item['pipeline_stage_name']: item['count'] for item in churches_pipeline_raw}
     for stage_code, stage_name in MAIN_CHURCH_PIPELINE_STAGES:
-        # Count contacts that have this pipeline stage through the pipeline system
-        count = 0
-        for church in churches_queryset:
-            stage_code_from_contact = church.contact.get_pipeline_stage_code()
-            if stage_code_from_contact == stage_code:
-                count += 1
+        count = church_pipeline_counts.get(stage_code, 0)
         churches_pipeline_data.append({
             'stage_code': stage_code,
             'stage_name': stage_name,
@@ -131,31 +178,50 @@ def dashboard(request):
     # Prepare priority distribution (user-specific tasks)
     priority_tasks = tasks_queryset.filter(
         status='pending'
-    ).values('priority').annotate(count=Count('id')).order_by('priority')
+    ).values('priority').annotate(count=Count('pk')).order_by('priority')
     
-    # Get activity timeline data (last 7 days)
+    # Get activity timeline data (last 7 days) - OPTIMIZED with single queries and proper date handling
+    from django.db.models import DateField
+    from django.db.models.functions import TruncDate
+    
+    # Get date range for last 7 days
+    end_date = datetime.now().date()
+    start_date = end_date - timedelta(days=6)
+    
+    # Get all people created in last 7 days, grouped by date - OPTIMIZED
+    people_by_date = people_queryset.select_related('contact').filter(
+        contact__created_at__date__range=[start_date, end_date]
+    ).annotate(
+        created_date=TruncDate('contact__created_at')
+    ).values('created_date').annotate(count=Count('contact_id'))
+    people_counts = {item['created_date']: item['count'] for item in people_by_date}
+    
+    # Get all tasks completed in last 7 days, grouped by date - OPTIMIZED
+    tasks_by_date = tasks_queryset.select_related('assigned_to', 'created_by').filter(
+        status='completed',
+        completed_at__date__range=[start_date, end_date]
+    ).annotate(
+        task_date=TruncDate('completed_at')
+    ).values('task_date').annotate(count=Count('pk'))
+    task_counts = {item['task_date']: item['count'] for item in tasks_by_date}
+    
+    # Get all communications sent in last 7 days, grouped by date - OPTIMIZED
+    comms_by_date = communications_queryset.select_related('person', 'church', 'user').filter(
+        date__range=[start_date, end_date]
+    ).annotate(
+        comm_date=TruncDate('date')
+    ).values('comm_date').annotate(count=Count('pk'))
+    comm_counts = {item['comm_date']: item['count'] for item in comms_by_date}
+    
+    # Build timeline data efficiently
     activity_timeline = []
     for i in range(6, -1, -1):
         date = datetime.now().date() - timedelta(days=i)
-        
-        people_created = people_queryset.filter(
-            contact__created_at__date=date
-        ).count()
-        
-        tasks_completed = tasks_queryset.filter(
-            status='completed',
-            completed_at__date=date
-        ).count()
-        
-        communications_sent = communications_queryset.filter(
-            date=date
-        ).count()
-        
         activity_timeline.append({
             'date': date.strftime('%m/%d'),
-            'people': people_created,
-            'tasks': tasks_completed,
-            'communications': communications_sent,
+            'people': people_counts.get(date, 0),
+            'tasks': task_counts.get(date, 0),
+            'communications': comm_counts.get(date, 0),
         })
     
     # Get church activity summary
@@ -173,6 +239,12 @@ def dashboard(request):
     dashboard_config = get_user_dashboard_config(request.user)
     enabled_widgets = dashboard_config.get_enabled_widgets()
     widget_rows = organize_widgets_by_row(enabled_widgets)
+    
+    # Get offices for super admin office selector
+    all_offices = []
+    if request.user.role == 'super_admin':
+        from mobilize.admin_panel.models import Office
+        all_offices = Office.objects.all().order_by('name')
     
     context = {
         'people_count': people_count,
@@ -194,6 +266,7 @@ def dashboard(request):
         'current_view_mode': access_manager.view_mode,
         'view_mode_display': access_manager.get_view_mode_display(),
         'user_role': getattr(request.user, 'role', 'standard_user'),
+        'all_offices': all_offices,
         # Add widget configuration
         'widget_rows': widget_rows,
         'get_widget_css_class': get_widget_css_class,

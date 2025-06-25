@@ -36,6 +36,10 @@ class SupabaseMapper:
             'to_supabase': lambda x: str(x) if x is not None else None,
             'from_supabase': lambda x: int(x) if x is not None and x != '' else None
         },
+        'Contact.user_id': {
+            'to_supabase': lambda x: str(x) if x is not None else None,
+            'from_supabase': lambda x: int(x) if x is not None and x != '' else None
+        },
         'office_id': {
             'to_supabase': lambda x: str(x) if x is not None else None,
             'from_supabase': lambda x: int(x) if x is not None and x != '' else None
@@ -93,6 +97,21 @@ class SupabaseMapper:
                 field_value = cls.TYPE_MAPPING[field_name]['to_supabase'](field_value)
             
             data[supabase_field_name] = field_value
+            
+            # For ForeignKey fields, also include the _id field that Supabase expects
+            if hasattr(field, 'related_model') and field.related_model is not None:
+                # This is a ForeignKey field
+                id_field_name = f"{field_name}_id"
+                id_value = getattr(instance, id_field_name, None)
+                
+                # Apply type conversion for ID fields
+                model_id_field_key = f"{model_name}.{id_field_name}"
+                if model_id_field_key in cls.TYPE_MAPPING:
+                    id_value = cls.TYPE_MAPPING[model_id_field_key]['to_supabase'](id_value)
+                elif id_field_name in cls.TYPE_MAPPING:
+                    id_value = cls.TYPE_MAPPING[id_field_name]['to_supabase'](id_value)
+                
+                data[id_field_name] = id_value
             
         return data
     

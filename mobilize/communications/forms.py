@@ -106,7 +106,7 @@ class CommunicationForm(forms.ModelForm):
         fields = [
             'type', 'message', 'subject', 'direction', 'date', 'date_sent',
             'person', 'church', 'gmail_message_id', 'gmail_thread_id',
-            'email_status', 'attachments', 'sender', 'user_id', 'owner_id',
+            'email_status', 'attachments', 'sender', 'owner_id',
             'office', 'google_calendar_event_id', 'google_meet_link'
         ]
         widgets = {

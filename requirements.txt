@@ -7,6 +7,8 @@ google-auth-oauthlib==1.2.0
 google-api-python-client==2.115.0
 celery==5.3.6
 redis==5.0.1
+django-celery-beat==2.8.1  # Celery Beat for scheduled tasks
+django-celery-results==2.6.0  # Celery Results backend
 django-crispy-forms==2.1
 crispy-bootstrap5==2023.10
 django-debug-toolbar==4.3.0
@@ -21,3 +23,7 @@ isort==5.13.2
 django-crontab==0.7.1 # Or the version pip installed
 python-dateutil==2.8.2 # Or latest compatible version
 pytz==2024.1 # For timezone handling in Google Calendar service
+django-compressor==4.4 # For CSS/JS minification and compression
+whitenoise==6.6.0 # For serving static files efficiently
+faker==37.4.0 # For generating sample data
+supabase==2.3.0 # For Supabase database integration

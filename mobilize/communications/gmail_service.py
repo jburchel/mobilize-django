@@ -249,7 +249,7 @@ class GmailService:
             
             if kwargs.get('related_person_id'):
                 try:
-                    person = Person.objects.get(id=kwargs['related_person_id'])
+                    person = Person.objects.get(contact_id=kwargs['related_person_id'])
                 except Person.DoesNotExist:
                     pass
             
@@ -271,7 +271,7 @@ class GmailService:
                 gmail_message_id=kwargs.get('gmail_message_id'),
                 email_status='sent',
                 sender=self.user.email,
-                user_id=str(self.user.id)
+                user=self.user
             )
         except Exception as e:
             print(f"Error creating communication record: {e}")
@@ -385,7 +385,7 @@ class GmailService:
                     gmail_thread_id=message['thread_id'],
                     email_status='received',
                     sender=message['sender'],
-                    user_id=str(self.user.id)
+                    user=self.user
                 )
                 synced_count += 1
         
