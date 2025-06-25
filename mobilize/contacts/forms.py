@@ -261,7 +261,7 @@ class PersonForm(forms.ModelForm):
             )
         )
     
-    def save(self, commit=True):
+    def save(self, commit=True, user=None, office=None):
         # Handle Contact creation/update
         if self.instance.pk:
             # Editing existing person
@@ -284,6 +284,12 @@ class PersonForm(forms.ModelForm):
         contact.notes = self.cleaned_data.get('notes')
         contact.priority = self.cleaned_data.get('priority')
         contact.status = self.cleaned_data.get('status') or 'active'
+        
+        # Set user and office for new contacts
+        if not self.instance.pk and user:
+            contact.user = user
+        if not self.instance.pk and office:
+            contact.office = office
         
         # Handle tags - convert string to list if needed
         tags_value = self.cleaned_data.get('tags')

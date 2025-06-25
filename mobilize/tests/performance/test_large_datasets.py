@@ -306,7 +306,7 @@ class LargeDatasetPerformanceTest(TransactionTestCase):
         self.client.login(username='perfuser', password='perfpass123')
         
         start_time = time.time()
-        response = self.client.get(reverse('pipeline:pipeline_detail', args=[self.pipeline.id]))
+        response = self.client.get(reverse('pipeline:pipeline_visualization', args=[self.pipeline.id]))
         elapsed_time = time.time() - start_time
         
         self.assertEqual(response.status_code, 200)
@@ -338,14 +338,14 @@ class LargeDatasetPerformanceTest(TransactionTestCase):
         connection.queries_log.clear()
         
         # Access contact list (should use optimized queries)
-        with self.assertNumQueries(5):  # Adjust based on actual optimizations
+        with self.assertNumQueries(4):  # Adjust based on actual optimizations
             response = self.client.get(reverse('contacts:person_list'))
             self.assertEqual(response.status_code, 200)
         
         # Check query count is reasonable
         query_count = len(connection.queries)
         print(f"Contact list view executed {query_count} queries")
-        self.assertLess(query_count, 10, "Too many queries executed for contact list")
+        self.assertLess(query_count, 8, "Too many queries executed for contact list")
     
     def test_pagination_performance(self):
         """Test pagination performance with large datasets"""

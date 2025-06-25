@@ -142,7 +142,11 @@ def person_create(request):
     if request.method == 'POST':
         form = PersonForm(request.POST)
         if form.is_valid():
-            person = form.save()
+            # Get the user's office assignment
+            user_office = request.user.useroffice_set.first()
+            office = user_office.office if user_office else None
+            
+            person = form.save(commit=True, user=request.user, office=office)
             messages.success(request, f"Successfully created {person.name}")
             return redirect('contacts:person_detail', pk=person.pk)
     else:
