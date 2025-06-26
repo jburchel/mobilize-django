@@ -47,3 +47,15 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS("Users table schema updated successfully!"))
             else:
                 self.stdout.write("Users table already has required schema.")
+            
+            # Also create django_session table if it doesn't exist
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS django_session (
+                    session_key VARCHAR(40) PRIMARY KEY,
+                    session_data TEXT NOT NULL,
+                    expire_date TIMESTAMP WITH TIME ZONE NOT NULL
+                );
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS django_session_expire_date_idx ON django_session (expire_date);")
+            
+            self.stdout.write("Django session table ensured.")
