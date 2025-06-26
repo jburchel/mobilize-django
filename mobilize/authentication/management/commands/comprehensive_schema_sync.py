@@ -43,7 +43,10 @@ class Command(BaseCommand):
         # Step 5: Create missing indexes
         self.create_missing_indexes(dry_run, verbose)
         
-        # Step 6: Verify schema integrity
+        # Step 6: Fix Person data integrity issues
+        self.fix_person_data_integrity(dry_run, verbose)
+        
+        # Step 7: Verify schema integrity
         self.verify_schema_integrity(verbose)
         
         if dry_run:
@@ -839,3 +842,155 @@ class Command(BaseCommand):
             """)
             table_count = cursor.fetchone()[0]
             self.stdout.write(f"📊 Total tables in database: {table_count}")
+
+    def fix_person_data_integrity(self, dry_run, verbose):
+        """Fix Person data integrity issues - NULL PKs and broken FK relationships"""
+        self.stdout.write(self.style.HTTP_INFO("\n🔧 FIXING PERSON DATA INTEGRITY ISSUES"))
+        
+        with connection.cursor() as cursor:
+            # Determine the actual primary key column for people table
+            cursor.execute("""
+                SELECT column_name
+                FROM information_schema.table_constraints tc
+                JOIN information_schema.key_column_usage kcu 
+                    ON tc.constraint_name = kcu.constraint_name
+                WHERE tc.table_name = 'people' 
+                AND tc.constraint_type = 'PRIMARY KEY'
+            """)
+            pk_result = cursor.fetchone()
+            pk_column = pk_result[0] if pk_result else 'id'
+            
+            if verbose:
+                self.stdout.write(f"   People table primary key: {pk_column}")
+            
+            # Check for NULL primary keys
+            cursor.execute(f"SELECT COUNT(*) FROM people WHERE {pk_column} IS NULL")
+            null_pk_count = cursor.fetchone()[0]
+            
+            if null_pk_count > 0:
+                self.stdout.write(f"   🚨 CRITICAL: Found {null_pk_count} Person records with NULL {pk_column}")
+                
+                if not dry_run:
+                    try:
+                        # Fix NULL primary keys by setting them to sequential values
+                        if pk_column == 'contact_id':
+                            # For contact_id PK, set them to match the contact's ID
+                            cursor.execute("""
+                                UPDATE people 
+                                SET contact_id = (
+                                    SELECT c.id FROM contacts c 
+                                    WHERE c.type = 'person' 
+                                    AND NOT EXISTS (
+                                        SELECT 1 FROM people p2 
+                                        WHERE p2.contact_id = c.id
+                                    )
+                                    LIMIT 1
+                                )
+                                WHERE contact_id IS NULL;
+                            """)
+                        else:
+                            # For id PK, use nextval from sequence
+                            cursor.execute(f"""
+                                UPDATE people 
+                                SET {pk_column} = nextval('people_id_seq')
+                                WHERE {pk_column} IS NULL;
+                            """)
+                        
+                        # Check how many were fixed
+                        cursor.execute(f"SELECT COUNT(*) FROM people WHERE {pk_column} IS NULL")
+                        remaining_nulls = cursor.fetchone()[0]
+                        fixed_count = null_pk_count - remaining_nulls
+                        
+                        if fixed_count > 0:
+                            self.stdout.write(f"   ✅ Fixed {fixed_count} NULL {pk_column} values")
+                        if remaining_nulls > 0:
+                            self.stdout.write(f"   ⚠️  {remaining_nulls} NULL {pk_column} values remain")
+                            
+                    except Exception as e:
+                        self.stdout.write(self.style.ERROR(f"   ❌ Failed to fix NULL primary keys: {e}"))
+                else:
+                    self.stdout.write(f"   WOULD FIX: {null_pk_count} NULL {pk_column} values")
+            else:
+                if verbose:
+                    self.stdout.write(f"   ✅ No NULL {pk_column} values found")
+            
+            # Check for broken Person-Contact relationships
+            cursor.execute(f"""
+                SELECT COUNT(*) FROM people p
+                LEFT JOIN contacts c ON p.contact_id = c.id
+                WHERE c.id IS NULL AND p.{pk_column} IS NOT NULL
+            """)
+            broken_fk_count = cursor.fetchone()[0]
+            
+            if broken_fk_count > 0:
+                self.stdout.write(f"   🚨 Found {broken_fk_count} Person records with invalid contact_id")
+                
+                if not dry_run:
+                    try:
+                        # Create basic contact records for orphaned Person records
+                        cursor.execute(f"""
+                            SELECT p.{pk_column}, p.contact_id, p.title, p.profession 
+                            FROM people p
+                            LEFT JOIN contacts c ON p.contact_id = c.id
+                            WHERE c.id IS NULL AND p.{pk_column} IS NOT NULL
+                            LIMIT 20
+                        """)
+                        orphaned_people = cursor.fetchall()
+                        
+                        for person_pk, contact_id, title, profession in orphaned_people:
+                            # Create a basic contact record
+                            cursor.execute("""
+                                INSERT INTO contacts (type, first_name, last_name, created_at, updated_at)
+                                VALUES ('person', %s, '', NOW(), NOW())
+                                RETURNING id
+                            """, [title or f'Person {person_pk}'])
+                            new_contact_id = cursor.fetchone()[0]
+                            
+                            # Update Person record with new contact_id
+                            cursor.execute(f"""
+                                UPDATE people SET contact_id = %s WHERE {pk_column} = %s
+                            """, [new_contact_id, person_pk])
+                            
+                            if verbose:
+                                self.stdout.write(f"   ✅ Created Contact {new_contact_id} for Person {person_pk}")
+                        
+                        self.stdout.write(f"   ✅ Fixed {len(orphaned_people)} broken Person-Contact relationships")
+                        
+                    except Exception as e:
+                        self.stdout.write(self.style.ERROR(f"   ❌ Failed to fix broken relationships: {e}"))
+                else:
+                    self.stdout.write(f"   WOULD FIX: {broken_fk_count} broken Person-Contact relationships")
+            else:
+                if verbose:
+                    self.stdout.write("   ✅ All Person-Contact relationships are valid")
+            
+            # Verify Django ORM functionality
+            try:
+                from mobilize.contacts.models import Person
+                django_count = Person.objects.count()
+                self.stdout.write(f"   📊 Django Person.objects.count() = {django_count}")
+                
+                # Test queryset evaluation
+                test_people = list(Person.objects.all()[:3])
+                self.stdout.write(f"   ✅ Django queryset evaluation works - got {len(test_people)} people")
+                
+                # Test foreign key access
+                success_count = 0
+                for person in test_people:
+                    try:
+                        contact = person.contact
+                        success_count += 1
+                        if verbose:
+                            self.stdout.write(f"   ✅ Person {person.pk}: contact={contact.id}")
+                    except Exception:
+                        pass
+                
+                if success_count == len(test_people) and len(test_people) > 0:
+                    self.stdout.write(f"   ✅ All {success_count} Person-Contact FK relationships work correctly")
+                elif success_count > 0:
+                    self.stdout.write(f"   ⚠️  {success_count}/{len(test_people)} Person-Contact FK relationships work")
+                else:
+                    self.stdout.write(f"   ❌ No Person-Contact FK relationships work")
+                    
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"   ❌ Django ORM verification failed: {e}"))
