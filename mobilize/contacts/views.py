@@ -213,12 +213,18 @@ def person_list_api(request):
     """
     JSON API endpoint for lazy loading person list data.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     # Get query parameters
     query = request.GET.get('q', '')
     priority = request.GET.get('priority', '')
     pipeline_stage = request.GET.get('pipeline_stage', '')
     page = int(request.GET.get('page', 1))
     per_page = int(request.GET.get('per_page', 25))
+    
+    # Debug logging
+    logger.info(f"🔍 DEBUG: User {request.user.email} (Role: {request.user.role}) accessing person_list_api")
     
     # Build queryset with optimizations
     people = Person.objects.select_related(
@@ -229,9 +235,16 @@ def person_list_api(request):
         'contact__pipeline_entries__current_stage'
     )
     
+    logger.info(f"🔍 DEBUG: Initial people count: {people.count()}")
+    
     # Apply office-level filtering only for non-super admins
     if request.user.role != 'super_admin':
+        logger.info(f"🔍 DEBUG: Applying office filter for non-super admin")
         people = office_data_filter(people, request.user, 'contact__office')
+    else:
+        logger.info(f"🔍 DEBUG: User is super_admin - no office filtering applied")
+    
+    logger.info(f"🔍 DEBUG: People count after office filtering: {people.count()}")
     
     # Apply filters
     if query:
@@ -279,6 +292,8 @@ def person_list_api(request):
             'edit_url': reverse('contacts:person_edit', args=[person.pk]),
             'delete_url': reverse('contacts:person_delete', args=[person.pk]),
         })
+    
+    logger.info(f"🔍 DEBUG: Final results count: {len(results)}, Total: {paginator.count}")
     
     return JsonResponse({
         'results': results,
