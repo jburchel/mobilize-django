@@ -29,7 +29,24 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-default-key-fo
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,testserver,0.0.0.0').split(',')
+# ALLOWED_HOSTS configuration for Render
+RENDER_EXTERNAL_URL = os.environ.get('RENDER_EXTERNAL_URL')
+ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS', '')
+
+if RENDER_EXTERNAL_URL:
+    # Use Render provided URL
+    ALLOWED_HOSTS = [
+        RENDER_EXTERNAL_URL.split('//')[1],
+        '.onrender.com',  # All Render domains
+        'localhost',
+        '127.0.0.1',
+    ]
+elif ALLOWED_HOSTS_ENV:
+    # Use environment variable
+    ALLOWED_HOSTS = ALLOWED_HOSTS_ENV.split(',')
+else:
+    # Local development fallback
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver', '0.0.0.0']
 
 # Application definition
 
@@ -98,18 +115,29 @@ WSGI_APPLICATION = 'mobilize.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'mobilize'),
-        'USER': os.environ.get('DB_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DB_PASS', ''),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
-        'CONN_MAX_AGE': 600,  # Connection pooling - keep connections for 10 minutes
-        'CONN_HEALTH_CHECKS': True,  # Enable connection health checks
+# Database configuration with DATABASE_URL support (Render/Supabase)
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    # Parse DATABASE_URL for Render deployment
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
-}
+else:
+    # Fallback to individual environment variables for local development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'mobilize'),
+            'USER': os.environ.get('DB_USER', 'postgres'),
+            'PASSWORD': os.environ.get('DB_PASS', ''),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+            'CONN_MAX_AGE': 600,  # Connection pooling - keep connections for 10 minutes
+            'CONN_HEALTH_CHECKS': True,  # Enable connection health checks
+        }
+    }
 
 # Custom user model
 AUTH_USER_MODEL = 'authentication.User'

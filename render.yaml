@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: mobilize-crm
+    runtime: python
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+    startCommand: |
+      python manage.py migrate --fake-initial
+      python manage.py createcachetable
+      gunicorn mobilize.wsgi:application
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: mobilize.settings
+      - key: PYTHON_VERSION
+        value: 3.10.13
+      - key: PORT
+        value: 10000
+      - key: WEB_CONCURRENCY
+        value: 4
