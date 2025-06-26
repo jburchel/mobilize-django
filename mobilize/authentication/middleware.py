@@ -24,7 +24,13 @@ class CustomAuthMiddleware(MiddlewareMixin):
                     self.is_staff = False
                     self.is_superuser = False
                     # Add missing attributes for CRM decorators
-                    self.role = 'super_admin'  # Temporary - give admin access
+                    # Set role based on email - j.burchel@crossoverglobal.net is super admin
+                    if email == 'j.burchel@crossoverglobal.net':
+                        self.role = 'super_admin'
+                        self.is_staff = True
+                        self.is_superuser = True
+                    else:
+                        self.role = 'standard_user'  # Default for other users
                     self.first_name = ''
                     self.last_name = ''
                     self.preferences = {}
