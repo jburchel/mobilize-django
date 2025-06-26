@@ -360,12 +360,31 @@ def person_list_api(request):
         try:
             logger.info(f"🔍 DEBUG: Processing person {i+1}: ID={person.pk}, Contact ID={person.contact.id}")
             
-            # Handle null first_name and last_name safely
+            # Build proper name display: "First Last" or "No name listed"
             first_name = person.contact.first_name or ""
             last_name = person.contact.last_name or ""
+            
+            # Clean up names - filter out titles and placeholder text
+            first_name = first_name.strip()
+            last_name = last_name.strip()
+            
+            # Check if names look like real names (not titles or placeholders)
+            titles = {'mr', 'mrs', 'ms', 'dr', 'prof', 'rev', 'pastor', 'person'}
+            
+            # Skip first name if it's just a title
+            if first_name.lower() in titles or first_name.lower().startswith('person'):
+                first_name = ""
+            
+            # Skip last name if it's just a number or placeholder
+            if last_name.isdigit() or last_name.lower().startswith('person'):
+                last_name = ""
+            
+            # Build full name
             full_name = f"{first_name} {last_name}".strip()
+            
+            # If no valid name parts, show "No name listed"
             if not full_name:
-                full_name = person.contact.email or f"Contact #{person.contact.id}"
+                full_name = "No name listed"
             
             logger.info(f"🔍 DEBUG: Person name: '{full_name}', Email: '{person.contact.email}'")
             

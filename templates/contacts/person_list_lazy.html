@@ -111,6 +111,21 @@
         <div id="no-results" class="text-center text-muted py-4" style="display: none;">
             No people found. <a href="{% url 'contacts:person_create' %}">Add the first person</a>.
         </div>
+        
+        <!-- Pagination Status and Load More Button -->
+        <div class="d-flex justify-content-between align-items-center mt-3" id="pagination-controls">
+            <div class="text-muted">
+                <span id="showing-text">Showing <span id="current-count">0</span> of <span id="total-count">0</span> people</span>
+            </div>
+            <div>
+                <button type="button" class="btn btn-primary" id="load-more-btn" style="display: none;">
+                    Load More <span id="per-page-count">25</span>
+                </button>
+                <span class="text-muted" id="end-reached" style="display: none;">
+                    <i class="fas fa-check-circle text-success"></i> All people loaded
+                </span>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -160,6 +175,49 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load initial data
     personLoader.loadMore();
+    
+    // Set up pagination controls
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    const currentCountSpan = document.getElementById('current-count');
+    const totalCountSpan = document.getElementById('total-count');
+    const endReachedSpan = document.getElementById('end-reached');
+    
+    // Override loadMore to update pagination controls
+    const originalLoadMore = personLoader.loadMore.bind(personLoader);
+    personLoader.loadMore = async function() {
+        await originalLoadMore();
+        updatePaginationControls();
+    };
+    
+    // Load more button click handler
+    loadMoreBtn.addEventListener('click', () => {
+        personLoader.loadMore();
+    });
+    
+    function updatePaginationControls() {
+        const currentCount = document.querySelectorAll('#person-table-body tr:not(#load-more-sentinel)').length;
+        currentCountSpan.textContent = currentCount;
+        
+        // Show/hide load more button
+        if (personLoader.hasMore && currentCount > 0) {
+            loadMoreBtn.style.display = 'inline-block';
+            endReachedSpan.style.display = 'none';
+        } else if (currentCount > 0) {
+            loadMoreBtn.style.display = 'none';
+            endReachedSpan.style.display = 'inline-block';
+        } else {
+            loadMoreBtn.style.display = 'none';
+            endReachedSpan.style.display = 'none';
+        }
+    }
+    
+    // Listen for loader updates to get accurate total count
+    window.addEventListener('lazyLoaderUpdate', (event) => {
+        const { total, loaded, hasMore } = event.detail;
+        currentCountSpan.textContent = loaded;
+        totalCountSpan.textContent = total || (hasMore ? `${loaded}+` : loaded);
+        updatePaginationControls();
+    });
     
     // Bulk operations management
     const selectAll = document.getElementById('select-all');

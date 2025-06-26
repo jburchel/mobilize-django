@@ -142,9 +142,20 @@ class LazyLoader {
             // Update pagination state
             this.currentPage++;
             this.hasMore = data.has_next;
+            this.totalCount = data.total || 0;
             
             // Update URL without page reload
             this.updateUrl();
+            
+            // Trigger custom event for pagination updates
+            window.dispatchEvent(new CustomEvent('lazyLoaderUpdate', {
+                detail: {
+                    currentPage: this.currentPage,
+                    hasMore: this.hasMore,
+                    total: this.totalCount,
+                    loaded: document.querySelectorAll(`${this.tableBody.id} tr:not(#load-more-sentinel)`).length
+                }
+            }));
             
         } catch (error) {
             console.error('Error loading data:', error);
