@@ -8,6 +8,7 @@ services:
     startCommand: |
       echo "Starting custom deployment commands..."
       python manage.py fix_users_table
+      python manage.py sync_supabase_schema
       python manage.py migrate --run-syncdb
       python manage.py createcachetable
       echo "Starting gunicorn server..."
