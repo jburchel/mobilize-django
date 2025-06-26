@@ -82,11 +82,11 @@ def get_user_dashboard_config(user):
     from mobilize.core.models import DashboardPreference
     
     try:
-        return DashboardPreference.objects.get(user=user)
+        return DashboardPreference.objects.get(user_id=user.id)
     except DashboardPreference.DoesNotExist:
         # Create default configuration
         return DashboardPreference.objects.create(
-            user=user,
+            user_id=user.id,
             widget_config={'widgets': DEFAULT_WIDGETS}
         )
 
