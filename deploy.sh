@@ -16,6 +16,9 @@ python manage.py createcachetable
 echo "Fixing data type mismatches..."
 python manage.py fix_supabase_data_types
 
+echo "🔧 Fixing people table schema mismatch..."
+python manage.py fix_people_table_schema
+
 echo "🔍 Running production queryset debugging..."
 python manage.py debug_production_queryset
 
