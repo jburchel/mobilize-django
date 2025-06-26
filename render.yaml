@@ -13,7 +13,7 @@ services:
       - key: DJANGO_SETTINGS_MODULE
         value: mobilize.settings
       - key: PYTHON_VERSION
-        value: 3.10.13
+        value: 3.11.9
       - key: PORT
         value: 10000
       - key: WEB_CONCURRENCY

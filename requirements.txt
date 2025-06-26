@@ -13,7 +13,7 @@ django-celery-results==2.6.0  # Celery Results backend
 django-crispy-forms==2.1
 crispy-bootstrap5==2023.10
 django-debug-toolbar==4.3.0
-pillow==10.2.0
+pillow==10.4.0
 django-storages==1.14.2
 gunicorn==21.2.0
 pytest==8.0.0
