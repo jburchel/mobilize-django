@@ -14,8 +14,8 @@ class CustomAuthMiddleware(MiddlewareMixin):
             # Create a minimal user object that Django's auth system will accept
             class AuthenticatedUser:
                 def __init__(self, user_id, email):
-                    self.id = user_id
-                    self.pk = user_id
+                    self.id = int(user_id)  # Ensure it's an integer for Django ORM
+                    self.pk = int(user_id)  # Django compatibility
                     self.email = email
                     self.username = email
                     self.is_authenticated = True
