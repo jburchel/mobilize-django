@@ -7,6 +7,17 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         with connection.cursor() as cursor:
+            # First create django_session table
+            self.stdout.write("Creating django_session table...")
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS django_session (
+                    session_key VARCHAR(40) PRIMARY KEY,
+                    session_data TEXT NOT NULL,
+                    expire_date TIMESTAMP WITH TIME ZONE NOT NULL
+                );
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS django_session_expire_date_idx ON django_session (expire_date);")
+            self.stdout.write("✓ Django session table created")
             # Check if password column exists
             cursor.execute("""
                 SELECT column_name 

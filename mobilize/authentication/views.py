@@ -192,8 +192,10 @@ def google_auth_callback(request):
     
     user = MinimalUser(user_id, email)
     
-    # Log the user in
-    login(request, user)
+    # Skip Django login for now - just set session manually
+    request.session['user_id'] = user_id
+    request.session['user_email'] = email
+    request.session['authenticated'] = True
     
     # Calculate token expiration
     expires_in = tokens.get('expires_in', 3600)
