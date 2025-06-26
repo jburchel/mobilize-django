@@ -16,5 +16,8 @@ python manage.py createcachetable
 echo "Fixing data type mismatches..."
 python manage.py fix_supabase_data_types
 
+echo "🔍 Running production queryset debugging..."
+python manage.py debug_production_queryset
+
 echo "Starting gunicorn server..."
 gunicorn mobilize.wsgi:application
