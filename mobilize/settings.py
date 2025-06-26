@@ -29,7 +29,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-default-key-fo
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-# ALLOWED_HOSTS configuration for Render
+# ALLOWED_HOSTS configuration for Render - Updated for comprehensive schema sync
 RENDER_EXTERNAL_URL = os.environ.get('RENDER_EXTERNAL_URL')
 ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS', '')
 
