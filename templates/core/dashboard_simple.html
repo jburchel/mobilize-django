@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Django CRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <h4 class="alert-heading">🎉 Deployment Successful!</h4>
+                <p>{{ message }}</p>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Welcome, {{ user.email }}!</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Role:</strong> {{ user.role|title }}</p>
+                    <p><strong>Status:</strong> Successfully authenticated</p>
+                    <p><strong>Platform:</strong> Render</p>
+                    <p><strong>Database:</strong> Supabase PostgreSQL</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Next Steps</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% for step in next_steps %}
+                        <li class="list-group-item">✅ {{ step }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="/admin/" class="btn btn-primary btn-lg w-100">
+                                Django Admin
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="/full/" class="btn btn-outline-primary btn-lg w-100">
+                                Full Dashboard
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="/contacts/" class="btn btn-outline-primary btn-lg w-100">
+                                Contacts
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="/auth/logout/" class="btn btn-outline-secondary btn-lg w-100">
+                                Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

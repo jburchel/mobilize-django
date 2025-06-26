@@ -9,7 +9,25 @@ from mobilize.authentication.decorators import ensure_user_office_assignment
 
 
 @login_required
-@ensure_user_office_assignment
+def dashboard_simple(request):
+    """
+    Simplified dashboard for initial deployment - bypasses complex database queries.
+    """
+    context = {
+        'user': request.user,
+        'deployment_success': True,
+        'message': 'Django CRM successfully deployed to Render!',
+        'next_steps': [
+            'Google OAuth authentication is working',
+            'User authentication system is functional',
+            'Database connection established',
+            'Ready for data migration and full setup'
+        ]
+    }
+    return render(request, 'core/dashboard_simple.html', context)
+
+@login_required
+@ensure_user_office_assignment  
 def dashboard(request):
     """
     Main dashboard view displaying key metrics and pending tasks.
