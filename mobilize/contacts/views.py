@@ -316,27 +316,32 @@ def person_list_api(request):
                 'error': f'Direct slice failed: {str(e)}'
             })
         
+        # Get total count first (this should always work)
+        try:
+            total_count = people.count()
+            logger.info(f"🔍 DEBUG: Total people count: {total_count}")
+        except Exception as e:
+            logger.error(f"🔍 DEBUG: Failed to get total count: {e}")
+            total_count = 0
+        
         # For debugging, just use the direct slice for first page
         if page == 1:
             people_to_process = direct_slice
-            total_count = people.count()
             has_next = len(direct_slice) == per_page and total_count > per_page
             has_previous = False
-            logger.info(f"🔍 DEBUG: Using direct slice for page 1")
+            logger.info(f"🔍 DEBUG: Using direct slice for page 1, total={total_count}")
         else:
             # For other pages, try simple manual slicing
             start_idx = (page - 1) * per_page
             end_idx = start_idx + per_page
             try:
                 people_to_process = list(people[start_idx:end_idx])
-                total_count = people.count()
                 has_next = end_idx < total_count
                 has_previous = start_idx > 0
-                logger.info(f"🔍 DEBUG: Manual slice for page {page}: got {len(people_to_process)} people")
+                logger.info(f"🔍 DEBUG: Manual slice for page {page}: got {len(people_to_process)} people, total={total_count}")
             except Exception as e:
                 logger.error(f"🔍 DEBUG: Manual slice failed: {e}")
                 people_to_process = []
-                total_count = 0
                 has_next = False
                 has_previous = False
                 
@@ -364,20 +369,22 @@ def person_list_api(request):
             first_name = person.contact.first_name or ""
             last_name = person.contact.last_name or ""
             
-            # Clean up names - filter out titles and placeholder text
+            # Clean up names - filter out obvious placeholders only
             first_name = first_name.strip()
             last_name = last_name.strip()
             
-            # Check if names look like real names (not titles or placeholders)
-            titles = {'mr', 'mrs', 'ms', 'dr', 'prof', 'rev', 'pastor', 'person'}
+            logger.info(f"🔍 DEBUG: Raw names - First: '{first_name}', Last: '{last_name}'")
             
-            # Skip first name if it's just a title
-            if first_name.lower() in titles or first_name.lower().startswith('person'):
-                first_name = ""
+            # Only filter out obvious placeholders and standalone titles
+            if first_name.lower().startswith('person ') and first_name[7:].isdigit():
+                first_name = ""  # "Person 123" -> ""
+            if last_name.isdigit():
+                last_name = ""   # "123" -> ""
             
-            # Skip last name if it's just a number or placeholder
-            if last_name.isdigit() or last_name.lower().startswith('person'):
-                last_name = ""
+            # Keep short titles as they might be real names, only filter standalone common titles
+            standalone_titles = {'mr', 'mrs', 'ms', 'dr'}
+            if first_name.lower() in standalone_titles and not last_name:
+                first_name = ""  # "Mr" alone -> "", but "Mr Smith" keeps "Mr"
             
             # Build full name
             full_name = f"{first_name} {last_name}".strip()
