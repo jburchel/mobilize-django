@@ -226,14 +226,8 @@ def person_list_api(request):
     # Debug logging
     logger.info(f"🔍 DEBUG: User {request.user.email} (Role: {request.user.role}) accessing person_list_api")
     
-    # Build queryset with optimizations
-    people = Person.objects.select_related(
-        'contact', 
-        'contact__office',
-        'primary_church'
-    ).prefetch_related(
-        'contact__pipeline_entries__current_stage'
-    )
+    # Build queryset with basic optimization only (testing simplified query)
+    people = Person.objects.select_related('contact')
     
     logger.info(f"🔍 DEBUG: Initial people count: {people.count()}")
     
