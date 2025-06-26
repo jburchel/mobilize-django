@@ -6,11 +6,23 @@ services:
       pip install -r requirements.txt
       python manage.py collectstatic --noinput
     startCommand: |
-      echo "Starting custom deployment commands..."
-      python manage.py fix_users_table
-      python manage.py sync_supabase_schema
+      echo "Starting comprehensive database synchronization..."
+      python manage.py comprehensive_schema_sync --verbose
+      echo "Running Django migrations..."
       python manage.py migrate --run-syncdb
       python manage.py createcachetable
+      echo "Creating default office if needed..."
+      python -c "
+      import os, django
+      os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mobilize.settings')
+      django.setup()
+      from mobilize.admin_panel.models import Office
+      if not Office.objects.exists():
+          Office.objects.create(name='Main Office', code='MAIN', is_active=True)
+          print('✅ Created default office')
+      else:
+          print('✅ Office already exists')
+      "
       echo "Starting gunicorn server..."
       gunicorn mobilize.wsgi:application
     envVars:
