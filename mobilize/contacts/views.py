@@ -226,8 +226,8 @@ def person_list_api(request):
     # Debug logging
     logger.info(f"🔍 DEBUG: User {request.user.email} (Role: {request.user.role}) accessing person_list_api")
     
-    # Build queryset with basic optimization only (testing simplified query)
-    people = Person.objects.select_related('contact')
+    # Test with no joins at all to isolate the issue
+    people = Person.objects.all()
     
     logger.info(f"🔍 DEBUG: Initial people count: {people.count()}")
     
@@ -275,7 +275,14 @@ def person_list_api(request):
         test_people = list(people[:5])  # Get first 5 items directly
         logger.info(f"🔍 DEBUG: Direct queryset access - got {len(test_people)} people")
         for i, person in enumerate(test_people):
-            logger.info(f"🔍 DEBUG: Person {i+1}: ID={person.pk}, Name='{person.contact.first_name} {person.contact.last_name}'")
+            logger.info(f"🔍 DEBUG: Person {i+1}: PK={person.pk}, Contact ID={person.contact_id}")
+            
+            # Test contact access separately
+            try:
+                contact = person.contact
+                logger.info(f"🔍 DEBUG: Contact: {contact.first_name} {contact.last_name}")
+            except Exception as contact_e:
+                logger.error(f"🔍 DEBUG: Error accessing contact for person {person.pk}: {contact_e}")
     except Exception as e:
         logger.error(f"🔍 DEBUG: Error accessing queryset directly: {e}")
         import traceback
