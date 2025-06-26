@@ -161,9 +161,9 @@ def google_auth_callback(request):
         
         with connection.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO users (username, email, first_name, last_name, is_active)
-                VALUES (%s, %s, %s, %s, %s) RETURNING id
-            """, [username, email, first_name, last_name, True])
+                INSERT INTO users (username, email)
+                VALUES (%s, %s) RETURNING id
+            """, [username, email])
             user_id = cursor.fetchone()[0]
         
         new_user = True
@@ -172,12 +172,7 @@ def google_auth_callback(request):
         user_id = row[0]
         new_user = False
         
-        # Update profile picture if provided
-        if user_info.get('picture'):
-            with connection.cursor() as cursor:
-                cursor.execute("""
-                    UPDATE users SET profile_picture_url = %s WHERE id = %s
-                """, [user_info.get('picture'), user_id])
+        # Skip profile picture update - column doesn't exist in legacy schema
     
     # Create a minimal user object for login
     class MinimalUser:
@@ -204,28 +199,8 @@ def google_auth_callback(request):
     expires_in = tokens.get('expires_in', 3600)
     expires_at = timezone.now() + timedelta(seconds=expires_in)
     
-    # Store tokens in database using raw SQL
-    import json
-    scopes = tokens.get('scope', '').split(' ')
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            INSERT INTO google_tokens (user_id, access_token, refresh_token, token_type, expires_at, scopes, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
-            ON CONFLICT (user_id) DO UPDATE SET
-                access_token = EXCLUDED.access_token,
-                refresh_token = EXCLUDED.refresh_token,
-                token_type = EXCLUDED.token_type,
-                expires_at = EXCLUDED.expires_at,
-                scopes = EXCLUDED.scopes,
-                updated_at = NOW()
-        """, [
-            user_id,
-            tokens.get('access_token'),
-            tokens.get('refresh_token', ''),
-            tokens.get('token_type'),
-            expires_at,
-            json.dumps(scopes)
-        ])
+    # Skip token storage for now - focus on getting login working
+    # TODO: Add token storage once user authentication is working
     
     # Store OAuth info in session for contact sync setup
     request.session['oauth_completed'] = True
