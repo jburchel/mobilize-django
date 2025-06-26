@@ -270,12 +270,9 @@ def person_list_api(request):
             ).values_list('contact_id', flat=True)
             people = people.filter(contact__id__in=pipeline_contacts)
     
-    # Order by most recently updated - using pk as fallback for safety
-    try:
-        people = people.order_by('-contact__updated_at', '-pk')
-    except Exception as e:
-        logger.error(f"🔍 DEBUG: Error in order_by: {e}")
-        people = people.order_by('-pk')  # Fallback to simple ordering
+    # Order by simple pk to avoid pagination issues with related fields
+    people = people.order_by('-pk')
+    logger.info(f"🔍 DEBUG: Using simple -pk ordering to avoid pagination issues")
     
     logger.info(f"🔍 DEBUG: Before pagination - people count: {people.count()}")
     
