@@ -608,9 +608,79 @@ class Command(BaseCommand):
                     elif verbose:
                         self.stdout.write(f"✅ Table {table_name} has all required columns")
 
+    def fix_people_table_schema(self, dry_run, verbose):
+        """Fix critical people table schema mismatch (id vs contact_id)"""
+        if verbose:
+            self.stdout.write("🔧 Checking people table schema...")
+        
+        with connection.cursor() as cursor:
+            # Check current people table structure
+            cursor.execute("""
+                SELECT column_name, data_type
+                FROM information_schema.columns 
+                WHERE table_name = 'people'
+                ORDER BY ordinal_position;
+            """)
+            current_columns = cursor.fetchall()
+            column_names = [col[0] for col in current_columns]
+            
+            has_id_column = 'id' in column_names
+            has_contact_id_column = 'contact_id' in column_names
+            
+            if has_id_column and not has_contact_id_column:
+                if verbose:
+                    self.stdout.write("🔧 CRITICAL: People table has 'id' but needs 'contact_id'")
+                
+                if not dry_run:
+                    try:
+                        # Check if data alignment is correct (people.id should match contacts.id)
+                        cursor.execute("""
+                            SELECT COUNT(*) FROM people p 
+                            INNER JOIN contacts c ON p.id = c.id 
+                            WHERE c.type = 'person';
+                        """)
+                        aligned_count = cursor.fetchone()[0]
+                        
+                        cursor.execute("SELECT COUNT(*) FROM people;")
+                        total_count = cursor.fetchone()[0]
+                        
+                        if aligned_count == total_count and total_count > 0:
+                            if verbose:
+                                self.stdout.write(f"✅ Data alignment verified ({aligned_count}/{total_count})")
+                            
+                            # Rename the column
+                            cursor.execute("ALTER TABLE people RENAME COLUMN id TO contact_id;")
+                            if verbose:
+                                self.stdout.write("✅ Renamed 'id' to 'contact_id' in people table")
+                            
+                            # Drop legacy columns that don't belong in people table
+                            legacy_columns = ['church_role', 'church_id']
+                            for col in legacy_columns:
+                                if col in column_names:
+                                    cursor.execute(f"ALTER TABLE people DROP COLUMN IF EXISTS {col};")
+                                    if verbose:
+                                        self.stdout.write(f"✅ Dropped legacy column: {col}")
+                        else:
+                            self.stdout.write(self.style.ERROR(f"❌ Data alignment mismatch: {aligned_count}/{total_count}"))
+                            
+                    except Exception as e:
+                        self.stdout.write(self.style.ERROR(f"❌ Failed to fix people table schema: {e}"))
+                else:
+                    self.stdout.write("WOULD FIX: Rename people.id to people.contact_id")
+                    
+            elif has_contact_id_column:
+                if verbose:
+                    self.stdout.write("✅ People table schema is correct")
+            else:
+                if verbose:
+                    self.stdout.write("⚠️  People table structure is unexpected")
+
     def fix_table_naming_mismatches(self, dry_run, verbose):
         """Fix table naming mismatches between Supabase and Django expectations"""
         self.stdout.write(self.style.HTTP_INFO("\n🔄 FIXING TABLE NAMING MISMATCHES"))
+        
+        # First, fix the critical people table schema mismatch
+        self.fix_people_table_schema(dry_run, verbose)
         
         # Check if we have legacy tables that need to be renamed or have data migrated
         table_mappings = {
