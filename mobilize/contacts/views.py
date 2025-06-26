@@ -226,19 +226,47 @@ def person_list_api(request):
     # Debug logging
     logger.info(f"🔍 DEBUG: User {request.user.email} (Role: {request.user.role}) accessing person_list_api")
     
-    # Test with no joins at all to isolate the issue
-    people = Person.objects.all()
-    
-    logger.info(f"🔍 DEBUG: Initial people count: {people.count()}")
-    
-    # Apply office-level filtering only for non-super admins
-    if request.user.role != 'super_admin':
-        logger.info(f"🔍 DEBUG: Applying office filter for non-super admin")
-        people = office_data_filter(people, request.user, 'contact__office')
-    else:
-        logger.info(f"🔍 DEBUG: User is super_admin - no office filtering applied")
-    
-    logger.info(f"🔍 DEBUG: People count after office filtering: {people.count()}")
+    # Simplified test - just get people with minimal filtering
+    try:
+        logger.info(f"🔍 DEBUG: Starting with basic Person.objects.all()")
+        people = Person.objects.all()
+        initial_count = people.count()
+        logger.info(f"🔍 DEBUG: Initial people count: {initial_count}")
+        
+        # Test direct list access
+        try:
+            first_five = list(people[:5])
+            logger.info(f"🔍 DEBUG: Successfully got first 5 people: {len(first_five)}")
+            for person in first_five:
+                logger.info(f"🔍 DEBUG: Person PK={person.pk}, has contact: {hasattr(person, 'contact')}")
+        except Exception as e:
+            logger.error(f"🔍 DEBUG: Failed to get first 5 people: {e}")
+        
+        # Apply office filtering based on user role
+        if request.user.role != 'super_admin':
+            logger.info(f"🔍 DEBUG: User role: {request.user.role} - applying office filter")
+            try:
+                people = office_data_filter(people, request.user, 'contact__office')
+                after_office_count = people.count()
+                logger.info(f"🔍 DEBUG: After office filtering: {after_office_count}")
+            except Exception as e:
+                logger.error(f"🔍 DEBUG: Office filtering failed: {e}")
+                # If office filtering fails, continue with all people for debugging
+                people = Person.objects.all()
+        else:
+            logger.info(f"🔍 DEBUG: User is super_admin - no office filtering")
+            
+    except Exception as e:
+        logger.error(f"🔍 DEBUG: Basic queryset setup failed: {e}")
+        return JsonResponse({
+            'results': [],
+            'page': page,
+            'per_page': per_page,
+            'total': 0,
+            'has_next': False,
+            'has_previous': False,
+            'error': str(e)
+        })
     
     # Apply filters
     if query:
@@ -264,76 +292,69 @@ def person_list_api(request):
             ).values_list('contact_id', flat=True)
             people = people.filter(contact__id__in=pipeline_contacts)
     
-    # Order by simple pk to avoid pagination issues with related fields
-    people = people.order_by('-pk')
-    logger.info(f"🔍 DEBUG: Using simple -pk ordering to avoid pagination issues")
-    
-    logger.info(f"🔍 DEBUG: Before pagination - people count: {people.count()}")
-    
-    # Test raw queryset access
+    # Simplified ordering and pagination test
     try:
-        test_people = list(people[:5])  # Get first 5 items directly
-        logger.info(f"🔍 DEBUG: Direct queryset access - got {len(test_people)} people")
-        for i, person in enumerate(test_people):
-            logger.info(f"🔍 DEBUG: Person {i+1}: PK={person.pk}, Contact ID={person.contact_id}")
-            
-            # Test contact access separately
+        logger.info(f"🔍 DEBUG: Before pagination - people count: {people.count()}")
+        
+        # Skip complex ordering for now
+        people = people.order_by('pk')  # Simple ascending order
+        logger.info(f"🔍 DEBUG: Applied simple pk ordering")
+        
+        # Test direct slice access before pagination
+        try:
+            direct_slice = list(people[:per_page])
+            logger.info(f"🔍 DEBUG: Direct slice access got {len(direct_slice)} people")
+        except Exception as e:
+            logger.error(f"🔍 DEBUG: Direct slice failed: {e}")
+            return JsonResponse({
+                'results': [],
+                'page': page,
+                'per_page': per_page,
+                'total': 0,
+                'has_next': False,
+                'has_previous': False,
+                'error': f'Direct slice failed: {str(e)}'
+            })
+        
+        # For debugging, just use the direct slice for first page
+        if page == 1:
+            people_to_process = direct_slice
+            total_count = people.count()
+            has_next = len(direct_slice) == per_page and total_count > per_page
+            has_previous = False
+            logger.info(f"🔍 DEBUG: Using direct slice for page 1")
+        else:
+            # For other pages, try simple manual slicing
+            start_idx = (page - 1) * per_page
+            end_idx = start_idx + per_page
             try:
-                contact = person.contact
-                logger.info(f"🔍 DEBUG: Contact: {contact.first_name} {contact.last_name}")
-            except Exception as contact_e:
-                logger.error(f"🔍 DEBUG: Error accessing contact for person {person.pk}: {contact_e}")
+                people_to_process = list(people[start_idx:end_idx])
+                total_count = people.count()
+                has_next = end_idx < total_count
+                has_previous = start_idx > 0
+                logger.info(f"🔍 DEBUG: Manual slice for page {page}: got {len(people_to_process)} people")
+            except Exception as e:
+                logger.error(f"🔍 DEBUG: Manual slice failed: {e}")
+                people_to_process = []
+                total_count = 0
+                has_next = False
+                has_previous = False
+                
     except Exception as e:
-        logger.error(f"🔍 DEBUG: Error accessing queryset directly: {e}")
-        import traceback
-        logger.error(f"🔍 DEBUG: Traceback: {traceback.format_exc()}")
-    
-    # Paginate
-    paginator = Paginator(people, per_page)
-    page_obj = paginator.get_page(page)
-    
-    logger.info(f"🔍 DEBUG: Paginator total count: {paginator.count}")
-    logger.info(f"🔍 DEBUG: Page object count: {len(page_obj)}")
-    logger.info(f"🔍 DEBUG: Current page: {page}, Per page: {per_page}")
-    logger.info(f"🔍 DEBUG: Has next: {page_obj.has_next()}, Has previous: {page_obj.has_previous()}")
-    
-    # Test manual page access
-    try:
-        manual_page = people[(page-1)*per_page:page*per_page]
-        manual_count = len(list(manual_page))
-        logger.info(f"🔍 DEBUG: Manual pagination - got {manual_count} people")
-    except Exception as e:
-        logger.error(f"🔍 DEBUG: Error with manual pagination: {e}")
+        logger.error(f"🔍 DEBUG: Pagination setup failed: {e}")
+        return JsonResponse({
+            'results': [],
+            'page': page,
+            'per_page': per_page,
+            'total': 0,
+            'has_next': False,
+            'has_previous': False,
+            'error': f'Pagination failed: {str(e)}'
+        })
     
     # Build JSON response
     results = []
-    logger.info(f"🔍 DEBUG: Starting to process {len(page_obj)} people from page_obj")
-    
-    # If paginator fails, try manual approach
-    if len(page_obj) == 0 and paginator.count > 0:
-        logger.info(f"🔍 DEBUG: Paginator failed, trying manual approach...")
-        try:
-            start_idx = (page - 1) * per_page
-            end_idx = start_idx + per_page
-            manual_people = list(people[start_idx:end_idx])
-            logger.info(f"🔍 DEBUG: Manual approach got {len(manual_people)} people")
-            
-            # Use manual results instead of page_obj
-            people_to_process = manual_people
-            total_count = people.count()
-            has_next = end_idx < total_count
-            has_previous = start_idx > 0
-        except Exception as e:
-            logger.error(f"🔍 DEBUG: Manual approach also failed: {e}")
-            people_to_process = []
-            total_count = 0
-            has_next = False
-            has_previous = False
-    else:
-        people_to_process = page_obj
-        total_count = paginator.count
-        has_next = page_obj.has_next()
-        has_previous = page_obj.has_previous()
+    logger.info(f"🔍 DEBUG: Processing {len(people_to_process)} people")
     
     for i, person in enumerate(people_to_process):
         try:

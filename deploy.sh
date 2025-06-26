@@ -19,6 +19,9 @@ python manage.py fix_supabase_data_types
 echo "🔧 Fixing people table schema mismatch..."
 python manage.py fix_people_table_schema
 
+echo "🔧 Fixing Person data integrity issues (NULL PKs and broken FKs)..."
+python manage.py fix_person_data_integrity --verbose
+
 echo "🔍 Running production queryset debugging..."
 python manage.py debug_production_queryset
 
