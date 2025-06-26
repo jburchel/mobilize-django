@@ -46,7 +46,10 @@ class Command(BaseCommand):
         # Step 6: Fix Person data integrity issues
         self.fix_person_data_integrity(dry_run, verbose)
         
-        # Step 7: Verify schema integrity
+        # Step 7: Fix Church data integrity issues  
+        self.fix_church_data_integrity(dry_run, verbose)
+        
+        # Step 8: Verify schema integrity
         self.verify_schema_integrity(verbose)
         
         if dry_run:
@@ -991,6 +994,158 @@ class Command(BaseCommand):
                     self.stdout.write(f"   ⚠️  {success_count}/{len(test_people)} Person-Contact FK relationships work")
                 else:
                     self.stdout.write(f"   ❌ No Person-Contact FK relationships work")
+                    
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"   ❌ Django ORM verification failed: {e}"))
+
+    def fix_church_data_integrity(self, dry_run, verbose):
+        """Fix Church data integrity issues - similar to Person fixes"""
+        self.stdout.write(self.style.HTTP_INFO("\n🔧 FIXING CHURCH DATA INTEGRITY ISSUES"))
+        
+        with connection.cursor() as cursor:
+            # Determine the actual primary key column for churches table
+            cursor.execute("""
+                SELECT column_name
+                FROM information_schema.table_constraints tc
+                JOIN information_schema.key_column_usage kcu 
+                    ON tc.constraint_name = kcu.constraint_name
+                WHERE tc.table_name = 'churches' 
+                AND tc.constraint_type = 'PRIMARY KEY'
+            """)
+            pk_result = cursor.fetchone()
+            pk_column = pk_result[0] if pk_result else 'id'
+            
+            if verbose:
+                self.stdout.write(f"   Churches table primary key: {pk_column}")
+            
+            # Check for NULL primary keys
+            cursor.execute(f"SELECT COUNT(*) FROM churches WHERE {pk_column} IS NULL")
+            null_pk_count = cursor.fetchone()[0]
+            
+            if null_pk_count > 0:
+                self.stdout.write(f"   🚨 CRITICAL: Found {null_pk_count} Church records with NULL {pk_column}")
+                
+                if not dry_run:
+                    try:
+                        # Fix NULL primary keys by setting them to sequential values
+                        if pk_column == 'contact_id':
+                            # For contact_id PK, set them to match the contact's ID
+                            cursor.execute("""
+                                UPDATE churches 
+                                SET contact_id = (
+                                    SELECT c.id FROM contacts c 
+                                    WHERE c.type = 'church' 
+                                    AND NOT EXISTS (
+                                        SELECT 1 FROM churches ch2 
+                                        WHERE ch2.contact_id = c.id
+                                    )
+                                    LIMIT 1
+                                )
+                                WHERE contact_id IS NULL;
+                            """)
+                        else:
+                            # For id PK, use nextval from sequence
+                            cursor.execute(f"""
+                                UPDATE churches 
+                                SET {pk_column} = nextval('churches_id_seq')
+                                WHERE {pk_column} IS NULL;
+                            """)
+                        
+                        # Check how many were fixed
+                        cursor.execute(f"SELECT COUNT(*) FROM churches WHERE {pk_column} IS NULL")
+                        remaining_nulls = cursor.fetchone()[0]
+                        fixed_count = null_pk_count - remaining_nulls
+                        
+                        if fixed_count > 0:
+                            self.stdout.write(f"   ✅ Fixed {fixed_count} NULL {pk_column} values")
+                        if remaining_nulls > 0:
+                            self.stdout.write(f"   ⚠️  {remaining_nulls} NULL {pk_column} values remain")
+                            
+                    except Exception as e:
+                        self.stdout.write(self.style.ERROR(f"   ❌ Failed to fix NULL primary keys: {e}"))
+                else:
+                    self.stdout.write(f"   WOULD FIX: {null_pk_count} NULL {pk_column} values")
+            else:
+                if verbose:
+                    self.stdout.write(f"   ✅ No NULL {pk_column} values found")
+            
+            # Check for broken Church-Contact relationships
+            cursor.execute(f"""
+                SELECT COUNT(*) FROM churches ch
+                LEFT JOIN contacts c ON ch.contact_id = c.id
+                WHERE c.id IS NULL AND ch.{pk_column} IS NOT NULL
+            """)
+            broken_fk_count = cursor.fetchone()[0]
+            
+            if broken_fk_count > 0:
+                self.stdout.write(f"   🚨 Found {broken_fk_count} Church records with invalid contact_id")
+                
+                if not dry_run:
+                    try:
+                        # Create basic contact records for orphaned Church records
+                        cursor.execute(f"""
+                            SELECT ch.{pk_column}, ch.contact_id, ch.name, ch.location 
+                            FROM churches ch
+                            LEFT JOIN contacts c ON ch.contact_id = c.id
+                            WHERE c.id IS NULL AND ch.{pk_column} IS NOT NULL
+                            LIMIT 20
+                        """)
+                        orphaned_churches = cursor.fetchall()
+                        
+                        for church_pk, contact_id, name, location in orphaned_churches:
+                            # Create a basic contact record
+                            cursor.execute("""
+                                INSERT INTO contacts (type, church_name, first_name, last_name, created_at, updated_at)
+                                VALUES ('church', %s, '', '', NOW(), NOW())
+                                RETURNING id
+                            """, [name or f'Church {church_pk}'])
+                            new_contact_id = cursor.fetchone()[0]
+                            
+                            # Update Church record with new contact_id
+                            cursor.execute(f"""
+                                UPDATE churches SET contact_id = %s WHERE {pk_column} = %s
+                            """, [new_contact_id, church_pk])
+                            
+                            if verbose:
+                                self.stdout.write(f"   ✅ Created Contact {new_contact_id} for Church {church_pk}")
+                        
+                        self.stdout.write(f"   ✅ Fixed {len(orphaned_churches)} broken Church-Contact relationships")
+                        
+                    except Exception as e:
+                        self.stdout.write(self.style.ERROR(f"   ❌ Failed to fix broken relationships: {e}"))
+                else:
+                    self.stdout.write(f"   WOULD FIX: {broken_fk_count} broken Church-Contact relationships")
+            else:
+                if verbose:
+                    self.stdout.write("   ✅ All Church-Contact relationships are valid")
+            
+            # Verify Django ORM functionality
+            try:
+                from mobilize.churches.models import Church
+                django_count = Church.objects.count()
+                self.stdout.write(f"   📊 Django Church.objects.count() = {django_count}")
+                
+                # Test queryset evaluation
+                test_churches = list(Church.objects.all()[:3])
+                self.stdout.write(f"   ✅ Django queryset evaluation works - got {len(test_churches)} churches")
+                
+                # Test foreign key access
+                success_count = 0
+                for church in test_churches:
+                    try:
+                        contact = church.contact
+                        success_count += 1
+                        if verbose:
+                            self.stdout.write(f"   ✅ Church {church.pk}: contact={contact.id}")
+                    except Exception:
+                        pass
+                
+                if success_count == len(test_churches) and len(test_churches) > 0:
+                    self.stdout.write(f"   ✅ All {success_count} Church-Contact FK relationships work correctly")
+                elif success_count > 0:
+                    self.stdout.write(f"   ⚠️  {success_count}/{len(test_churches)} Church-Contact FK relationships work")
+                else:
+                    self.stdout.write(f"   ❌ No Church-Contact FK relationships work")
                     
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f"   ❌ Django ORM verification failed: {e}"))
