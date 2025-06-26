@@ -270,17 +270,32 @@ def person_list_api(request):
             ).values_list('contact_id', flat=True)
             people = people.filter(contact__id__in=pipeline_contacts)
     
-    # Order by most recently updated
-    people = people.order_by('-contact__updated_at')
+    # Order by most recently updated - using pk as fallback for safety
+    try:
+        people = people.order_by('-contact__updated_at', '-pk')
+    except Exception as e:
+        logger.error(f"🔍 DEBUG: Error in order_by: {e}")
+        people = people.order_by('-pk')  # Fallback to simple ordering
+    
+    logger.info(f"🔍 DEBUG: Before pagination - people count: {people.count()}")
     
     # Paginate
     paginator = Paginator(people, per_page)
     page_obj = paginator.get_page(page)
     
+    logger.info(f"🔍 DEBUG: Paginator total count: {paginator.count}")
+    logger.info(f"🔍 DEBUG: Page object count: {len(page_obj)}")
+    logger.info(f"🔍 DEBUG: Current page: {page}, Per page: {per_page}")
+    logger.info(f"🔍 DEBUG: Has next: {page_obj.has_next()}, Has previous: {page_obj.has_previous()}")
+    
     # Build JSON response
     results = []
-    for person in page_obj:
+    logger.info(f"🔍 DEBUG: Starting to process {len(page_obj)} people from page_obj")
+    
+    for i, person in enumerate(page_obj):
         try:
+            logger.info(f"🔍 DEBUG: Processing person {i+1}: ID={person.pk}, Contact ID={person.contact.id}")
+            
             # Handle null first_name and last_name safely
             first_name = person.contact.first_name or ""
             last_name = person.contact.last_name or ""
@@ -288,20 +303,35 @@ def person_list_api(request):
             if not full_name:
                 full_name = person.contact.email or f"Contact #{person.contact.id}"
             
-            results.append({
+            logger.info(f"🔍 DEBUG: Person name: '{full_name}', Email: '{person.contact.email}'")
+            
+            # Test each field access
+            priority = person.contact.priority
+            priority_display = person.contact.get_priority_display()
+            pipeline_stage = person.contact.get_pipeline_stage_code()
+            
+            logger.info(f"🔍 DEBUG: Priority: {priority}, Pipeline: {pipeline_stage}")
+            
+            result_item = {
                 'id': person.contact.id,
                 'name': full_name,
                 'email': person.contact.email or "",
                 'phone': person.contact.phone or "",
-                'priority': person.contact.priority,
-                'priority_display': person.contact.get_priority_display(),
-                'pipeline_stage': person.contact.get_pipeline_stage_code(),
+                'priority': priority,
+                'priority_display': priority_display,
+                'pipeline_stage': pipeline_stage,
                 'detail_url': reverse('contacts:person_detail', args=[person.pk]),
                 'edit_url': reverse('contacts:person_edit', args=[person.pk]),
                 'delete_url': reverse('contacts:person_delete', args=[person.pk]),
-            })
+            }
+            
+            results.append(result_item)
+            logger.info(f"🔍 DEBUG: Successfully added person {i+1} to results")
+            
         except Exception as e:
             logger.error(f"🔍 DEBUG: Error processing person {person.pk}: {e}")
+            import traceback
+            logger.error(f"🔍 DEBUG: Full traceback: {traceback.format_exc()}")
             continue
     
     logger.info(f"🔍 DEBUG: Final results count: {len(results)}, Total: {paginator.count}")
