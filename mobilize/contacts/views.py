@@ -280,18 +280,29 @@ def person_list_api(request):
     # Build JSON response
     results = []
     for person in page_obj:
-        results.append({
-            'id': person.contact.id,
-            'name': f"{person.contact.first_name} {person.contact.last_name}",
-            'email': person.contact.email,
-            'phone': person.contact.phone,
-            'priority': person.contact.priority,
-            'priority_display': person.contact.get_priority_display(),
-            'pipeline_stage': person.contact.get_pipeline_stage_code(),
-            'detail_url': reverse('contacts:person_detail', args=[person.pk]),
-            'edit_url': reverse('contacts:person_edit', args=[person.pk]),
-            'delete_url': reverse('contacts:person_delete', args=[person.pk]),
-        })
+        try:
+            # Handle null first_name and last_name safely
+            first_name = person.contact.first_name or ""
+            last_name = person.contact.last_name or ""
+            full_name = f"{first_name} {last_name}".strip()
+            if not full_name:
+                full_name = person.contact.email or f"Contact #{person.contact.id}"
+            
+            results.append({
+                'id': person.contact.id,
+                'name': full_name,
+                'email': person.contact.email or "",
+                'phone': person.contact.phone or "",
+                'priority': person.contact.priority,
+                'priority_display': person.contact.get_priority_display(),
+                'pipeline_stage': person.contact.get_pipeline_stage_code(),
+                'detail_url': reverse('contacts:person_detail', args=[person.pk]),
+                'edit_url': reverse('contacts:person_edit', args=[person.pk]),
+                'delete_url': reverse('contacts:person_delete', args=[person.pk]),
+            })
+        except Exception as e:
+            logger.error(f"🔍 DEBUG: Error processing person {person.pk}: {e}")
+            continue
     
     logger.info(f"🔍 DEBUG: Final results count: {len(results)}, Total: {paginator.count}")
     
