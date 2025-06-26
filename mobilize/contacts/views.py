@@ -226,26 +226,6 @@ def person_list_api(request):
     # Debug logging
     logger.info(f"🔍 DEBUG: User {request.user.email} (Role: {request.user.role}) accessing person_list_api")
     
-    # Production debugging - let's see what's different about the table structure
-    from django.db import connection
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT COUNT(*) FROM people;")
-            raw_people_count = cursor.fetchone()[0]
-            logger.info(f"🔍 PROD DEBUG: Raw people count in database: {raw_people_count}")
-            
-            # Check people table structure
-            cursor.execute("""
-                SELECT column_name, data_type 
-                FROM information_schema.columns 
-                WHERE table_name = 'people'
-                ORDER BY ordinal_position;
-            """)
-            columns = cursor.fetchall()
-            logger.info(f"🔍 PROD DEBUG: People table columns: {[f'{col}:{dtype}' for col, dtype in columns[:5]]}")
-    except Exception as debug_e:
-        logger.error(f"🔍 PROD DEBUG: Error checking database: {debug_e}")
-    
     # Build queryset with optimizations
     people = Person.objects.select_related(
         'contact', 

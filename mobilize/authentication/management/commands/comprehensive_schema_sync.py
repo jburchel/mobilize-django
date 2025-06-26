@@ -671,6 +671,17 @@ class Command(BaseCommand):
             elif has_contact_id_column:
                 if verbose:
                     self.stdout.write("✅ People table schema is correct")
+                    # Test a quick Django ORM query to verify it works
+                    try:
+                        from mobilize.contacts.models import Person
+                        test_count = Person.objects.count()
+                        self.stdout.write(f"✅ Django Person.objects.count() = {test_count}")
+                        
+                        # Test queryset evaluation 
+                        test_people = list(Person.objects.all()[:3])
+                        self.stdout.write(f"✅ Django queryset evaluation works - got {len(test_people)} people")
+                    except Exception as e:
+                        self.stdout.write(self.style.ERROR(f"❌ Django ORM test failed: {e}"))
             else:
                 if verbose:
                     self.stdout.write("⚠️  People table structure is unexpected")
