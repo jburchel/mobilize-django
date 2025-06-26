@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Starting comprehensive database synchronization..."
+echo "🚀 Starting comprehensive database synchronization and debugging..."
 python manage.py comprehensive_schema_sync --verbose
 
 echo "Running Django migrations..."
