@@ -276,6 +276,17 @@ def person_list_api(request):
     
     logger.info(f"🔍 DEBUG: Before pagination - people count: {people.count()}")
     
+    # Test raw queryset access
+    try:
+        test_people = list(people[:5])  # Get first 5 items directly
+        logger.info(f"🔍 DEBUG: Direct queryset access - got {len(test_people)} people")
+        for i, person in enumerate(test_people):
+            logger.info(f"🔍 DEBUG: Person {i+1}: ID={person.pk}, Name='{person.contact.first_name} {person.contact.last_name}'")
+    except Exception as e:
+        logger.error(f"🔍 DEBUG: Error accessing queryset directly: {e}")
+        import traceback
+        logger.error(f"🔍 DEBUG: Traceback: {traceback.format_exc()}")
+    
     # Paginate
     paginator = Paginator(people, per_page)
     page_obj = paginator.get_page(page)
@@ -285,11 +296,45 @@ def person_list_api(request):
     logger.info(f"🔍 DEBUG: Current page: {page}, Per page: {per_page}")
     logger.info(f"🔍 DEBUG: Has next: {page_obj.has_next()}, Has previous: {page_obj.has_previous()}")
     
+    # Test manual page access
+    try:
+        manual_page = people[(page-1)*per_page:page*per_page]
+        manual_count = len(list(manual_page))
+        logger.info(f"🔍 DEBUG: Manual pagination - got {manual_count} people")
+    except Exception as e:
+        logger.error(f"🔍 DEBUG: Error with manual pagination: {e}")
+    
     # Build JSON response
     results = []
     logger.info(f"🔍 DEBUG: Starting to process {len(page_obj)} people from page_obj")
     
-    for i, person in enumerate(page_obj):
+    # If paginator fails, try manual approach
+    if len(page_obj) == 0 and paginator.count > 0:
+        logger.info(f"🔍 DEBUG: Paginator failed, trying manual approach...")
+        try:
+            start_idx = (page - 1) * per_page
+            end_idx = start_idx + per_page
+            manual_people = list(people[start_idx:end_idx])
+            logger.info(f"🔍 DEBUG: Manual approach got {len(manual_people)} people")
+            
+            # Use manual results instead of page_obj
+            people_to_process = manual_people
+            total_count = people.count()
+            has_next = end_idx < total_count
+            has_previous = start_idx > 0
+        except Exception as e:
+            logger.error(f"🔍 DEBUG: Manual approach also failed: {e}")
+            people_to_process = []
+            total_count = 0
+            has_next = False
+            has_previous = False
+    else:
+        people_to_process = page_obj
+        total_count = paginator.count
+        has_next = page_obj.has_next()
+        has_previous = page_obj.has_previous()
+    
+    for i, person in enumerate(people_to_process):
         try:
             logger.info(f"🔍 DEBUG: Processing person {i+1}: ID={person.pk}, Contact ID={person.contact.id}")
             
@@ -331,15 +376,15 @@ def person_list_api(request):
             logger.error(f"🔍 DEBUG: Full traceback: {traceback.format_exc()}")
             continue
     
-    logger.info(f"🔍 DEBUG: Final results count: {len(results)}, Total: {paginator.count}")
+    logger.info(f"🔍 DEBUG: Final results count: {len(results)}, Total: {total_count}")
     
     return JsonResponse({
         'results': results,
         'page': page,
         'per_page': per_page,
-        'total': paginator.count,
-        'has_next': page_obj.has_next(),
-        'has_previous': page_obj.has_previous(),
+        'total': total_count,
+        'has_next': has_next,
+        'has_previous': has_previous,
     })
 
 
