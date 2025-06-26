@@ -6,7 +6,7 @@ services:
       pip install -r requirements.txt
       python manage.py collectstatic --noinput
     startCommand: |
-      echo "Starting comprehensive database synchronization..."
+      echo "🚀 Starting comprehensive database synchronization..."
       python manage.py comprehensive_schema_sync --verbose
       echo "Running Django migrations..."
       python manage.py migrate --run-syncdb
