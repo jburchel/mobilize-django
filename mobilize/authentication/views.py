@@ -132,43 +132,70 @@ def google_auth_callback(request):
     from django.contrib.auth import get_user_model
     User = get_user_model()
     
-    try:
-        # Try to find existing user by email
-        user = User.objects.get(email=email)
-    except User.DoesNotExist:
+    # Check if user exists using raw SQL to avoid schema issues
+    from django.db import connection
+    user = None
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT id, email FROM users WHERE email = %s", [email])
+        row = cursor.fetchone()
+        
+    if not row:
         # Create new user
         username = email.split('@')[0]
         # Ensure username is unique
         base_username = username
         counter = 1
-        while User.objects.filter(username=username).exists():
-            username = f"{base_username}{counter}"
-            counter += 1
+        with connection.cursor() as cursor:
+            while True:
+                cursor.execute("SELECT id FROM users WHERE username = %s", [username])
+                if not cursor.fetchone():
+                    break
+                username = f"{base_username}{counter}"
+                counter += 1
         
-        # Create the user
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            is_active=True
-        )
+        # Create new user using raw SQL
+        user_name = user_info.get('name', '')
+        name_parts = user_name.split(' ', 1) if user_name else ['', '']
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else ''
         
-        # Set name if provided
-        if user_info.get('name'):
-            name_parts = user_info.get('name').split(' ', 1)
-            user.first_name = name_parts[0]
-            if len(name_parts) > 1:
-                user.last_name = name_parts[1]
-            user.save()
-    
-    # Update profile picture URL for both new and existing users
-    if user_info.get('picture'):
-        user.profile_picture_url = user_info.get('picture')
-        user.save()
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO users (username, email, first_name, last_name, is_active)
+                VALUES (%s, %s, %s, %s, %s) RETURNING id
+            """, [username, email, first_name, last_name, True])
+            user_id = cursor.fetchone()[0]
         
-        # Mark as new user for contact sync preference setup
         new_user = True
     else:
+        # Existing user
+        user_id = row[0]
         new_user = False
+        
+        # Update profile picture if provided
+        if user_info.get('picture'):
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE users SET profile_picture_url = %s WHERE id = %s
+                """, [user_info.get('picture'), user_id])
+    
+    # Create a minimal user object for login
+    class MinimalUser:
+        def __init__(self, user_id, email):
+            self.id = user_id
+            self.pk = user_id
+            self.email = email
+            self.is_authenticated = True
+            self.is_active = True
+            self.is_anonymous = False
+            
+        def get_username(self):
+            return self.email
+            
+        def __str__(self):
+            return self.email
+    
+    user = MinimalUser(user_id, email)
     
     # Log the user in
     login(request, user)
@@ -177,17 +204,28 @@ def google_auth_callback(request):
     expires_in = tokens.get('expires_in', 3600)
     expires_at = timezone.now() + timedelta(seconds=expires_in)
     
-    # Store tokens in database
-    GoogleToken.objects.update_or_create(
-        user=user,
-        defaults={
-            'access_token': tokens.get('access_token'),
-            'refresh_token': tokens.get('refresh_token', ''),
-            'token_type': tokens.get('token_type'),
-            'expires_at': expires_at,
-            'scopes': tokens.get('scope', '').split(' '),
-        }
-    )
+    # Store tokens in database using raw SQL
+    import json
+    scopes = tokens.get('scope', '').split(' ')
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            INSERT INTO google_tokens (user_id, access_token, refresh_token, token_type, expires_at, scopes, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+            ON CONFLICT (user_id) DO UPDATE SET
+                access_token = EXCLUDED.access_token,
+                refresh_token = EXCLUDED.refresh_token,
+                token_type = EXCLUDED.token_type,
+                expires_at = EXCLUDED.expires_at,
+                scopes = EXCLUDED.scopes,
+                updated_at = NOW()
+        """, [
+            user_id,
+            tokens.get('access_token'),
+            tokens.get('refresh_token', ''),
+            tokens.get('token_type'),
+            expires_at,
+            json.dumps(scopes)
+        ])
     
     # Store OAuth info in session for contact sync setup
     request.session['oauth_completed'] = True
