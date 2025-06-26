@@ -11,6 +11,7 @@ from datetime import datetime
 from .models import Church, ChurchMembership
 from .forms import ChurchForm, ImportChurchesForm
 from mobilize.pipeline.models import MAIN_CHURCH_PIPELINE_STAGES
+from mobilize.authentication.decorators import office_data_filter
 
 # ChurchContact and ChurchInteraction models have been removed as they don't exist in Supabase
 
@@ -26,7 +27,11 @@ def church_list(request):
     priority = request.GET.get('priority', '')
     
     # Start with all churches - use select_related to optimize queries
-    churches = Church.objects.select_related('contact').all()
+    churches = Church.objects.select_related('contact', 'contact__office').all()
+    
+    # Apply office-level filtering only for non-super admins
+    if request.user.role != 'super_admin':
+        churches = office_data_filter(churches, request.user, 'contact__office')
     
     # Apply filters if provided
     if query:

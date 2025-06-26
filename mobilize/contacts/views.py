@@ -53,8 +53,9 @@ def person_list(request):
         # Start with all people - use select_related to optimize queries
         people = Person.objects.select_related('contact', 'contact__office').all()
         
-        # Apply office-level filtering
-        people = office_data_filter(people, request.user, 'contact__office')
+        # Apply office-level filtering only for non-super admins
+        if request.user.role != 'super_admin':
+            people = office_data_filter(people, request.user, 'contact__office')
         
         # Apply filters if provided
         if query:
@@ -227,6 +228,10 @@ def person_list_api(request):
     ).prefetch_related(
         'contact__pipeline_entries__current_stage'
     )
+    
+    # Apply office-level filtering only for non-super admins
+    if request.user.role != 'super_admin':
+        people = office_data_filter(people, request.user, 'contact__office')
     
     # Apply filters
     if query:
@@ -426,6 +431,10 @@ def export_contacts(request):
     
     # Start with all people - use select_related to optimize queries
     people = Person.objects.select_related('contact', 'contact__office').all()
+    
+    # Apply office-level filtering only for non-super admins
+    if request.user.role != 'super_admin':
+        people = office_data_filter(people, request.user, 'contact__office')
     
     # Apply filters if provided
     if query:
