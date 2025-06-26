@@ -13,5 +13,8 @@ python manage.py migrate django_celery_results
 echo "Creating cache table..."
 python manage.py createcachetable
 
+echo "Fixing data type mismatches..."
+python manage.py fix_supabase_data_types
+
 echo "Starting gunicorn server..."
 gunicorn mobilize.wsgi:application
