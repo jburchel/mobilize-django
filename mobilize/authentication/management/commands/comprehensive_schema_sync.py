@@ -49,7 +49,10 @@ class Command(BaseCommand):
         # Step 7: Fix Church data integrity issues  
         self.fix_church_data_integrity(dry_run, verbose)
         
-        # Step 8: Verify schema integrity
+        # Step 8: Fix pipeline foreign key constraints
+        self.fix_pipeline_foreign_keys(dry_run, verbose)
+        
+        # Step 9: Verify schema integrity
         self.verify_schema_integrity(verbose)
         
         if dry_run:
@@ -248,8 +251,8 @@ class Command(BaseCommand):
                 CREATE TABLE pipeline_pipelinecontact (
                     id SERIAL PRIMARY KEY,
                     contact_id INTEGER REFERENCES contacts(id) ON DELETE CASCADE,
-                    person_id INTEGER,
-                    church_id INTEGER,
+                    person_id INTEGER REFERENCES people(contact_id) ON DELETE CASCADE,
+                    church_id INTEGER REFERENCES churches(contact_id) ON DELETE CASCADE,
                     contact_type VARCHAR(10) DEFAULT 'person',
                     pipeline_id INTEGER REFERENCES pipeline_pipeline(id) ON DELETE CASCADE,
                     current_stage_id INTEGER REFERENCES pipeline_pipelinestage(id) ON DELETE CASCADE,
@@ -257,6 +260,8 @@ class Command(BaseCommand):
                     last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW()
                 );
                 CREATE INDEX pipeline_pipelinecontact_contact_idx ON pipeline_pipelinecontact(contact_id);
+                CREATE INDEX pipeline_pipelinecontact_person_idx ON pipeline_pipelinecontact(person_id);
+                CREATE INDEX pipeline_pipelinecontact_church_idx ON pipeline_pipelinecontact(church_id);
                 CREATE INDEX pipeline_pipelinecontact_pipeline_idx ON pipeline_pipelinecontact(pipeline_id);
                 CREATE INDEX pipeline_pipelinecontact_stage_idx ON pipeline_pipelinecontact(current_stage_id);
             """,
@@ -1149,3 +1154,100 @@ class Command(BaseCommand):
                     
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f"   ❌ Django ORM verification failed: {e}"))
+
+    def fix_pipeline_foreign_keys(self, dry_run, verbose):
+        """Fix missing foreign key constraints in pipeline_pipelinecontact table"""
+        self.stdout.write(self.style.HTTP_INFO("\n🔧 FIXING PIPELINE FOREIGN KEY CONSTRAINTS"))
+        
+        with connection.cursor() as cursor:
+            # Check if pipeline_pipelinecontact table exists
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.tables 
+                    WHERE table_name = 'pipeline_pipelinecontact' AND table_schema = 'public'
+                );
+            """)
+            table_exists = cursor.fetchone()[0]
+            
+            if not table_exists:
+                if verbose:
+                    self.stdout.write("   ⚠️  pipeline_pipelinecontact table does not exist, skipping FK fixes")
+                return
+            
+            # Check existing foreign key constraints
+            cursor.execute("""
+                SELECT 
+                    tc.constraint_name,
+                    kcu.column_name,
+                    ccu.table_name AS foreign_table_name,
+                    ccu.column_name AS foreign_column_name
+                FROM information_schema.table_constraints AS tc 
+                JOIN information_schema.key_column_usage AS kcu
+                    ON tc.constraint_name = kcu.constraint_name
+                JOIN information_schema.constraint_column_usage AS ccu
+                    ON ccu.constraint_name = tc.constraint_name
+                WHERE tc.constraint_type = 'FOREIGN KEY' 
+                AND tc.table_name = 'pipeline_pipelinecontact';
+            """)
+            existing_fks = cursor.fetchall()
+            existing_fk_columns = {row[1] for row in existing_fks}
+            
+            if verbose:
+                self.stdout.write(f"   📊 Found {len(existing_fks)} existing foreign keys: {list(existing_fk_columns)}")
+            
+            # Define required foreign keys
+            required_fks = [
+                ('person_id', 'people', 'contact_id'),
+                ('church_id', 'churches', 'contact_id'),
+            ]
+            
+            for column_name, ref_table, ref_column in required_fks:
+                if column_name not in existing_fk_columns:
+                    if verbose:
+                        self.stdout.write(f"   🔧 Adding foreign key: {column_name} -> {ref_table}({ref_column})")
+                    
+                    if not dry_run:
+                        try:
+                            # First, check if the column exists
+                            cursor.execute("""
+                                SELECT column_name 
+                                FROM information_schema.columns 
+                                WHERE table_name = 'pipeline_pipelinecontact' 
+                                AND column_name = %s
+                            """, [column_name])
+                            column_exists = cursor.fetchone()
+                            
+                            if not column_exists:
+                                # Add the column first
+                                cursor.execute(f"""
+                                    ALTER TABLE pipeline_pipelinecontact 
+                                    ADD COLUMN {column_name} INTEGER;
+                                """)
+                                if verbose:
+                                    self.stdout.write(f"   ✅ Added column {column_name}")
+                            
+                            # Add the foreign key constraint
+                            constraint_name = f"pipeline_pipelinecontact_{column_name}_fkey"
+                            cursor.execute(f"""
+                                ALTER TABLE pipeline_pipelinecontact 
+                                ADD CONSTRAINT {constraint_name}
+                                FOREIGN KEY ({column_name}) 
+                                REFERENCES {ref_table}({ref_column}) 
+                                ON DELETE CASCADE;
+                            """)
+                            
+                            # Add index for performance
+                            index_name = f"pipeline_pipelinecontact_{column_name}_idx"
+                            cursor.execute(f"""
+                                CREATE INDEX IF NOT EXISTS {index_name} 
+                                ON pipeline_pipelinecontact({column_name});
+                            """)
+                            
+                            self.stdout.write(f"   ✅ Added foreign key constraint for {column_name}")
+                            
+                        except Exception as e:
+                            self.stdout.write(self.style.ERROR(f"   ❌ Failed to add FK for {column_name}: {e}"))
+                    else:
+                        self.stdout.write(f"   WOULD ADD FK: {column_name} -> {ref_table}({ref_column})")
+                elif verbose:
+                    self.stdout.write(f"   ✅ Foreign key for {column_name} already exists")
