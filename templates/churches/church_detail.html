@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 {% load static %}
-{% csrf_token %}
 
 {% block title %}{{ church.name|default:church.contact.church_name }}{% endblock %}
 
@@ -191,6 +190,11 @@
 {% endblock %}
 
 {% block content %}
+<!-- Hidden form for CSRF token -->
+<form style="display: none;">
+    {% csrf_token %}
+</form>
+
 <div class="row">
     <!-- Main Content -->
     <div class="col-lg-8">
