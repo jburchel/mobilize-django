@@ -18,4 +18,5 @@ urlpatterns = [
     path('bulk/delete/', views.bulk_delete, name='bulk_delete'),
     path('bulk/update-priority/', views.bulk_update_priority, name='bulk_update_priority'),
     path('bulk/assign-office/', views.bulk_assign_office, name='bulk_assign_office'),
+    path('bulk/assign-user/', views.bulk_assign_user, name='bulk_assign_user'),
 ]

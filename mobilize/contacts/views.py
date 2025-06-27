@@ -39,6 +39,16 @@ def person_list(request):
     from mobilize.pipeline.models import MAIN_PEOPLE_PIPELINE_STAGES
     
     if use_lazy_loading:
+        # Get data for bulk operation dropdowns
+        from mobilize.authentication.models import User
+        from mobilize.admin_panel.models import Office
+        
+        # Get users for bulk assignment dropdown
+        users = User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'email')
+        
+        # Get offices for bulk assignment dropdown
+        offices = Office.objects.all().order_by('name')
+        
         # Use lazy loading template
         context = {
             'query': query,
@@ -46,6 +56,8 @@ def person_list(request):
             'pipeline_stage': pipeline_stage,
             'priorities': Contact.PRIORITY_CHOICES,
             'pipeline_stages': MAIN_PEOPLE_PIPELINE_STAGES,
+            'users': users,
+            'offices': offices,
         }
         return render(request, 'contacts/person_list_lazy.html', context)
     else:
@@ -747,6 +759,47 @@ def bulk_assign_office(request):
         contacts.update(office=office)
         
         messages.success(request, f"Successfully assigned {count} contact(s) to {office.name}")
+        
+    except Exception as e:
+        messages.error(request, f"Error assigning contacts: {str(e)}")
+    
+    return redirect('contacts:person_list')
+
+
+@login_required
+@require_POST
+def bulk_assign_user(request):
+    """
+    Assign multiple contacts to a user at once.
+    """
+    contact_ids = request.POST.getlist('contact_ids')
+    user_id = request.POST.get('user_id')
+    
+    if not contact_ids:
+        messages.error(request, "No contacts selected for assignment")
+        return redirect('contacts:person_list')
+    
+    if not user_id:
+        messages.error(request, "Please select a user")
+        return redirect('contacts:person_list')
+    
+    try:
+        from mobilize.authentication.models import User
+        user = get_object_or_404(User, id=user_id)
+        
+        # Get the contacts to update
+        contacts = Contact.objects.filter(id__in=contact_ids, type='person')
+        count = contacts.count()
+        
+        if count == 0:
+            messages.error(request, "No valid contacts found to assign")
+            return redirect('contacts:person_list')
+        
+        # Update the user assignment
+        contacts.update(user=user)
+        
+        user_display_name = user.get_full_name() or user.email
+        messages.success(request, f"Successfully assigned {count} contact(s) to {user_display_name}")
         
     except Exception as e:
         messages.error(request, f"Error assigning contacts: {str(e)}")

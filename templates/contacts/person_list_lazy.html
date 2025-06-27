@@ -47,6 +47,32 @@
                 </select>
                 <button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>
             </form>
+            
+            <!-- Bulk User Assignment -->
+            <form method="post" action="{% url 'contacts:bulk_assign_user' %}" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="contact_ids" id="bulk-user-ids">
+                <select name="user_id" class="form-select form-select-sm" style="width: auto; display: inline;">
+                    <option value="">Assign to User...</option>
+                    {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Assign</button>
+            </form>
+            
+            <!-- Bulk Office Assignment -->
+            <form method="post" action="{% url 'contacts:bulk_assign_office' %}" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="contact_ids" id="bulk-office-ids">
+                <select name="office_id" class="form-select form-select-sm" style="width: auto; display: inline;">
+                    <option value="">Assign to Office...</option>
+                    {% for office in offices %}
+                    <option value="{{ office.id }}">{{ office.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Assign</button>
+            </form>
         </div>
     </div>
 </div>
@@ -236,6 +262,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const ids = Array.from(selected).map(cb => cb.value).join(',');
         document.getElementById('bulk-delete-ids').value = ids;
         document.getElementById('bulk-priority-ids').value = ids;
+        document.getElementById('bulk-user-ids').value = ids;
+        document.getElementById('bulk-office-ids').value = ids;
         
         // Update select all checkbox state
         const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
@@ -254,6 +282,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle bulk operation form submissions
     document.querySelectorAll('form select[name="priority"]').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.closest('form').submit();
+            }
+        });
+    });
+    
+    document.querySelectorAll('form select[name="user_id"]').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.closest('form').submit();
+            }
+        });
+    });
+    
+    document.querySelectorAll('form select[name="office_id"]').forEach(select => {
         select.addEventListener('change', function() {
             if (this.value) {
                 this.closest('form').submit();
