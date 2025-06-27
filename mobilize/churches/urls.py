@@ -19,4 +19,10 @@ urlpatterns = [
     path('membership/<int:membership_id>/edit/', views.edit_church_member, name='edit_church_member'),
     path('membership/<int:membership_id>/set-primary/', views.set_primary_contact, name='set_primary_contact'),
     path('membership/<int:membership_id>/remove/', views.remove_church_member, name='remove_church_member'),
+    
+    # Bulk operations
+    path('bulk/delete/', views.bulk_delete_churches, name='bulk_delete_churches'),
+    path('bulk/update-priority/', views.bulk_update_church_priority, name='bulk_update_church_priority'),
+    path('bulk/assign-user/', views.bulk_assign_church_user, name='bulk_assign_church_user'),
+    path('bulk/assign-office/', views.bulk_assign_church_office, name='bulk_assign_church_office'),
 ]

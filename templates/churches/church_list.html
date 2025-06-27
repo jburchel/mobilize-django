@@ -54,11 +54,71 @@
     </div>
 </div>
 
+<!-- Bulk Operations Bar -->
+<div class="card mb-3" id="bulk-operations" style="display: none;">
+    <div class="card-body py-2">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <span class="text-muted"><span id="selected-count">0</span> selected</span>
+            
+            <!-- Bulk Delete -->
+            <form method="post" action="{% url 'churches:bulk_delete_churches' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected churches?');">
+                {% csrf_token %}
+                <input type="hidden" name="church_ids" id="bulk-delete-ids">
+                <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash"></i> Delete Selected
+                </button>
+            </form>
+            
+            <!-- Bulk Priority Update -->
+            <form method="post" action="{% url 'churches:bulk_update_church_priority' %}" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="church_ids" id="bulk-priority-ids">
+                <select name="priority" class="form-select form-select-sm" style="width: auto; display: inline;">
+                    <option value="">Change Priority...</option>
+                    {% for priority_value, priority_label in priorities %}
+                    <option value="{{ priority_value }}">{{ priority_label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>
+            </form>
+            
+            <!-- Bulk User Assignment -->
+            <form method="post" action="{% url 'churches:bulk_assign_church_user' %}" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="church_ids" id="bulk-user-ids">
+                <select name="user_id" class="form-select form-select-sm" style="width: auto; display: inline;">
+                    <option value="">Assign to User...</option>
+                    {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Assign</button>
+            </form>
+            
+            <!-- Bulk Office Assignment -->
+            <form method="post" action="{% url 'churches:bulk_assign_church_office' %}" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="church_ids" id="bulk-office-ids">
+                <select name="office_id" class="form-select form-select-sm" style="width: auto; display: inline;">
+                    <option value="">Assign to Office...</option>
+                    {% for office in offices %}
+                    <option value="{{ office.id }}">{{ office.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Assign</button>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% if page_obj %}
     <div class="table-responsive">
         <table class="table table-hover">
             <thead>
                 <tr>
+                    <th width="40">
+                        <input type="checkbox" id="select-all" class="form-check-input">
+                    </th>
                     <th>Name</th>
                     <th>Primary Contact</th>
                     <th>Phone</th>
@@ -70,6 +130,9 @@
             <tbody>
                 {% for church in page_obj %}
                     <tr>
+                        <td>
+                            <input type="checkbox" name="church_ids" value="{{ church.contact.id }}" class="form-check-input church-checkbox">
+                        </td>
                         <td><a href="{% url 'churches:church_detail' church.pk %}">{{ church.name|default:church.contact.church_name }}</a></td>
                         <td>
                             {% with primary_contact=church.get_primary_contact %}
@@ -248,6 +311,73 @@ document.addEventListener('DOMContentLoaded', function() {
     if (searchButton && searchButton.classList.contains('btn')) {
         searchButton.style.display = 'none';
     }
+    
+    // Bulk operations management
+    const selectAll = document.getElementById('select-all');
+    const bulkOpsBar = document.getElementById('bulk-operations');
+    const selectedCount = document.getElementById('selected-count');
+    
+    function updateBulkOperations() {
+        const checkboxes = document.querySelectorAll('.church-checkbox');
+        const selected = document.querySelectorAll('.church-checkbox:checked');
+        const count = selected.length;
+        
+        selectedCount.textContent = count;
+        bulkOpsBar.style.display = count > 0 ? 'block' : 'none';
+        
+        // Update hidden inputs for bulk operations
+        const ids = Array.from(selected).map(cb => cb.value).join(',');
+        document.getElementById('bulk-delete-ids').value = ids;
+        document.getElementById('bulk-priority-ids').value = ids;
+        document.getElementById('bulk-user-ids').value = ids;
+        document.getElementById('bulk-office-ids').value = ids;
+        
+        // Update select all checkbox state
+        const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+        const noneChecked = Array.from(checkboxes).every(cb => !cb.checked);
+        
+        selectAll.checked = allChecked;
+        selectAll.indeterminate = !allChecked && !noneChecked;
+    }
+    
+    // Select all functionality
+    selectAll.addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.church-checkbox');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+        updateBulkOperations();
+    });
+    
+    // Individual checkbox handlers
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('church-checkbox')) {
+            updateBulkOperations();
+        }
+    });
+    
+    // Handle bulk operation form submissions
+    document.querySelectorAll('form select[name="priority"]').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.closest('form').submit();
+            }
+        });
+    });
+    
+    document.querySelectorAll('form select[name="user_id"]').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.closest('form').submit();
+            }
+        });
+    });
+    
+    document.querySelectorAll('form select[name="office_id"]').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.closest('form').submit();
+            }
+        });
+    });
 });
 </script>
 {% endblock %}

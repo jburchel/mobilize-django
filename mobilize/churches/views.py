@@ -5,6 +5,7 @@ from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.db import models
+from django.views.decorators.http import require_POST
 import csv
 from datetime import datetime
 
@@ -83,6 +84,16 @@ def church_list(request):
         ('high', 'High'),
     ]
     
+    # Get data for bulk operation dropdowns
+    from mobilize.authentication.models import User
+    from mobilize.admin_panel.models import Office
+    
+    # Get users for bulk assignment dropdown
+    users = User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'email')
+    
+    # Get offices for bulk assignment dropdown
+    offices = Office.objects.all().order_by('name')
+    
     context = {
         'page_obj': page_obj,
         'query': query,
@@ -90,6 +101,8 @@ def church_list(request):
         'priority': priority,
         'pipeline_stages': pipeline_stages,
         'priorities': priorities,
+        'users': users,
+        'offices': offices,
     }
     
     return render(request, 'churches/church_list.html', context)
@@ -457,3 +470,162 @@ def remove_church_member(request, membership_id):
         messages.success(request, f"Removed {person_name} from {church.name}.")
     
     return redirect('churches:church_detail', pk=church.pk)
+
+
+@login_required
+@require_POST
+def bulk_delete_churches(request):
+    """
+    Delete multiple churches at once.
+    """
+    church_ids = request.POST.getlist('church_ids')
+    
+    if not church_ids:
+        messages.error(request, "No churches selected for deletion")
+        return redirect('churches:church_list')
+    
+    try:
+        # Get the churches to delete
+        churches = Church.objects.filter(id__in=church_ids)
+        count = churches.count()
+        
+        if count == 0:
+            messages.error(request, "No valid churches found to delete")
+            return redirect('churches:church_list')
+        
+        # Delete the churches
+        churches.delete()
+        
+        messages.success(request, f"Successfully deleted {count} church(es)")
+        
+    except Exception as e:
+        messages.error(request, f"Error deleting churches: {str(e)}")
+    
+    return redirect('churches:church_list')
+
+
+@login_required
+@require_POST
+def bulk_update_church_priority(request):
+    """
+    Update priority for multiple churches at once.
+    """
+    church_ids = request.POST.getlist('church_ids')
+    new_priority = request.POST.get('priority')
+    
+    if not church_ids:
+        messages.error(request, "No churches selected for update")
+        return redirect('churches:church_list')
+    
+    if not new_priority:
+        messages.error(request, "Please select a priority")
+        return redirect('churches:church_list')
+    
+    try:
+        # Get the churches to update - update through Contact model since that's where priority is stored
+        from mobilize.contacts.models import Contact
+        contacts = Contact.objects.filter(id__in=church_ids, type='church')
+        count = contacts.count()
+        
+        if count == 0:
+            messages.error(request, "No valid churches found to update")
+            return redirect('churches:church_list')
+        
+        # Update the priority
+        contacts.update(priority=new_priority)
+        
+        priority_display = dict([
+            ('low', 'Low'),
+            ('medium', 'Medium'),
+            ('high', 'High'),
+        ]).get(new_priority, new_priority)
+        
+        messages.success(request, f"Successfully updated {count} church(es) to {priority_display} priority")
+        
+    except Exception as e:
+        messages.error(request, f"Error updating churches: {str(e)}")
+    
+    return redirect('churches:church_list')
+
+
+@login_required
+@require_POST
+def bulk_assign_church_user(request):
+    """
+    Assign multiple churches to a user at once.
+    """
+    church_ids = request.POST.getlist('church_ids')
+    user_id = request.POST.get('user_id')
+    
+    if not church_ids:
+        messages.error(request, "No churches selected for assignment")
+        return redirect('churches:church_list')
+    
+    if not user_id:
+        messages.error(request, "Please select a user")
+        return redirect('churches:church_list')
+    
+    try:
+        from mobilize.authentication.models import User
+        from mobilize.contacts.models import Contact
+        user = get_object_or_404(User, id=user_id)
+        
+        # Get the church contacts to update
+        contacts = Contact.objects.filter(id__in=church_ids, type='church')
+        count = contacts.count()
+        
+        if count == 0:
+            messages.error(request, "No valid churches found to assign")
+            return redirect('churches:church_list')
+        
+        # Update the user assignment
+        contacts.update(user=user)
+        
+        user_display_name = user.get_full_name() or user.email
+        messages.success(request, f"Successfully assigned {count} church(es) to {user_display_name}")
+        
+    except Exception as e:
+        messages.error(request, f"Error assigning churches: {str(e)}")
+    
+    return redirect('churches:church_list')
+
+
+@login_required
+@require_POST
+def bulk_assign_church_office(request):
+    """
+    Assign multiple churches to an office at once.
+    """
+    church_ids = request.POST.getlist('church_ids')
+    office_id = request.POST.get('office_id')
+    
+    if not church_ids:
+        messages.error(request, "No churches selected for assignment")
+        return redirect('churches:church_list')
+    
+    if not office_id:
+        messages.error(request, "Please select an office")
+        return redirect('churches:church_list')
+    
+    try:
+        from mobilize.admin_panel.models import Office
+        from mobilize.contacts.models import Contact
+        office = get_object_or_404(Office, id=office_id)
+        
+        # Get the church contacts to update
+        contacts = Contact.objects.filter(id__in=church_ids, type='church')
+        count = contacts.count()
+        
+        if count == 0:
+            messages.error(request, "No valid churches found to assign")
+            return redirect('churches:church_list')
+        
+        # Update the office assignment
+        contacts.update(office=office)
+        
+        messages.success(request, f"Successfully assigned {count} church(es) to {office.name}")
+        
+    except Exception as e:
+        messages.error(request, f"Error assigning churches: {str(e)}")
+    
+    return redirect('churches:church_list')
