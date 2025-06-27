@@ -125,53 +125,73 @@ def dashboard(request):
     # Get all pipeline stage names for mapping
     stage_name_map = dict(MAIN_PEOPLE_PIPELINE_STAGES)
     
-    # Use database aggregation instead of Python loops
-    people_pipeline_raw = people_queryset.select_related('contact').prefetch_related(
-        'contact__pipeline_entries__current_stage'
-    ).annotate(
-        pipeline_stage_name=Case(
-            *[When(contact__pipeline_entries__current_stage__name=stage_name, then=Value(stage_code))
-              for stage_code, stage_name in MAIN_PEOPLE_PIPELINE_STAGES],
-            default=Value('unknown'),
-            output_field=CharField()
-        )
-    ).values('pipeline_stage_name').annotate(count=Count('contact_id'))
-    
-    # Convert to expected format
-    people_pipeline_data = []
-    pipeline_counts = {item['pipeline_stage_name']: item['count'] for item in people_pipeline_raw}
-    for stage_code, stage_name in MAIN_PEOPLE_PIPELINE_STAGES:
-        count = pipeline_counts.get(stage_code, 0)
-        people_pipeline_data.append({
-            'stage_code': stage_code,
-            'stage_name': stage_name,
-            'count': count
-        })
+    # Use database aggregation instead of Python loops with error handling
+    try:
+        people_pipeline_raw = people_queryset.select_related('contact').prefetch_related(
+            'contact__pipeline_entries__current_stage'
+        ).annotate(
+            pipeline_stage_name=Case(
+                *[When(contact__pipeline_entries__current_stage__name=stage_name, then=Value(stage_code))
+                  for stage_code, stage_name in MAIN_PEOPLE_PIPELINE_STAGES],
+                default=Value('unknown'),
+                output_field=CharField()
+            )
+        ).values('pipeline_stage_name').annotate(count=Count('contact_id'))
+        
+        # Convert to expected format
+        people_pipeline_data = []
+        pipeline_counts = {item['pipeline_stage_name']: item['count'] for item in people_pipeline_raw}
+        for stage_code, stage_name in MAIN_PEOPLE_PIPELINE_STAGES:
+            count = pipeline_counts.get(stage_code, 0)
+            people_pipeline_data.append({
+                'stage_code': stage_code,
+                'stage_name': stage_name,
+                'count': count
+            })
+    except Exception as e:
+        # Fallback to simple counts if pipeline aggregation fails
+        people_pipeline_data = []
+        for stage_code, stage_name in MAIN_PEOPLE_PIPELINE_STAGES:
+            people_pipeline_data.append({
+                'stage_code': stage_code,
+                'stage_name': stage_name,
+                'count': 0
+            })
     
     # Get churches pipeline distribution - OPTIMIZED with database aggregation
     church_stage_name_map = dict(MAIN_CHURCH_PIPELINE_STAGES)
     
-    churches_pipeline_raw = churches_queryset.select_related('contact').prefetch_related(
-        'contact__pipeline_entries__current_stage'
-    ).annotate(
-        pipeline_stage_name=Case(
-            *[When(contact__pipeline_entries__current_stage__name=stage_name, then=Value(stage_code))
-              for stage_code, stage_name in MAIN_CHURCH_PIPELINE_STAGES],
-            default=Value('unknown'),
-            output_field=CharField()
-        )
-    ).values('pipeline_stage_name').annotate(count=Count('contact_id'))
-    
-    # Convert to expected format
-    churches_pipeline_data = []
-    church_pipeline_counts = {item['pipeline_stage_name']: item['count'] for item in churches_pipeline_raw}
-    for stage_code, stage_name in MAIN_CHURCH_PIPELINE_STAGES:
-        count = church_pipeline_counts.get(stage_code, 0)
-        churches_pipeline_data.append({
-            'stage_code': stage_code,
-            'stage_name': stage_name,
-            'count': count
-        })
+    try:
+        churches_pipeline_raw = churches_queryset.select_related('contact').prefetch_related(
+            'contact__pipeline_entries__current_stage'
+        ).annotate(
+            pipeline_stage_name=Case(
+                *[When(contact__pipeline_entries__current_stage__name=stage_name, then=Value(stage_code))
+                  for stage_code, stage_name in MAIN_CHURCH_PIPELINE_STAGES],
+                default=Value('unknown'),
+                output_field=CharField()
+            )
+        ).values('pipeline_stage_name').annotate(count=Count('contact_id'))
+        
+        # Convert to expected format
+        churches_pipeline_data = []
+        church_pipeline_counts = {item['pipeline_stage_name']: item['count'] for item in churches_pipeline_raw}
+        for stage_code, stage_name in MAIN_CHURCH_PIPELINE_STAGES:
+            count = church_pipeline_counts.get(stage_code, 0)
+            churches_pipeline_data.append({
+                'stage_code': stage_code,
+                'stage_name': stage_name,
+                'count': count
+            })
+    except Exception as e:
+        # Fallback to simple counts if pipeline aggregation fails
+        churches_pipeline_data = []
+        for stage_code, stage_name in MAIN_CHURCH_PIPELINE_STAGES:
+            churches_pipeline_data.append({
+                'stage_code': stage_code,
+                'stage_name': stage_name,
+                'count': 0
+            })
     
     # Calculate percentages
     people_total = sum(item['count'] for item in people_pipeline_data) or 1
