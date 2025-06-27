@@ -734,7 +734,11 @@ def bulk_assign_office(request):
     """
     # Handle both list format and comma-separated string
     contact_ids = request.POST.getlist('contact_ids')
-    if not contact_ids:
+    
+    # If we got a list with one item that contains commas, it's a comma-separated string
+    if len(contact_ids) == 1 and ',' in contact_ids[0]:
+        contact_ids = [id.strip() for id in contact_ids[0].split(',') if id.strip()]
+    elif not contact_ids:
         # Try to get as a single comma-separated string
         contact_ids_str = request.POST.get('contact_ids', '')
         if contact_ids_str:
@@ -784,7 +788,11 @@ def bulk_assign_user(request):
     """
     # Handle both list format and comma-separated string
     contact_ids = request.POST.getlist('contact_ids')
-    if not contact_ids:
+    
+    # If we got a list with one item that contains commas, it's a comma-separated string
+    if len(contact_ids) == 1 and ',' in contact_ids[0]:
+        contact_ids = [id.strip() for id in contact_ids[0].split(',') if id.strip()]
+    elif not contact_ids:
         # Try to get as a single comma-separated string
         contact_ids_str = request.POST.get('contact_ids', '')
         if contact_ids_str:

@@ -594,7 +594,11 @@ def bulk_assign_church_user(request):
     """
     # Handle both list format and comma-separated string
     church_ids = request.POST.getlist('church_ids')
-    if not church_ids:
+    
+    # If we got a list with one item that contains commas, it's a comma-separated string
+    if len(church_ids) == 1 and ',' in church_ids[0]:
+        church_ids = [id.strip() for id in church_ids[0].split(',') if id.strip()]
+    elif not church_ids:
         # Try to get as a single comma-separated string
         church_ids_str = request.POST.get('church_ids', '')
         if church_ids_str:
@@ -646,7 +650,11 @@ def bulk_assign_church_office(request):
     """
     # Handle both list format and comma-separated string
     church_ids = request.POST.getlist('church_ids')
-    if not church_ids:
+    
+    # If we got a list with one item that contains commas, it's a comma-separated string
+    if len(church_ids) == 1 and ',' in church_ids[0]:
+        church_ids = [id.strip() for id in church_ids[0].split(',') if id.strip()]
+    elif not church_ids:
         # Try to get as a single comma-separated string
         church_ids_str = request.POST.get('church_ids', '')
         if church_ids_str:
