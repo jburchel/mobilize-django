@@ -273,19 +273,39 @@ def person_delete(request, pk):
         name = person.name
         contact = person.contact
         
+        # Add debug logging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"DELETE DEBUG: Starting deletion for person {name} (ID: {pk})")
+        logger.info(f"DELETE DEBUG: Contact ID: {contact.id}")
+        logger.info(f"DELETE DEBUG: User: {request.user.email} (Role: {request.user.role})")
+        
         try:
+            # Check for related objects before deletion
+            from mobilize.pipeline.models import PipelineContact
+            from mobilize.communications.models import Communication
+            from mobilize.tasks.models import Task
+            
+            pipeline_contacts = PipelineContact.objects.filter(contact=contact).count()
+            communications = Communication.objects.filter(person=person).count()
+            tasks = Task.objects.filter(person=person).count()
+            
+            logger.info(f"DELETE DEBUG: Related objects - Pipeline: {pipeline_contacts}, Communications: {communications}, Tasks: {tasks}")
+            
             # Use atomic transaction to ensure clean deletion
             with transaction.atomic():
+                logger.info(f"DELETE DEBUG: Starting contact deletion...")
                 # Delete the contact, which will cascade delete the person
                 # This is safer than deleting the person directly
                 contact.delete()
+                logger.info(f"DELETE DEBUG: Contact deletion completed successfully")
+                
             messages.success(request, f"Successfully deleted {name}")
         except Exception as e:
             # Log the error and show a user-friendly message
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Error deleting person {name} (ID: {pk}): {str(e)}")
-            logger.error(f"Full traceback: ", exc_info=True)
+            logger.error(f"DELETE ERROR: Error deleting person {name} (ID: {pk}): {str(e)}")
+            logger.error(f"DELETE ERROR: Exception type: {type(e).__name__}")
+            logger.error(f"DELETE ERROR: Full traceback: ", exc_info=True)
             messages.error(request, f"Error deleting {name}. Please try again or contact support.")
             return render(request, 'contacts/person_confirm_delete.html', {
                 'person': person,
