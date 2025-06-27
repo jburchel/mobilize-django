@@ -4,8 +4,13 @@ from django.db.models import Count, Q
 from django.contrib import messages
 from django.core.cache import cache
 from django.utils.http import urlencode
+from django.http import JsonResponse, HttpResponse
+from django.db import connection
+from django.conf import settings
+from django.utils import timezone
 from datetime import datetime, timedelta
 from mobilize.authentication.decorators import ensure_user_office_assignment
+import os
 
 
 @login_required
@@ -512,3 +517,65 @@ def customize_dashboard(request):
     }
     
     return render(request, 'core/customize_dashboard.html', context)
+
+
+def db_diagnostic(request):
+    """Simple diagnostic endpoint to check database connection info."""
+    if not request.user.is_authenticated or request.user.role != 'super_admin':
+        return HttpResponse("Unauthorized", status=401)
+    
+    try:
+        cursor = connection.cursor()
+        
+        # Get connection details
+        cursor.execute("SELECT current_database(), current_user, inet_server_addr(), inet_server_port();")
+        db_name, db_user, server_addr, server_port = cursor.fetchone()
+        
+        # Get some sample data
+        cursor.execute("SELECT COUNT(*) FROM contacts WHERE type = 'person'")
+        person_count = cursor.fetchone()[0]
+        
+        # Check for Olivia Tanchak to identify which database
+        cursor.execute("""
+            SELECT id, first_name, last_name, email 
+            FROM contacts 
+            WHERE first_name = 'Olivia' AND last_name = 'Tanchak'
+            LIMIT 1
+        """)
+        olivia_result = cursor.fetchone()
+        
+        # Get environment info
+        database_url = os.environ.get('DATABASE_URL', 'Not set')
+        debug_mode = settings.DEBUG
+        
+        # Mask password in DATABASE_URL
+        masked_url = database_url
+        if '@' in masked_url and ':' in masked_url:
+            parts = masked_url.split('@')
+            if ':' in parts[0]:
+                auth_parts = parts[0].split(':')
+                if len(auth_parts) >= 3:
+                    auth_parts[2] = '****'
+                    parts[0] = ':'.join(auth_parts)
+            masked_url = '@'.join(parts)
+        
+        data = {
+            'database': db_name,
+            'user': db_user,
+            'server': f"{server_addr}:{server_port}",
+            'person_contacts': person_count,
+            'olivia_tanchak': {
+                'found': olivia_result is not None,
+                'contact_id': olivia_result[0] if olivia_result else None,
+                'email': olivia_result[3] if olivia_result else None
+            },
+            'is_supabase': 'supabase' in str(server_addr).lower() or 'aws' in str(server_addr).lower(),
+            'database_url': masked_url,
+            'debug_mode': debug_mode,
+            'timestamp': timezone.now().isoformat()
+        }
+        
+        return JsonResponse(data, json_dumps_params={'indent': 2})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
