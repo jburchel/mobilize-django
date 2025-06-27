@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% csrf_token %}
 
 {% block title %}{{ church.name|default:church.contact.church_name }}{% endblock %}
 
@@ -75,6 +76,90 @@
     .member-role {
         background-color: #6c757d;
         color: white;
+    }
+    
+    /* Compact Pipeline Slider Styles for Sidebar */
+    .pipeline-slider-compact {
+        padding: 0.5rem 0;
+    }
+    
+    .pipeline-track-compact {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .pipeline-stage-compact {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .pipeline-stage-compact:hover {
+        transform: translateY(-2px);
+    }
+    
+    .stage-circle-compact {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background: #f8f9fa;
+        border: 2px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.25rem;
+        transition: all 0.3s ease;
+    }
+    
+    .pipeline-stage-compact.active .stage-circle-compact {
+        background: #667eea;
+        border-color: #667eea;
+        color: white;
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+    }
+    
+    .pipeline-stage-compact:hover .stage-circle-compact {
+        background: #e9ecef;
+        border-color: #adb5bd;
+    }
+    
+    .stage-number-compact {
+        font-weight: bold;
+        font-size: 0.9rem;
+        color: #495057;
+    }
+    
+    .pipeline-stage-compact.active .stage-number-compact {
+        color: white;
+    }
+    
+    .stage-label-compact {
+        color: #495057;
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-align: center;
+        min-width: 50px;
+        line-height: 1.1;
+    }
+    
+    .pipeline-stage-compact.active .stage-label-compact {
+        color: #667eea;
+        font-weight: 600;
+    }
+    
+    .pipeline-connector-compact {
+        width: 20px;
+        height: 2px;
+        background: #dee2e6;
+        margin: 0 0.25rem;
+        position: relative;
+        top: -15px;
     }
     .field-row {
         border-bottom: 1px solid #f8f9fa;
@@ -430,27 +515,30 @@
             </div>
             <div class="card-body">
                 <div class="field-row">
-                    <div class="d-flex justify-content-between">
-                        <span class="field-label">Pipeline Stage:</span>
-                        <span class="field-value">
-                            {% with stage_code=church.contact.get_pipeline_stage_code %}
-                                {% if stage_code == 'promotion' %}
-                                    <span class="badge bg-info">Promotion</span>
-                                {% elif stage_code == 'information' %}
-                                    <span class="badge bg-secondary">Information</span>
-                                {% elif stage_code == 'invitation' %}
-                                    <span class="badge bg-primary">Invitation</span>
-                                {% elif stage_code == 'confirmation' %}
-                                    <span class="badge bg-warning text-dark">Confirmation</span>
-                                {% elif stage_code == 'automation' %}
-                                    <span class="badge bg-success">Automation</span>
-                                {% elif stage_code == 'en42' %}
-                                    <span class="badge bg-success">EN42</span>
-                                {% else %}
-                                    <span class="text-muted">No stage assigned</span>
+                    <div class="d-block">
+                        <span class="field-label d-block mb-2">Pipeline Stage:</span>
+                        {% if pipeline_stages %}
+                        <div class="pipeline-slider-compact">
+                            <div class="pipeline-track-compact">
+                                {% for stage in pipeline_stages %}
+                                <div class="pipeline-stage-compact {% if current_stage and stage.id == current_stage.id %}active{% endif %}" 
+                                     data-stage-id="{{ stage.id }}" 
+                                     data-stage-name="{{ stage.name }}"
+                                     title="Click to move to {{ stage.name }}">
+                                    <div class="stage-circle-compact">
+                                        <span class="stage-number-compact">{{ forloop.counter }}</span>
+                                    </div>
+                                    <div class="stage-label-compact">{{ stage.name }}</div>
+                                </div>
+                                {% if not forloop.last %}
+                                <div class="pipeline-connector-compact"></div>
                                 {% endif %}
-                            {% endwith %}
-                        </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% else %}
+                        <span class="text-muted">No pipeline configured</span>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="field-row">
@@ -717,6 +805,96 @@ function handlePhoneClick(phoneNumber, contactId) {
     } else {
         window.location.href = `/communications/?open_log_modal=phone&contact_id=${contactId}`;
     }
+}
+
+// Pipeline stage update functionality for churches
+document.addEventListener('DOMContentLoaded', function() {
+    const pipelineStages = document.querySelectorAll('.pipeline-stage-compact');
+    
+    pipelineStages.forEach(stage => {
+        stage.addEventListener('click', function() {
+            const stageId = this.dataset.stageId;
+            const stageName = this.dataset.stageName;
+            const contactId = {{ church.contact.id }};
+            
+            // Show loading state
+            this.style.opacity = '0.6';
+            this.style.pointerEvents = 'none';
+            
+            // Make AJAX request to update pipeline stage
+            fetch('{% url "pipeline:update_contact_pipeline_stage" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value || getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    contact_id: contactId,
+                    contact_type: 'church',
+                    stage_id: stageId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update the UI
+                    pipelineStages.forEach(s => s.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show success message
+                    showMessage('success', data.message);
+                } else {
+                    showMessage('error', data.error || 'Failed to update pipeline stage');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('error', 'An error occurred while updating the pipeline stage');
+            })
+            .finally(() => {
+                // Reset loading state
+                this.style.opacity = '';
+                this.style.pointerEvents = '';
+            });
+        });
+    });
+});
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Helper function to show messages
+function showMessage(type, message) {
+    // Create a toast-style message
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
 }
 
 // Add church member

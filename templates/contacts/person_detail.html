@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% csrf_token %}
 
 {% block title %}{{ person.name }}{% endblock %}
 
@@ -89,6 +90,117 @@
     .social-link {
         margin-bottom: 0.5rem;
     }
+    
+    /* Pipeline Slider Styles */
+    .pipeline-slider {
+        padding: 1rem 0;
+    }
+    
+    .pipeline-track {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+        margin: 0 2rem;
+    }
+    
+    .pipeline-stage {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .pipeline-stage:hover {
+        transform: translateY(-3px);
+    }
+    
+    .stage-circle {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        border: 3px solid rgba(255, 255, 255, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .pipeline-stage.active .stage-circle {
+        background: rgba(255, 255, 255, 0.9);
+        border-color: #fff;
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    }
+    
+    .pipeline-stage:hover .stage-circle {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.6);
+    }
+    
+    .stage-number {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: white;
+    }
+    
+    .pipeline-stage.active .stage-number {
+        color: #667eea;
+    }
+    
+    .stage-label {
+        color: white;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-align: center;
+        min-width: 80px;
+        opacity: 0.9;
+    }
+    
+    .pipeline-stage.active .stage-label {
+        opacity: 1;
+        font-weight: 600;
+    }
+    
+    .pipeline-connector {
+        flex: 1;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.3);
+        margin: 0 1rem;
+        position: relative;
+        top: -25px;
+        z-index: 1;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .pipeline-track {
+            margin: 0 1rem;
+        }
+        
+        .stage-circle {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .stage-number {
+            font-size: 1rem;
+        }
+        
+        .stage-label {
+            font-size: 0.75rem;
+            min-width: 60px;
+        }
+        
+        .pipeline-connector {
+            margin: 0 0.5rem;
+            top: -20px;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -96,31 +208,41 @@
 <div class="row">
     <!-- Main Content -->
     <div class="col-lg-8">
-        <!-- Pipeline Stage Highlight -->
+        <!-- Interactive Pipeline Stage Slider -->
         <div class="card pipeline-highlight">
-            <div class="card-body text-center">
-                <h5 class="card-title text-white mb-3">
-                    <i class="fas fa-flag me-2"></i>Current Pipeline Stage
+            <div class="card-body">
+                <h5 class="card-title text-white mb-3 text-center">
+                    <i class="fas fa-flag me-2"></i>Pipeline Stage
                 </h5>
-                <div class="h4 text-white mb-0">
-                    {% with stage_code=person.contact.get_pipeline_stage_code %}
-                        {% if stage_code == 'promotion' %}
-                            <span class="badge bg-light text-dark fs-6">Promotion</span>
-                        {% elif stage_code == 'information' %}
-                            <span class="badge bg-light text-dark fs-6">Information</span>
-                        {% elif stage_code == 'invitation' %}
-                            <span class="badge bg-light text-dark fs-6">Invitation</span>
-                        {% elif stage_code == 'confirmation' %}
-                            <span class="badge bg-light text-dark fs-6">Confirmation</span>
-                        {% elif stage_code == 'automation' %}
-                            <span class="badge bg-light text-dark fs-6">Automation</span>
-                        {% elif stage_code == 'en42' %}
-                            <span class="badge bg-light text-dark fs-6">EN42</span>
-                        {% else %}
-                            <span class="badge bg-light text-dark fs-6">No Stage Assigned</span>
+                
+                {% if pipeline_stages %}
+                <div class="pipeline-slider">
+                    <div class="pipeline-track">
+                        {% for stage in pipeline_stages %}
+                        <div class="pipeline-stage {% if current_stage and stage.id == current_stage.id %}active{% endif %}" 
+                             data-stage-id="{{ stage.id }}" 
+                             data-stage-name="{{ stage.name }}"
+                             title="Click to move to {{ stage.name }}">
+                            <div class="stage-circle">
+                                <span class="stage-number">{{ forloop.counter }}</span>
+                            </div>
+                            <div class="stage-label">{{ stage.name }}</div>
+                        </div>
+                        {% if not forloop.last %}
+                        <div class="pipeline-connector"></div>
                         {% endif %}
-                    {% endwith %}
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="pipeline-actions mt-3 text-center">
+                        <small class="text-white-50">Click on a stage to update pipeline position</small>
+                    </div>
                 </div>
+                {% else %}
+                <div class="text-center">
+                    <span class="badge bg-light text-dark fs-6">No Pipeline Configured</span>
+                </div>
+                {% endif %}
             </div>
         </div>
 
@@ -701,6 +823,96 @@ function handlePhoneClick(phoneNumber, contactId) {
     } else {
         window.location.href = `/communications/?open_log_modal=phone&contact_id=${contactId}`;
     }
+}
+
+// Pipeline stage update functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const pipelineStages = document.querySelectorAll('.pipeline-stage');
+    
+    pipelineStages.forEach(stage => {
+        stage.addEventListener('click', function() {
+            const stageId = this.dataset.stageId;
+            const stageName = this.dataset.stageName;
+            const contactId = {{ person.contact.id }};
+            
+            // Show loading state
+            this.style.opacity = '0.6';
+            this.style.pointerEvents = 'none';
+            
+            // Make AJAX request to update pipeline stage
+            fetch('{% url "pipeline:update_contact_pipeline_stage" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value || getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    contact_id: contactId,
+                    contact_type: 'person',
+                    stage_id: stageId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update the UI
+                    pipelineStages.forEach(s => s.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show success message
+                    showMessage('success', data.message);
+                } else {
+                    showMessage('error', data.error || 'Failed to update pipeline stage');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('error', 'An error occurred while updating the pipeline stage');
+            })
+            .finally(() => {
+                // Reset loading state
+                this.style.opacity = '';
+                this.style.pointerEvents = '';
+            });
+        });
+    });
+});
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Helper function to show messages
+function showMessage(type, message) {
+    // Create a toast-style message
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
 }
 </script>
 {% endblock %}

@@ -167,10 +167,32 @@ def church_detail(request, pk):
     except ImportError:
         recent_communications = []
     
+    # Get pipeline stages for the interactive slider
+    from mobilize.pipeline.models import Pipeline, PipelineStage, PipelineContact
+    main_pipeline = Pipeline.get_main_church_pipeline()
+    pipeline_stages = []
+    current_stage = None
+    
+    if main_pipeline:
+        pipeline_stages = main_pipeline.stages.all().order_by('order')
+        
+        # Get current pipeline stage for this church
+        try:
+            pipeline_contact = PipelineContact.objects.get(
+                contact=church.contact,
+                pipeline=main_pipeline
+            )
+            current_stage = pipeline_contact.current_stage
+        except PipelineContact.DoesNotExist:
+            current_stage = None
+    
     context = {
         'church': church,
         'memberships': memberships,
         'recent_communications': recent_communications,
+        'pipeline_stages': pipeline_stages,
+        'current_stage': current_stage,
+        'main_pipeline': main_pipeline,
     }
     
     return render(request, 'churches/church_detail.html', context)

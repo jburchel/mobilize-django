@@ -3,6 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.utils import timezone
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
 from .models import Pipeline, PipelineStage, PipelineContact, PipelineStageHistory
 
 # Create your views here.
@@ -79,3 +82,94 @@ def move_pipeline_contact(request):
 
     messages.success(request, f"{pipeline_contact.contact} moved to {target_stage.name}.")
     return redirect('pipeline:pipeline_visualization', pipeline_id=pipeline_contact.pipeline.id)
+
+
+@login_required
+@require_POST
+def update_contact_pipeline_stage(request):
+    """
+    AJAX endpoint to update a contact's pipeline stage from detail pages.
+    Expects JSON data with contact_id, contact_type, and stage_id.
+    """
+    try:
+        data = json.loads(request.body)
+        contact_id = data.get('contact_id')
+        contact_type = data.get('contact_type')  # 'person' or 'church'
+        stage_id = data.get('stage_id')
+        
+        if not all([contact_id, contact_type, stage_id]):
+            return JsonResponse({
+                'success': False, 
+                'error': 'Missing required parameters'
+            }, status=400)
+        
+        # Get the target stage
+        target_stage = get_object_or_404(PipelineStage, pk=stage_id)
+        
+        # Import models here to avoid circular imports
+        from mobilize.contacts.models import Contact
+        
+        # Get the contact
+        contact = get_object_or_404(Contact, pk=contact_id)
+        
+        # Get or create pipeline contact entry
+        pipeline_contact, created = PipelineContact.objects.get_or_create(
+            contact=contact,
+            contact_type=contact_type,
+            pipeline=target_stage.pipeline,
+            defaults={
+                'current_stage': target_stage,
+                'entered_at': timezone.now()
+            }
+        )
+        
+        # If not created, update the stage
+        if not created:
+            from_stage = pipeline_contact.current_stage
+            
+            # Only update if it's a different stage
+            if from_stage != target_stage:
+                pipeline_contact.current_stage = target_stage
+                pipeline_contact.entered_at = timezone.now()
+                pipeline_contact.save()
+                
+                # Log the history
+                PipelineStageHistory.objects.create(
+                    pipeline_contact=pipeline_contact,
+                    from_stage=from_stage,
+                    to_stage=target_stage,
+                    created_by=request.user,
+                    notes=f"Updated via detail page by {request.user.username}"
+                )
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Moved from {from_stage.name} to {target_stage.name}',
+                    'stage_name': target_stage.name,
+                    'stage_code': target_stage.name.lower()
+                })
+            else:
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Already in {target_stage.name}',
+                    'stage_name': target_stage.name,
+                    'stage_code': target_stage.name.lower()
+                })
+        else:
+            return JsonResponse({
+                'success': True,
+                'message': f'Added to {target_stage.name}',
+                'stage_name': target_stage.name,
+                'stage_code': target_stage.name.lower()
+            })
+            
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

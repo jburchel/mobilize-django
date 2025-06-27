@@ -186,6 +186,7 @@ def person_detail(request, pk):
     """
     # Get the person (office filtering is handled by decorator)
     person = get_object_or_404(Person.objects.select_related('contact', 'contact__office'), pk=pk)
+    
     # Get recent communications for this person
     from mobilize.communications.models import Communication
     recent_communications = Communication.objects.filter(
@@ -195,10 +196,32 @@ def person_detail(request, pk):
     # Get related tasks for this person
     related_tasks = person.person_tasks.all().order_by('-due_date', '-created_at')[:10]
     
+    # Get pipeline stages for the interactive slider
+    from mobilize.pipeline.models import Pipeline, PipelineStage, PipelineContact
+    main_pipeline = Pipeline.get_main_people_pipeline()
+    pipeline_stages = []
+    current_stage = None
+    
+    if main_pipeline:
+        pipeline_stages = main_pipeline.stages.all().order_by('order')
+        
+        # Get current pipeline stage for this person
+        try:
+            pipeline_contact = PipelineContact.objects.get(
+                contact=person.contact,
+                pipeline=main_pipeline
+            )
+            current_stage = pipeline_contact.current_stage
+        except PipelineContact.DoesNotExist:
+            current_stage = None
+    
     context = {
         'person': person,
         'recent_communications': recent_communications,
         'related_tasks': related_tasks,
+        'pipeline_stages': pipeline_stages,
+        'current_stage': current_stage,
+        'main_pipeline': main_pipeline,
     }
     
     return render(request, 'contacts/person_detail.html', context)
