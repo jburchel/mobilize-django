@@ -300,50 +300,33 @@ def person_list_api(request):
         people = people.order_by('pk')  # Simple ascending order
         logger.info(f"🔍 DEBUG: Applied simple pk ordering")
         
-        # Test direct slice access before pagination
-        try:
-            direct_slice = list(people[:per_page])
-            logger.info(f"🔍 DEBUG: Direct slice access got {len(direct_slice)} people")
-        except Exception as e:
-            logger.error(f"🔍 DEBUG: Direct slice failed: {e}")
-            return JsonResponse({
-                'results': [],
-                'page': page,
-                'per_page': per_page,
-                'total': 0,
-                'has_next': False,
-                'has_previous': False,
-                'error': f'Direct slice failed: {str(e)}'
-            })
-        
         # Get total count first (this should always work)
         try:
             total_count = people.count()
-            logger.info(f"🔍 DEBUG: Total people count: {total_count}")
+            logger.info(f"🔍 DEBUG: Total people count: {total_count}, per_page: {per_page}")
         except Exception as e:
             logger.error(f"🔍 DEBUG: Failed to get total count: {e}")
             total_count = 0
         
-        # For debugging, just use the direct slice for first page
-        if page == 1:
-            people_to_process = direct_slice
-            has_next = len(direct_slice) == per_page and total_count > per_page
+        # Calculate pagination indices
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        
+        # Get the page of results
+        try:
+            # Use list() to force evaluation of the queryset slice
+            people_to_process = list(people[start_idx:end_idx])
+            logger.info(f"🔍 DEBUG: Page {page}: requested {per_page} items, got {len(people_to_process)} people (indices {start_idx}:{end_idx} of {total_count} total)")
+            
+            # Calculate has_next and has_previous
+            has_next = end_idx < total_count
+            has_previous = page > 1
+            
+        except Exception as e:
+            logger.error(f"🔍 DEBUG: Pagination slice failed: {e}")
+            people_to_process = []
+            has_next = False
             has_previous = False
-            logger.info(f"🔍 DEBUG: Using direct slice for page 1, total={total_count}")
-        else:
-            # For other pages, try simple manual slicing
-            start_idx = (page - 1) * per_page
-            end_idx = start_idx + per_page
-            try:
-                people_to_process = list(people[start_idx:end_idx])
-                has_next = end_idx < total_count
-                has_previous = start_idx > 0
-                logger.info(f"🔍 DEBUG: Manual slice for page {page}: got {len(people_to_process)} people, total={total_count}")
-            except Exception as e:
-                logger.error(f"🔍 DEBUG: Manual slice failed: {e}")
-                people_to_process = []
-                has_next = False
-                has_previous = False
                 
     except Exception as e:
         logger.error(f"🔍 DEBUG: Pagination setup failed: {e}")

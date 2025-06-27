@@ -153,7 +153,7 @@ class LazyLoader {
                     currentPage: this.currentPage,
                     hasMore: this.hasMore,
                     total: this.totalCount,
-                    loaded: document.querySelectorAll(`${this.tableBody.id} tr:not(#load-more-sentinel)`).length
+                    loaded: this.tableBody.querySelectorAll('tr:not(#load-more-sentinel)').length
                 }
             }));
             

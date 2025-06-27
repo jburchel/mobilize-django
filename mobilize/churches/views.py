@@ -66,6 +66,9 @@ def church_list(request):
     if priority:
         churches = churches.filter(contact__priority=priority)
     
+    # Apply consistent ordering for reliable pagination
+    churches = churches.order_by('pk')
+    
     # Pagination
     paginator = Paginator(churches, 25)  # Show 25 churches per page
     page_number = request.GET.get('page', 1)
