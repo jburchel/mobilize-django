@@ -173,3 +173,121 @@ def update_contact_pipeline_stage(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
+
+@login_required
+@require_POST
+def batch_update_pipeline_stage(request):
+    """
+    AJAX endpoint to update multiple contacts' pipeline stages at once.
+    Expects JSON data with contact_ids, contact_type, and stage_id.
+    """
+    try:
+        data = json.loads(request.body)
+        contact_ids = data.get('contact_ids', [])
+        contact_type = data.get('contact_type')  # 'person' or 'church'
+        stage_id = data.get('stage_id')
+        
+        if not all([contact_ids, contact_type, stage_id]):
+            return JsonResponse({
+                'success': False, 
+                'error': 'Missing required parameters'
+            }, status=400)
+        
+        if not isinstance(contact_ids, list) or len(contact_ids) == 0:
+            return JsonResponse({
+                'success': False, 
+                'error': 'contact_ids must be a non-empty list'
+            }, status=400)
+        
+        # Get the target stage
+        target_stage = get_object_or_404(PipelineStage, pk=stage_id)
+        
+        # Import models here to avoid circular imports
+        from mobilize.contacts.models import Contact
+        
+        # Get the contacts
+        contacts = Contact.objects.filter(pk__in=contact_ids)
+        
+        if contacts.count() != len(contact_ids):
+            return JsonResponse({
+                'success': False,
+                'error': 'Some contacts not found'
+            }, status=404)
+        
+        updated_count = 0
+        created_count = 0
+        errors = []
+        
+        # Update each contact's pipeline stage
+        for contact in contacts:
+            try:
+                # Get or create pipeline contact entry
+                pipeline_contact, created = PipelineContact.objects.get_or_create(
+                    contact=contact,
+                    contact_type=contact_type,
+                    pipeline=target_stage.pipeline,
+                    defaults={
+                        'current_stage': target_stage,
+                        'entered_at': timezone.now()
+                    }
+                )
+                
+                if created:
+                    created_count += 1
+                else:
+                    from_stage = pipeline_contact.current_stage
+                    
+                    # Only update if it's a different stage
+                    if from_stage != target_stage:
+                        pipeline_contact.current_stage = target_stage
+                        pipeline_contact.entered_at = timezone.now()
+                        pipeline_contact.save()
+                        
+                        # Log the history
+                        PipelineStageHistory.objects.create(
+                            pipeline_contact=pipeline_contact,
+                            from_stage=from_stage,
+                            to_stage=target_stage,
+                            created_by=request.user,
+                            notes=f"Batch update by {request.user.username}"
+                        )
+                        
+                        updated_count += 1
+                        
+            except Exception as e:
+                errors.append(f"Contact {contact.id}: {str(e)}")
+        
+        # Prepare response message
+        total_processed = updated_count + created_count
+        messages = []
+        
+        if updated_count > 0:
+            messages.append(f"{updated_count} contact{'s' if updated_count != 1 else ''} moved to {target_stage.name}")
+        
+        if created_count > 0:
+            messages.append(f"{created_count} contact{'s' if created_count != 1 else ''} added to {target_stage.name}")
+        
+        if errors:
+            messages.append(f"{len(errors)} error{'s' if len(errors) != 1 else ''} occurred")
+        
+        return JsonResponse({
+            'success': True,
+            'message': '; '.join(messages),
+            'updated_count': updated_count,
+            'created_count': created_count,
+            'total_processed': total_processed,
+            'errors': errors,
+            'stage_name': target_stage.name
+        })
+            
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

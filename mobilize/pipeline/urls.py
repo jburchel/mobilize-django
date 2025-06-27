@@ -9,6 +9,7 @@ urlpatterns = [
     path('<int:pipeline_id>/', views.pipeline_visualization, name='pipeline_visualization'),
     path('move-contact/', views.move_pipeline_contact, name='move_pipeline_contact'),
     path('update-stage/', views.update_contact_pipeline_stage, name='update_contact_pipeline_stage'),
+    path('batch-update-stage/', views.batch_update_pipeline_stage, name='batch_update_pipeline_stage'),
     path('debug/', debug_pipeline_data, name='debug_pipeline_data'),
 ]
 

@@ -183,6 +183,35 @@
             </table>
         </div>
 
+        <!-- Bulk Actions -->
+        <div id="bulk-actions" class="d-none mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <span id="selected-count" class="text-muted">0 people selected</span>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex gap-2 justify-content-end">
+                                <select id="bulk-stage-select" class="form-select" style="width: auto;">
+                                    <option value="">Choose Pipeline Stage...</option>
+                                    {% for stage in pipeline_stages_objects %}
+                                    <option value="{{ stage.id }}">{{ stage.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" id="bulk-update-stage" class="btn btn-primary" disabled>
+                                    Update Stage
+                                </button>
+                                <button type="button" id="clear-selection" class="btn btn-outline-secondary">
+                                    Clear Selection
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Pagination -->
         {% include 'partials/_pagination.html' with page_obj=page_obj per_page=per_page %}
     </div>
@@ -192,21 +221,26 @@
 document.addEventListener('DOMContentLoaded', function() {
     const selectAll = document.getElementById('select-all');
     const checkboxes = document.querySelectorAll('.contact-checkbox');
-    const bulkOpsBar = document.getElementById('bulk-operations');
+    const bulkActionsBar = document.getElementById('bulk-actions');
     const selectedCount = document.getElementById('selected-count');
+    const bulkStageSelect = document.getElementById('bulk-stage-select');
+    const bulkUpdateStageBtn = document.getElementById('bulk-update-stage');
+    const clearSelectionBtn = document.getElementById('clear-selection');
     
     // Update bulk operations visibility and selected count
     function updateBulkOperations() {
         const selected = document.querySelectorAll('.contact-checkbox:checked');
         const count = selected.length;
         
-        selectedCount.textContent = count;
-        bulkOpsBar.style.display = count > 0 ? 'block' : 'none';
+        selectedCount.textContent = `${count} people selected`;
         
-        // Update hidden inputs for bulk operations
-        const ids = Array.from(selected).map(cb => cb.value).join(',');
-        document.getElementById('bulk-delete-ids').value = ids;
-        document.getElementById('bulk-priority-ids').value = ids;
+        if (count > 0) {
+            bulkActionsBar.classList.remove('d-none');
+        } else {
+            bulkActionsBar.classList.add('d-none');
+            bulkStageSelect.value = '';
+            bulkUpdateStageBtn.disabled = true;
+        }
     }
     
     // Select all functionality
@@ -228,7 +262,79 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Handle bulk operation form submissions
+    // Enable/disable bulk update button when stage is selected
+    bulkStageSelect.addEventListener('change', function() {
+        const selected = document.querySelectorAll('.contact-checkbox:checked');
+        bulkUpdateStageBtn.disabled = !this.value || selected.length === 0;
+    });
+    
+    // Handle bulk stage update
+    bulkUpdateStageBtn.addEventListener('click', function() {
+        const selected = document.querySelectorAll('.contact-checkbox:checked');
+        const stageId = bulkStageSelect.value;
+        const stageName = bulkStageSelect.options[bulkStageSelect.selectedIndex].text;
+        
+        if (selected.length === 0 || !stageId) {
+            alert('Please select contacts and a pipeline stage.');
+            return;
+        }
+        
+        if (!confirm(`Move ${selected.length} people to "${stageName}" stage?`)) {
+            return;
+        }
+        
+        // Disable button and show loading
+        bulkUpdateStageBtn.disabled = true;
+        bulkUpdateStageBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Updating...';
+        
+        // Get contact IDs
+        const contactIds = Array.from(selected).map(cb => cb.value);
+        
+        // Make AJAX request
+        fetch('{% url "pipeline:batch_update_pipeline_stage" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                contact_ids: contactIds,
+                contact_type: 'person',
+                stage_id: stageId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage('success', data.message);
+                // Reload page to show updated stages
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showMessage('error', data.error || 'Failed to update pipeline stages');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('error', 'An error occurred while updating pipeline stages');
+        })
+        .finally(() => {
+            // Reset button
+            bulkUpdateStageBtn.disabled = false;
+            bulkUpdateStageBtn.innerHTML = 'Update Stage';
+        });
+    });
+    
+    // Handle clear selection
+    clearSelectionBtn.addEventListener('click', function() {
+        checkboxes.forEach(cb => cb.checked = false);
+        selectAll.checked = false;
+        selectAll.indeterminate = false;
+        updateBulkOperations();
+    });
+    
+    // Handle bulk operation form submissions (legacy)
     document.querySelectorAll('form select[name="priority"]').forEach(select => {
         select.addEventListener('change', function() {
             if (this.value) {
@@ -257,6 +363,43 @@ function handlePhoneClick(phoneNumber, contactId) {
         // On desktop, redirect to communications page and open the log modal
         window.location.href = `/communications/?open_log_modal=phone&contact_id=${contactId}`;
     }
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Helper function to show messages
+function showMessage(type, message) {
+    // Create a toast-style message
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
 }
 </script>
 {% endblock %}

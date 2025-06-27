@@ -38,7 +38,7 @@ def person_list(request):
     use_lazy_loading = request.GET.get('lazy', 'true').lower() == 'true'
     
     # Get pipeline stages for the dropdown
-    from mobilize.pipeline.models import MAIN_PEOPLE_PIPELINE_STAGES
+    from mobilize.pipeline.models import MAIN_PEOPLE_PIPELINE_STAGES, Pipeline
     
     if use_lazy_loading:
         # Get data for bulk operation dropdowns
@@ -67,6 +67,12 @@ def person_list(request):
             ('-home_country', 'Home Country Z-A'),
         ]
         
+        # Get actual pipeline stages for bulk operations
+        main_pipeline = Pipeline.get_main_people_pipeline()
+        pipeline_stages_objects = []
+        if main_pipeline:
+            pipeline_stages_objects = main_pipeline.stages.all().order_by('order')
+        
         # Use lazy loading template
         context = {
             'query': query,
@@ -75,6 +81,7 @@ def person_list(request):
             'sort_by': sort_by,
             'priorities': Contact.PRIORITY_CHOICES,
             'pipeline_stages': MAIN_PEOPLE_PIPELINE_STAGES,
+            'pipeline_stages_objects': pipeline_stages_objects,
             'users': users,
             'offices': offices,
             'sort_options': sort_options,
@@ -162,6 +169,12 @@ def person_list(request):
             ('-home_country', 'Home Country Z-A'),
         ]
         
+        # Get actual pipeline stages for bulk operations
+        main_pipeline = Pipeline.get_main_people_pipeline()
+        pipeline_stages_objects = []
+        if main_pipeline:
+            pipeline_stages_objects = main_pipeline.stages.all().order_by('order')
+        
         context = {
             'page_obj': page_obj,
             'query': query,
@@ -170,6 +183,7 @@ def person_list(request):
             'sort_by': sort_by,
             'priorities': priorities,
             'pipeline_stages': MAIN_PEOPLE_PIPELINE_STAGES,
+            'pipeline_stages_objects': pipeline_stages_objects,
             'sort_options': sort_options,
             'per_page': per_page,
         }
