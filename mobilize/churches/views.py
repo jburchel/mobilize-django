@@ -98,6 +98,13 @@ def church_list(request):
     # Get pipeline stages and priorities for filter dropdowns
     pipeline_stages = MAIN_CHURCH_PIPELINE_STAGES
     
+    # Get actual pipeline stages for bulk operations
+    from mobilize.pipeline.models import Pipeline
+    main_pipeline = Pipeline.get_main_church_pipeline()
+    pipeline_stages_objects = []
+    if main_pipeline:
+        pipeline_stages_objects = main_pipeline.stages.all().order_by('order')
+    
     priorities = [
         ('low', 'Low'),
         ('medium', 'Medium'),
@@ -137,6 +144,7 @@ def church_list(request):
         'priority': priority,
         'sort_by': sort_by,
         'pipeline_stages': pipeline_stages,
+        'pipeline_stages_objects': pipeline_stages_objects,
         'priorities': priorities,
         'users': users,
         'offices': offices,
