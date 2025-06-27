@@ -1,0 +1,579 @@
+{
+  "render_data": {
+    "church_assignments": [
+      {
+        "assigned_to": "Unassigned",
+        "count": 27
+      },
+      {
+        "assigned_to": "JIM BURCHEL",
+        "count": 15
+      },
+      {
+        "assigned_to": "MATTHEW RULE",
+        "count": 13
+      },
+      {
+        "assigned_to": "Chip Atkinson",
+        "count": 9
+      },
+      {
+        "assigned_to": "Ken Katayama",
+        "count": 7
+      },
+      {
+        "assigned_to": "Matthew Rule",
+        "count": 6
+      },
+      {
+        "assigned_to": "Jim Burchel",
+        "count": 5
+      },
+      {
+        "assigned_to": "Bill Jones",
+        "count": 5
+      },
+      {
+        "assigned_to": "Jason Modomo",
+        "count": 4
+      },
+      {
+        "assigned_to": "BILL JONES",
+        "count": 3
+      },
+      {
+        "assigned_to": "CHIP ATKINSON",
+        "count": 3
+      },
+      {
+        "assigned_to": "KEN KATAYAMA",
+        "count": 2
+      }
+    ],
+    "people_assignments": [
+      {
+        "assigned_to": "JIM BURCHEL",
+        "count": 56
+      },
+      {
+        "assigned_to": "MATTHEW RULE",
+        "count": 14
+      },
+      {
+        "assigned_to": "CHIP ATKINSON",
+        "count": 2
+      }
+    ],
+    "church_samples": [
+      {
+        "church_name": "Crossroads Church",
+        "assigned_to": "Bill Jones",
+        "priority": "MEDIUM",
+        "church_pipeline": "INFORMATION",
+        "info_given": ""
+      },
+      {
+        "church_name": "Grace Church of Columbia",
+        "assigned_to": "Bill Jones",
+        "priority": "MEDIUM",
+        "church_pipeline": "PROMOTION",
+        "info_given": ""
+      },
+      {
+        "church_name": "Grace Fellowship Church",
+        "assigned_to": "Bill Jones",
+        "priority": "MEDIUM",
+        "church_pipeline": "PROMOTION",
+        "info_given": ""
+      },
+      {
+        "church_name": "Harmony Church",
+        "assigned_to": "Bill Jones",
+        "priority": "MEDIUM",
+        "church_pipeline": "PROMOTION",
+        "info_given": ""
+      },
+      {
+        "church_name": "Riverbend Community Church",
+        "assigned_to": "Bill Jones",
+        "priority": "MEDIUM",
+        "church_pipeline": "PROMOTION",
+        "info_given": ""
+      },
+      {
+        "church_name": "Agape Worship Center",
+        "assigned_to": "BILL JONES",
+        "priority": "MEDIUM",
+        "church_pipeline": "PROMOTION",
+        "info_given": ""
+      },
+      {
+        "church_name": "Bagley Swamp Wesleyan Church",
+        "assigned_to": "BILL JONES",
+        "priority": "URGENT",
+        "church_pipeline": "PROMOTION",
+        "info_given": "none to church yet"
+      },
+      {
+        "church_name": "Foster Street Wesleyan Church",
+        "assigned_to": "BILL JONES",
+        "priority": "MEDIUM",
+        "church_pipeline": "INFORMATION",
+        "info_given": ""
+      },
+      {
+        "church_name": "Christian Family Chapel",
+        "assigned_to": "Chip Atkinson",
+        "priority": "MEDIUM",
+        "church_pipeline": "INFORMATION",
+        "info_given": ""
+      },
+      {
+        "church_name": "Fellowship Bible Church",
+        "assigned_to": "Chip Atkinson",
+        "priority": "MEDIUM",
+        "church_pipeline": "PROMOTION",
+        "info_given": ""
+      },
+      {
+        "church_name": "First Baptist Church",
+        "assigned_to": "Chip Atkinson",
+        "priority": "MEDIUM",
+        "church_pipeline": "PROMOTION",
+        "info_given": ""
+      },
+      {
+        "church_name": "Harvest Church",
+        "assigned_to": "Chip Atkinson",
+        "priority": "MEDIUM",
+        "church_pipeline": "PROMOTION",
+        "info_given": ""
+      },
+      {
+        "church_name": "Mateo 28:19 Church",
+        "assigned_to": "Chip Atkinson",
+        "priority": "MEDIUM",
+        "church_pipeline": "PROMOTION",
+        "info_given": ""
+      },
+      {
+        "church_name": "Mercy Hill",
+        "assigned_to": "Chip Atkinson",
+        "priority": "MEDIUM",
+        "church_pipeline": "INFORMATION",
+        "info_given": ""
+      },
+      {
+        "church_name": "Northeast Christian Church",
+        "assigned_to": "Chip Atkinson",
+        "priority": "MEDIUM",
+        "church_pipeline": "INFORMATION",
+        "info_given": ""
+      },
+      {
+        "church_name": "NorthStar Christian Center",
+        "assigned_to": "Chip Atkinson",
+        "priority": "MEDIUM",
+        "church_pipeline": "INFORMATION",
+        "info_given": ""
+      },
+      {
+        "church_name": "Tabernacle of Praise Christian Fellowship",
+        "assigned_to": "Chip Atkinson",
+        "priority": "MEDIUM",
+        "church_pipeline": "PROMOTION",
+        "info_given": ""
+      },
+      {
+        "church_name": "Adams Farm Community Church",
+        "assigned_to": "CHIP ATKINSON",
+        "priority": "URGENT",
+        "church_pipeline": "INFORMATION",
+        "info_given": ""
+      },
+      {
+        "church_name": "Riverland Hills Baptist Church",
+        "assigned_to": "CHIP ATKINSON",
+        "priority": "HIGH",
+        "church_pipeline": "INFORMATION",
+        "info_given": ""
+      },
+      {
+        "church_name": "Westover Church",
+        "assigned_to": "CHIP ATKINSON",
+        "priority": "MEDIUM",
+        "church_pipeline": "INFORMATION",
+        "info_given": ""
+      }
+    ],
+    "people_samples": [
+      {
+        "first_name": "Ben",
+        "last_name": "Makowitz",
+        "assigned_to": "CHIP ATKINSON",
+        "priority": "urgent",
+        "people_pipeline": "INVITATION",
+        "info_given": "Mission/Vision"
+      },
+      {
+        "first_name": "Christy",
+        "last_name": "Marini",
+        "assigned_to": "CHIP ATKINSON",
+        "priority": "high",
+        "people_pipeline": "INVITATION",
+        "info_given": "MV"
+      },
+      {
+        "first_name": "Beka",
+        "last_name": "Ahlstrom",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "high",
+        "people_pipeline": "INFORMATION",
+        "info_given": "Persepectives lesson 13"
+      },
+      {
+        "first_name": "Richard and Beth",
+        "last_name": "Anderson",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "high",
+        "people_pipeline": "INVITATION",
+        "info_given": "Mission/Vision -- 3 HR areas -- \"global\" nature of our team --"
+      },
+      {
+        "first_name": "Zion",
+        "last_name": "Atkinson",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "low",
+        "people_pipeline": "INFORMATION",
+        "info_given": ""
+      },
+      {
+        "first_name": "Luma",
+        "last_name": "Batista",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "medium",
+        "people_pipeline": "INFORMATION",
+        "info_given": "Mission and Vision"
+      },
+      {
+        "first_name": "Landon",
+        "last_name": "Battermanm",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "low",
+        "people_pipeline": "INFORMATION",
+        "info_given": ""
+      },
+      {
+        "first_name": "Lohrane",
+        "last_name": "Boaventura",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "medium",
+        "people_pipeline": "INFORMATION",
+        "info_given": ""
+      },
+      {
+        "first_name": "Janis",
+        "last_name": "Bolick",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "high",
+        "people_pipeline": "INVITATION",
+        "info_given": "Mission/Vision"
+      },
+      {
+        "first_name": "Joseph",
+        "last_name": "Brinkley",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "medium",
+        "people_pipeline": "INFORMATION",
+        "info_given": "m/v"
+      },
+      {
+        "first_name": "Jim",
+        "last_name": "Burchel",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "high",
+        "people_pipeline": "CONFIRMATION",
+        "info_given": "everything"
+      },
+      {
+        "first_name": "Hannah",
+        "last_name": "Caughman",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "medium",
+        "people_pipeline": "INFORMATION",
+        "info_given": "m/v"
+      },
+      {
+        "first_name": "Charles",
+        "last_name": "Chen",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "medium",
+        "people_pipeline": "INFORMATION",
+        "info_given": "Mission and Vision"
+      },
+      {
+        "first_name": "Ben",
+        "last_name": "Cimorelli",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "high",
+        "people_pipeline": "INFORMATION",
+        "info_given": "Lesson 13 Perspectives"
+      },
+      {
+        "first_name": "Fletcher",
+        "last_name": "Colgan",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "low",
+        "people_pipeline": "INFORMATION",
+        "info_given": "Mission/Vision"
+      },
+      {
+        "first_name": "Alissa",
+        "last_name": "Cox",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "high",
+        "people_pipeline": "INFORMATION",
+        "info_given": ""
+      },
+      {
+        "first_name": "Shoshonnah",
+        "last_name": "Crompton",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "medium",
+        "people_pipeline": "INFORMATION",
+        "info_given": "Mission and Vision"
+      },
+      {
+        "first_name": "Philip",
+        "last_name": "Donato",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "low",
+        "people_pipeline": "PROMOTION",
+        "info_given": "Perspectives lesson 13..."
+      },
+      {
+        "first_name": "Savannah",
+        "last_name": "Easterling",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "medium",
+        "people_pipeline": "INFORMATION",
+        "info_given": "m/v"
+      },
+      {
+        "first_name": "Jennifer",
+        "last_name": "Faheem",
+        "assigned_to": "JIM BURCHEL",
+        "priority": "high",
+        "people_pipeline": "INFORMATION",
+        "info_given": "Mission/Vision"
+      }
+    ]
+  },
+  "supabase_users": [
+    {
+      "id": 58,
+      "username": "admin",
+      "email": "admin@crossoverglobal.net",
+      "first_name": "Super",
+      "last_name": "Admin",
+      "is_active": true
+    },
+    {
+      "id": 61,
+      "username": "admin_asia_pacific_office",
+      "email": "admin.ap@crossoverglobal.net",
+      "first_name": "Angela",
+      "last_name": "Cobb",
+      "is_active": true
+    },
+    {
+      "id": 60,
+      "username": "admin_europe_office",
+      "email": "admin.eu@crossoverglobal.net",
+      "first_name": "Thomas",
+      "last_name": "Webb",
+      "is_active": true
+    },
+    {
+      "id": 62,
+      "username": "admin_latin_america_office",
+      "email": "admin.la@crossoverglobal.net",
+      "first_name": "Juan",
+      "last_name": "Payne",
+      "is_active": true
+    },
+    {
+      "id": 59,
+      "username": "admin_north_america_office",
+      "email": "admin.na@crossoverglobal.net",
+      "first_name": "Michael",
+      "last_name": "Jordan",
+      "is_active": true
+    },
+    {
+      "id": 6,
+      "username": "debuguser",
+      "email": "debug@example.com",
+      "first_name": "",
+      "last_name": "",
+      "is_active": true
+    },
+    {
+      "id": 2,
+      "username": "j.burchel",
+      "email": "j.burchel@crossoverglobal.net",
+      "first_name": "Jim",
+      "last_name": "Burchel",
+      "is_active": true
+    },
+    {
+      "id": 3,
+      "username": "office_admin_test",
+      "email": "admin@test.com",
+      "first_name": "Office",
+      "last_name": "Admin",
+      "is_active": true
+    },
+    {
+      "id": 76,
+      "username": "test",
+      "email": "test@example.com",
+      "first_name": "",
+      "last_name": "",
+      "is_active": true
+    },
+    {
+      "id": 1,
+      "username": "testuser",
+      "email": "test@example.com",
+      "first_name": "",
+      "last_name": "",
+      "is_active": true
+    },
+    {
+      "id": 63,
+      "username": "user1",
+      "email": "john.smith@crossoverglobal.net",
+      "first_name": "Andrea",
+      "last_name": "Alexander",
+      "is_active": true
+    },
+    {
+      "id": 72,
+      "username": "user10",
+      "email": "emma.anderson@crossoverglobal.net",
+      "first_name": "Sarah",
+      "last_name": "Cisneros",
+      "is_active": true
+    },
+    {
+      "id": 73,
+      "username": "user11",
+      "email": "ryan.taylor@crossoverglobal.net",
+      "first_name": "Melanie",
+      "last_name": "Thornton",
+      "is_active": true
+    },
+    {
+      "id": 74,
+      "username": "user12",
+      "email": "kate.thomas@crossoverglobal.net",
+      "first_name": "Mary",
+      "last_name": "Price",
+      "is_active": true
+    },
+    {
+      "id": 64,
+      "username": "user2",
+      "email": "jane.doe@crossoverglobal.net",
+      "first_name": "Jason",
+      "last_name": "Torres",
+      "is_active": true
+    },
+    {
+      "id": 65,
+      "username": "user3",
+      "email": "mike.johnson@crossoverglobal.net",
+      "first_name": "Jesse",
+      "last_name": "Moody",
+      "is_active": true
+    },
+    {
+      "id": 66,
+      "username": "user4",
+      "email": "sarah.wilson@crossoverglobal.net",
+      "first_name": "Nicholas",
+      "last_name": "White",
+      "is_active": true
+    },
+    {
+      "id": 67,
+      "username": "user5",
+      "email": "david.brown@crossoverglobal.net",
+      "first_name": "David",
+      "last_name": "Ruiz",
+      "is_active": true
+    },
+    {
+      "id": 68,
+      "username": "user6",
+      "email": "lisa.davis@crossoverglobal.net",
+      "first_name": "Amber",
+      "last_name": "Mckee",
+      "is_active": true
+    },
+    {
+      "id": 69,
+      "username": "user7",
+      "email": "chris.miller@crossoverglobal.net",
+      "first_name": "Kyle",
+      "last_name": "Hayes",
+      "is_active": true
+    },
+    {
+      "id": 70,
+      "username": "user8",
+      "email": "amy.garcia@crossoverglobal.net",
+      "first_name": "Diane",
+      "last_name": "Estrada",
+      "is_active": true
+    },
+    {
+      "id": 71,
+      "username": "user9",
+      "email": "tom.martinez@crossoverglobal.net",
+      "first_name": "Lorraine",
+      "last_name": "Williams",
+      "is_active": true
+    }
+  ],
+  "mapping": {
+    "Jim Burchel": {
+      "user_id": 2,
+      "email": "j.burchel@crossoverglobal.net",
+      "name": "Jim Burchel"
+    },
+    "JIM BURCHEL": {
+      "user_id": 2,
+      "email": "j.burchel@crossoverglobal.net",
+      "name": "Jim Burchel"
+    }
+  },
+  "unmapped_assignments": [
+    "Ken Katayama",
+    "Unassigned",
+    "Matthew Rule",
+    "Chip Atkinson",
+    "CHIP ATKINSON",
+    "MATTHEW RULE",
+    "BILL JONES",
+    "Bill Jones",
+    "KEN KATAYAMA",
+    "Jason Modomo"
+  ],
+  "recommendations": {
+    "mapped_count": 2,
+    "unmapped_count": 10,
+    "total_unique_assignments": 12
+  }
+}
