@@ -546,7 +546,7 @@ def db_diagnostic(request):
         
         # Get environment info
         database_url = os.environ.get('DATABASE_URL', 'Not set')
-        debug_mode = settings.DEBUG
+        debug_mode = getattr(settings, 'DEBUG', 'Unknown')
         
         # Mask password in DATABASE_URL
         masked_url = database_url
