@@ -409,6 +409,12 @@ def person_list_api(request):
     
     logger.info(f"🔍 DEBUG: Final results count: {len(results)}, Total: {total_count}")
     
+    # Ensure we're not returning more than per_page results
+    if len(results) > per_page:
+        logger.warning(f"⚠️ WARNING: Returning {len(results)} results but per_page is {per_page}")
+        results = results[:per_page]
+        has_next = True
+    
     return JsonResponse({
         'results': results,
         'page': page,
