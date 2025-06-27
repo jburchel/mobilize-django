@@ -22,10 +22,11 @@ def church_list(request):
     """
     Display a list of churches with filtering and pagination.
     """
-    # Get query parameters for filtering
+    # Get query parameters for filtering and sorting
     query = request.GET.get('q', '')
     pipeline_stage = request.GET.get('pipeline_stage', '')
     priority = request.GET.get('priority', '')
+    sort_by = request.GET.get('sort', 'name')  # Default sort by name
     
     # Start with all churches - use select_related to optimize queries
     churches = Church.objects.select_related('contact', 'contact__office').all()
@@ -67,8 +68,27 @@ def church_list(request):
     if priority:
         churches = churches.filter(contact__priority=priority)
     
-    # Apply consistent ordering for reliable pagination
-    churches = churches.order_by('pk')
+    # Apply sorting
+    sort_options = {
+        'name': 'name',
+        'denomination': 'denomination',
+        'location': 'location',
+        'priority': 'contact__priority',
+        'assigned_to': 'contact__user__first_name',
+        'created': 'contact__created_at',
+        '-name': '-name',
+        '-denomination': '-denomination', 
+        '-location': '-location',
+        '-priority': '-contact__priority',
+        '-assigned_to': '-contact__user__first_name',
+        '-created': '-contact__created_at',
+    }
+    
+    # Apply sorting with fallback ordering for consistent pagination
+    if sort_by in sort_options:
+        churches = churches.order_by(sort_options[sort_by], 'pk')
+    else:
+        churches = churches.order_by('name', 'pk')  # Default sort
     
     # Pagination
     paginator = Paginator(churches, 25)  # Show 25 churches per page
@@ -94,15 +114,33 @@ def church_list(request):
     # Get offices for bulk assignment dropdown
     offices = Office.objects.all().order_by('name')
     
+    # Sort options for the template
+    sort_options = [
+        ('name', 'Name A-Z'),
+        ('-name', 'Name Z-A'),
+        ('denomination', 'Denomination A-Z'),
+        ('-denomination', 'Denomination Z-A'),
+        ('location', 'Location A-Z'),
+        ('-location', 'Location Z-A'),
+        ('assigned_to', 'Assigned To A-Z'),
+        ('-assigned_to', 'Assigned To Z-A'),
+        ('priority', 'Priority Low-High'),
+        ('-priority', 'Priority High-Low'),
+        ('created', 'Oldest First'),
+        ('-created', 'Newest First'),
+    ]
+    
     context = {
         'page_obj': page_obj,
         'query': query,
         'pipeline_stage': pipeline_stage,
         'priority': priority,
+        'sort_by': sort_by,
         'pipeline_stages': pipeline_stages,
         'priorities': priorities,
         'users': users,
         'offices': offices,
+        'sort_options': sort_options,
     }
     
     return render(request, 'churches/church_list.html', context)

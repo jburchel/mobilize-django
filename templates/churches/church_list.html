@@ -39,11 +39,19 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <select name="priority" class="form-select" onchange="this.form.submit()">
                     <option value="">All Priorities</option>
                     {% for value, label in priorities %}
                         <option value="{{ value }}" {% if value == priority %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="sort" class="form-select" onchange="this.form.submit()">
+                    <option value="">Sort By...</option>
+                    {% for value, label in sort_options %}
+                        <option value="{{ value }}" {% if value == sort_by %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -119,11 +127,12 @@
                     <th width="40">
                         <input type="checkbox" id="select-all" class="form-check-input">
                     </th>
-                    <th>Name</th>
+                    <th>Name{% if sort_by == 'name' %} ↑{% elif sort_by == '-name' %} ↓{% endif %}</th>
                     <th>Primary Contact</th>
                     <th>Phone</th>
                     <th>Email</th>
                     <th>Pipeline Stage</th>
+                    <th>Assigned To{% if sort_by == 'assigned_to' %} ↑{% elif sort_by == '-assigned_to' %} ↓{% endif %}</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -185,6 +194,13 @@
                             {% endwith %}
                         </td>
                         <td>
+                            {% if church.contact.user %}
+                                {{ church.contact.user.full_name|default:church.contact.user.email }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
                             <div class="btn-group">
                                 <a href="{% url 'churches:church_edit' church.pk %}" class="btn btn-sm btn-outline-secondary">
                                     <i class="fas fa-edit"></i>
@@ -209,12 +225,12 @@
             <ul class="pagination justify-content-center">
                 {% if page_obj.has_previous %}
                     <li class="page-item">
-                        <a class="page-link" href="?page=1&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}" aria-label="First">
+                        <a class="page-link" href="?page=1&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}&sort={{ sort_by }}&sort={{ sort_by }}" aria-label="First">
                             <span aria-hidden="true">&laquo;&laquo;</span>
                         </a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}" aria-label="Previous">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}&sort={{ sort_by }}" aria-label="Previous">
                             <span aria-hidden="true">&laquo;</span>
                         </a>
                     </li>
@@ -236,19 +252,19 @@
                         <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
                     {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ i }}&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}">{{ i }}</a>
+                            <a class="page-link" href="?page={{ i }}&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}&sort={{ sort_by }}">{{ i }}</a>
                         </li>
                     {% endif %}
                 {% endfor %}
                 
                 {% if page_obj.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}" aria-label="Next">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}&sort={{ sort_by }}" aria-label="Next">
                             <span aria-hidden="true">&raquo;</span>
                         </a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}" aria-label="Last">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}&sort={{ sort_by }}" aria-label="Last">
                             <span aria-hidden="true">&raquo;&raquo;</span>
                         </a>
                     </li>

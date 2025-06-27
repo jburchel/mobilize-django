@@ -474,7 +474,7 @@
                         <span class="field-label">Assigned To:</span>
                         <span class="field-value">
                             {% if church.contact.user %}
-                                {{ church.contact.user.full_name|default:church.contact.user.username }}
+                                {{ church.contact.user.full_name|default:church.contact.user.email }}
                             {% else %}
                                 <span class="text-muted">Not assigned</span>
                             {% endif %}
@@ -627,7 +627,7 @@
                         <span class="field-label">Created By:</span>
                         <span class="field-value">
                             {% if church.contact.user %}
-                                {{ church.contact.user.full_name|default:church.contact.user.username }}
+                                {{ church.contact.user.full_name|default:church.contact.user.email }}
                             {% else %}
                                 <span class="text-muted">Unknown</span>
                             {% endif %}
