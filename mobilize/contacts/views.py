@@ -184,36 +184,52 @@ def person_detail(request, pk):
     Display detailed information about a person.
     Only accessible if user has office permission.
     """
-    # Get the person (office filtering is handled by decorator)
-    person = get_object_or_404(Person.objects.select_related('contact', 'contact__office'), pk=pk)
+    import logging
+    logger = logging.getLogger(__name__)
     
-    # Get recent communications for this person
-    from mobilize.communications.models import Communication
-    recent_communications = Communication.objects.filter(
-        person=person
-    ).order_by('-date_sent', '-created_at')[:5]
-    
-    # Get related tasks for this person
-    related_tasks = person.person_tasks.all().order_by('-due_date', '-created_at')[:10]
-    
-    # Get pipeline stages for the interactive slider
-    from mobilize.pipeline.models import Pipeline, PipelineStage, PipelineContact
-    main_pipeline = Pipeline.get_main_people_pipeline()
-    pipeline_stages = []
-    current_stage = None
-    
-    if main_pipeline:
-        pipeline_stages = main_pipeline.stages.all().order_by('order')
+    try:
+        # Get the person (office filtering is handled by decorator)
+        person = get_object_or_404(Person.objects.select_related('contact', 'contact__office'), pk=pk)
         
-        # Get current pipeline stage for this person
-        try:
-            pipeline_contact = PipelineContact.objects.get(
-                contact=person.contact,
-                pipeline=main_pipeline
-            )
-            current_stage = pipeline_contact.current_stage
-        except PipelineContact.DoesNotExist:
-            current_stage = None
+        # Get recent communications for this person
+        from mobilize.communications.models import Communication
+        recent_communications = Communication.objects.filter(
+            person=person
+        ).order_by('-date_sent', '-created_at')[:5]
+        
+        # Get related tasks for this person
+        related_tasks = person.person_tasks.all().order_by('-due_date', '-created_at')[:10]
+        
+        # Get pipeline stages for the interactive slider
+        from mobilize.pipeline.models import Pipeline, PipelineStage, PipelineContact
+        
+        # Debug logging
+        logger.error(f"DEBUG: Getting main people pipeline for person {pk}")
+        
+        main_pipeline = Pipeline.get_main_people_pipeline()
+        
+        logger.error(f"DEBUG: Main pipeline = {main_pipeline}")
+        
+        pipeline_stages = []
+        current_stage = None
+        
+        if main_pipeline:
+            logger.error(f"DEBUG: Main pipeline ID = {main_pipeline.id}")
+            pipeline_stages = main_pipeline.stages.all().order_by('order')
+            logger.error(f"DEBUG: Found {pipeline_stages.count()} stages")
+            
+            # Get current pipeline stage for this person
+            try:
+                pipeline_contact = PipelineContact.objects.get(
+                    contact=person.contact,
+                    pipeline=main_pipeline
+                )
+                current_stage = pipeline_contact.current_stage
+            except PipelineContact.DoesNotExist:
+                current_stage = None
+    except Exception as e:
+        logger.error(f"ERROR in person_detail: {str(e)}", exc_info=True)
+        raise
     
     context = {
         'person': person,

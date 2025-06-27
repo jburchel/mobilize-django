@@ -97,11 +97,11 @@ def dashboard(request):
     # Get task counts using aggregation for efficiency
     task_stats = tasks_queryset.aggregate(
         overdue_tasks=Count('pk', filter=Q(
-            status='pending',
+            status__in=['pending', 'in_progress'],
             due_date__lt=datetime.now().date()
         )),
         upcoming_tasks=Count('pk', filter=Q(
-            status='pending',
+            status__in=['pending', 'in_progress'],
             due_date__range=[datetime.now().date(), datetime.now().date() + timedelta(days=7)]
         )),
         completed_this_week=Count('pk', filter=Q(
