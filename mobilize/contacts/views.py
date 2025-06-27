@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.views.decorators.http import require_POST
 from django.urls import reverse
+from django.db import transaction
 import csv
 from datetime import datetime
 
@@ -270,8 +271,26 @@ def person_delete(request, pk):
     
     if request.method == 'POST':
         name = person.name
-        person.delete()
-        messages.success(request, f"Successfully deleted {name}")
+        contact = person.contact
+        
+        try:
+            # Use atomic transaction to ensure clean deletion
+            with transaction.atomic():
+                # Delete the contact, which will cascade delete the person
+                # This is safer than deleting the person directly
+                contact.delete()
+            messages.success(request, f"Successfully deleted {name}")
+        except Exception as e:
+            # Log the error and show a user-friendly message
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error deleting person {name} (ID: {pk}): {str(e)}")
+            logger.error(f"Full traceback: ", exc_info=True)
+            messages.error(request, f"Error deleting {name}. Please try again or contact support.")
+            return render(request, 'contacts/person_confirm_delete.html', {
+                'person': person,
+            })
+        
         return redirect('contacts:person_list')
     
     return render(request, 'contacts/person_confirm_delete.html', {
