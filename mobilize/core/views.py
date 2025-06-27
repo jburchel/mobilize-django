@@ -559,11 +559,65 @@ def db_diagnostic(request):
                     parts[0] = ':'.join(auth_parts)
             masked_url = '@'.join(parts)
         
+        # Check DataAccessManager filtering
+        from mobilize.core.permissions import DataAccessManager
+        access_manager = DataAccessManager(request.user, 'default')
+        visible_people = access_manager.get_people_queryset().count()
+        visible_churches = access_manager.get_churches_queryset().count()
+        
+        # Check user details
+        user_info = {
+            'id': request.user.id,
+            'username': request.user.username,
+            'role': getattr(request.user, 'role', 'unknown'),
+            'office_id': getattr(request.user, 'office_id', None),
+            'is_superuser': request.user.is_superuser,
+        }
+        
+        # Check for people with no names in visible set
+        cursor.execute("""
+            SELECT c.id, c.first_name, c.last_name, c.email, c.user_id, c.office_id
+            FROM contacts c
+            INNER JOIN people p ON c.id = p.contact_id
+            WHERE c.type = 'person'
+            AND (c.first_name IS NULL OR c.first_name = '')
+            AND (c.last_name IS NULL OR c.last_name = '')
+            LIMIT 10
+        """)
+        empty_name_people = cursor.fetchall()
+        
+        # Check user_id distribution
+        cursor.execute("""
+            SELECT user_id, COUNT(*) as count
+            FROM contacts 
+            WHERE type = 'person'
+            GROUP BY user_id
+            ORDER BY count DESC
+            LIMIT 10
+        """)
+        user_distribution = cursor.fetchall()
+        
         data = {
             'database': db_name,
             'user': db_user,
             'server': f"{server_addr}:{server_port}",
-            'person_contacts': person_count,
+            'total_person_contacts': person_count,
+            'visible_people': visible_people,
+            'visible_churches': visible_churches,
+            'user_info': user_info,
+            'empty_name_people': [
+                {
+                    'contact_id': row[0],
+                    'first_name': row[1],
+                    'last_name': row[2], 
+                    'email': row[3],
+                    'user_id': row[4],
+                    'office_id': row[5]
+                } for row in empty_name_people
+            ],
+            'user_distribution': [
+                {'user_id': row[0], 'count': row[1]} for row in user_distribution
+            ],
             'olivia_tanchak': {
                 'found': olivia_result is not None,
                 'contact_id': olivia_result[0] if olivia_result else None,
