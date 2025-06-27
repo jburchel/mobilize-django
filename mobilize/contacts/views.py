@@ -27,10 +27,11 @@ def person_list(request):
     Uses lazy loading for better performance.
     Only shows contacts from user's assigned offices.
     """
-    # Get query parameters for filtering
+    # Get query parameters for filtering and sorting
     query = request.GET.get('q', '')
     priority = request.GET.get('priority', '')
     pipeline_stage = request.GET.get('pipeline_stage', '')
+    sort_by = request.GET.get('sort', 'name')  # Default sort by name
     
     # Check if lazy loading is disabled (for backwards compatibility)
     use_lazy_loading = request.GET.get('lazy', 'true').lower() == 'true'
@@ -49,15 +50,33 @@ def person_list(request):
         # Get offices for bulk assignment dropdown
         offices = Office.objects.all().order_by('name')
         
+        # Sort options for the template
+        sort_options = [
+            ('name', 'Name A-Z'),
+            ('-name', 'Name Z-A'),
+            ('email', 'Email A-Z'),
+            ('-email', 'Email Z-A'),
+            ('assigned_to', 'Assigned To A-Z'),
+            ('-assigned_to', 'Assigned To Z-A'),
+            ('priority', 'Priority Low-High'),
+            ('-priority', 'Priority High-Low'),
+            ('created', 'Oldest First'),
+            ('-created', 'Newest First'),
+            ('home_country', 'Home Country A-Z'),
+            ('-home_country', 'Home Country Z-A'),
+        ]
+        
         # Use lazy loading template
         context = {
             'query': query,
             'priority': priority,
             'pipeline_stage': pipeline_stage,
+            'sort_by': sort_by,
             'priorities': Contact.PRIORITY_CHOICES,
             'pipeline_stages': MAIN_PEOPLE_PIPELINE_STAGES,
             'users': users,
             'offices': offices,
+            'sort_options': sort_options,
         }
         return render(request, 'contacts/person_list_lazy.html', context)
     else:
@@ -93,6 +112,28 @@ def person_list(request):
                 ).values_list('contact_id', flat=True)
                 people = people.filter(contact__id__in=pipeline_contacts)
         
+        # Apply sorting
+        sort_options_mapping = {
+            'name': 'contact__last_name',
+            'email': 'contact__email',
+            'assigned_to': 'contact__user__first_name',
+            'priority': 'contact__priority',
+            'created': 'contact__created_at',
+            'home_country': 'home_country',
+            '-name': '-contact__last_name',
+            '-email': '-contact__email',
+            '-assigned_to': '-contact__user__first_name',
+            '-priority': '-contact__priority',
+            '-created': '-contact__created_at',
+            '-home_country': '-home_country',
+        }
+        
+        # Apply sorting with fallback ordering for consistent pagination
+        if sort_by in sort_options_mapping:
+            people = people.order_by(sort_options_mapping[sort_by], 'pk')
+        else:
+            people = people.order_by('contact__last_name', 'contact__first_name', 'pk')  # Default sort
+        
         # Get items per page from request
         per_page = int(request.GET.get('per_page', 25))
         
@@ -104,13 +145,31 @@ def person_list(request):
         # Get priorities for filter dropdowns
         priorities = Contact.PRIORITY_CHOICES
         
+        # Sort options for the template (same as lazy loading)
+        sort_options = [
+            ('name', 'Name A-Z'),
+            ('-name', 'Name Z-A'),
+            ('email', 'Email A-Z'),
+            ('-email', 'Email Z-A'),
+            ('assigned_to', 'Assigned To A-Z'),
+            ('-assigned_to', 'Assigned To Z-A'),
+            ('priority', 'Priority Low-High'),
+            ('-priority', 'Priority High-Low'),
+            ('created', 'Oldest First'),
+            ('-created', 'Newest First'),
+            ('home_country', 'Home Country A-Z'),
+            ('-home_country', 'Home Country Z-A'),
+        ]
+        
         context = {
             'page_obj': page_obj,
             'query': query,
             'priority': priority,
             'pipeline_stage': pipeline_stage,
+            'sort_by': sort_by,
             'priorities': priorities,
             'pipeline_stages': MAIN_PEOPLE_PIPELINE_STAGES,
+            'sort_options': sort_options,
             'per_page': per_page,
         }
         
@@ -232,6 +291,7 @@ def person_list_api(request):
     query = request.GET.get('q', '')
     priority = request.GET.get('priority', '')
     pipeline_stage = request.GET.get('pipeline_stage', '')
+    sort_by = request.GET.get('sort', 'name')  # Default sort by name
     page = int(request.GET.get('page', 1))
     per_page = int(request.GET.get('per_page', 25))
     
@@ -308,9 +368,29 @@ def person_list_api(request):
     try:
         logger.info(f"🔍 DEBUG: Before pagination - people count: {people.count()}")
         
-        # Skip complex ordering for now
-        people = people.order_by('pk')  # Simple ascending order
-        logger.info(f"🔍 DEBUG: Applied simple pk ordering")
+        # Apply sorting
+        sort_options_mapping = {
+            'name': 'contact__last_name',
+            'email': 'contact__email',
+            'assigned_to': 'contact__user__first_name',
+            'priority': 'contact__priority',
+            'created': 'contact__created_at',
+            'home_country': 'home_country',
+            '-name': '-contact__last_name',
+            '-email': '-contact__email',
+            '-assigned_to': '-contact__user__first_name',
+            '-priority': '-contact__priority',
+            '-created': '-contact__created_at',
+            '-home_country': '-home_country',
+        }
+        
+        # Apply sorting with fallback ordering for consistent pagination
+        if sort_by in sort_options_mapping:
+            people = people.order_by(sort_options_mapping[sort_by], 'pk')
+            logger.info(f"🔍 DEBUG: Applied sorting: {sort_by} -> {sort_options_mapping[sort_by]}")
+        else:
+            people = people.order_by('contact__last_name', 'contact__first_name', 'pk')  # Default sort
+            logger.info(f"🔍 DEBUG: Applied default sorting: last_name, first_name, pk")
         
         # Get total count first (this should always work)
         try:

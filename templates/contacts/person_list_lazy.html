@@ -93,11 +93,19 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <select name="pipeline_stage" class="form-select" id="pipeline-stage-filter">
                         <option value="">All Pipeline Stages</option>
                         {% for stage_value, stage_label in pipeline_stages %}
                         <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="sort" class="form-select" id="sort-filter">
+                        <option value="">Sort By...</option>
+                        {% for value, label in sort_options %}
+                        <option value="{{ value }}" {% if value == sort_by %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -168,7 +176,8 @@ document.addEventListener('DOMContentLoaded', function() {
         filters: {
             q: '{{ query }}',
             priority: '{{ priority }}',
-            pipeline_stage: '{{ pipeline_stage }}'
+            pipeline_stage: '{{ pipeline_stage }}',
+            sort: '{{ sort_by }}'
         }
     });
     
@@ -304,6 +313,48 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    
+    // Handle filter changes for live search
+    const searchInput = document.getElementById('search-input');
+    const priorityFilter = document.getElementById('priority-filter');
+    const pipelineFilter = document.getElementById('pipeline-stage-filter');
+    const sortFilter = document.getElementById('sort-filter');
+    
+    function updateFilters() {
+        personLoader.updateFilters({
+            q: searchInput.value,
+            priority: priorityFilter.value,
+            pipeline_stage: pipelineFilter.value,
+            sort: sortFilter.value
+        });
+    }
+    
+    // Add event listeners for filters
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(updateFilters, 300));
+    }
+    if (priorityFilter) {
+        priorityFilter.addEventListener('change', updateFilters);
+    }
+    if (pipelineFilter) {
+        pipelineFilter.addEventListener('change', updateFilters);
+    }
+    if (sortFilter) {
+        sortFilter.addEventListener('change', updateFilters);
+    }
+    
+    // Simple debounce function for search input
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
 });
 
 // Handle email click - open Gmail compose in app

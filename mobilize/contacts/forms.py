@@ -71,12 +71,15 @@ class PersonForm(forms.ModelForm):
             'title', 'preferred_name', 'birthday', 'anniversary', 'marital_status', 
             'spouse_first_name', 'spouse_last_name', 'home_country', 
             'profession', 'organization',
+            'info_given', 'desired_service',
             'linkedin_url', 'facebook_url', 'twitter_url', 'instagram_url',
             'google_contact_id'
         ]
         widgets = {
             'birthday': forms.DateInput(attrs={'type': 'date'}),
             'anniversary': forms.DateInput(attrs={'type': 'date'}),
+            'info_given': forms.Textarea(attrs={'rows': 3}),
+            'desired_service': forms.Textarea(attrs={'rows': 3}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -213,6 +216,16 @@ class PersonForm(forms.ModelForm):
                 Row(
                     Column('profession', css_class='col-md-6 mb-3'),
                     Column('organization', css_class='col-md-6 mb-3'),
+                ),
+                HTML('</div></div>')
+            ),
+            
+            # Mission/Service Information Section
+            Div(
+                HTML('<div class="card mb-4"><div class="card-header bg-success text-white"><h5 class="mb-0"><i class="fas fa-globe me-2"></i>Mission & Service</h5></div><div class="card-body">'),
+                Row(
+                    Column('info_given', css_class='col-md-6 mb-3'),
+                    Column('desired_service', css_class='col-md-6 mb-3'),
                 ),
                 HTML('</div></div>')
             ),

@@ -297,6 +297,10 @@ class Person(models.Model):
     twitter_url = models.URLField(max_length=255, blank=True, null=True)
     instagram_url = models.URLField(max_length=255, blank=True, null=True)
     
+    # Mission/Service fields (from Render migration)
+    info_given = models.TextField(blank=True, null=True, help_text="Information about mission/vision shared")
+    desired_service = models.TextField(blank=True, null=True, help_text="Desired service location or type")
+    
     # Integration fields
     # virtuous - not in mobilize-prompt-django.md for Person
     google_contact_id = models.CharField(max_length=255, blank=True, null=True) # From mobilize-prompt-django.md

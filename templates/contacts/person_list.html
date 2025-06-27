@@ -68,11 +68,19 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <select name="pipeline_stage" class="form-select">
                         <option value="">All Pipeline Stages</option>
                         {% for stage_value, stage_label in pipeline_stages %}
                         <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="sort" class="form-select" onchange="this.form.submit()">
+                        <option value="">Sort By...</option>
+                        {% for value, label in sort_options %}
+                        <option value="{{ value }}" {% if value == sort_by %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
