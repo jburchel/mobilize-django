@@ -592,7 +592,14 @@ def bulk_assign_church_user(request):
     """
     Assign multiple churches to a user at once.
     """
+    # Handle both list format and comma-separated string
     church_ids = request.POST.getlist('church_ids')
+    if not church_ids:
+        # Try to get as a single comma-separated string
+        church_ids_str = request.POST.get('church_ids', '')
+        if church_ids_str:
+            church_ids = [id.strip() for id in church_ids_str.split(',') if id.strip()]
+    
     user_id = request.POST.get('user_id')
     
     if not church_ids:
@@ -607,6 +614,9 @@ def bulk_assign_church_user(request):
         from mobilize.authentication.models import User
         from mobilize.contacts.models import Contact
         user = get_object_or_404(User, id=user_id)
+        
+        # Convert string IDs to integers
+        church_ids = [int(id) for id in church_ids if id]
         
         # Get the church contacts to update
         contacts = Contact.objects.filter(id__in=church_ids, type='church')
@@ -634,7 +644,14 @@ def bulk_assign_church_office(request):
     """
     Assign multiple churches to an office at once.
     """
+    # Handle both list format and comma-separated string
     church_ids = request.POST.getlist('church_ids')
+    if not church_ids:
+        # Try to get as a single comma-separated string
+        church_ids_str = request.POST.get('church_ids', '')
+        if church_ids_str:
+            church_ids = [id.strip() for id in church_ids_str.split(',') if id.strip()]
+    
     office_id = request.POST.get('office_id')
     
     if not church_ids:
@@ -649,6 +666,9 @@ def bulk_assign_church_office(request):
         from mobilize.admin_panel.models import Office
         from mobilize.contacts.models import Contact
         office = get_object_or_404(Office, id=office_id)
+        
+        # Convert string IDs to integers
+        church_ids = [int(id) for id in church_ids if id]
         
         # Get the church contacts to update
         contacts = Contact.objects.filter(id__in=church_ids, type='church')

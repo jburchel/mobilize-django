@@ -732,7 +732,14 @@ def bulk_assign_office(request):
     """
     Assign multiple contacts to an office at once.
     """
+    # Handle both list format and comma-separated string
     contact_ids = request.POST.getlist('contact_ids')
+    if not contact_ids:
+        # Try to get as a single comma-separated string
+        contact_ids_str = request.POST.get('contact_ids', '')
+        if contact_ids_str:
+            contact_ids = [id.strip() for id in contact_ids_str.split(',') if id.strip()]
+    
     office_id = request.POST.get('office_id')
     
     if not contact_ids:
@@ -746,6 +753,9 @@ def bulk_assign_office(request):
     try:
         from mobilize.admin_panel.models import Office
         office = get_object_or_404(Office, id=office_id)
+        
+        # Convert string IDs to integers
+        contact_ids = [int(id) for id in contact_ids if id]
         
         # Get the contacts to update
         contacts = Contact.objects.filter(id__in=contact_ids, type='person')
@@ -772,7 +782,14 @@ def bulk_assign_user(request):
     """
     Assign multiple contacts to a user at once.
     """
+    # Handle both list format and comma-separated string
     contact_ids = request.POST.getlist('contact_ids')
+    if not contact_ids:
+        # Try to get as a single comma-separated string
+        contact_ids_str = request.POST.get('contact_ids', '')
+        if contact_ids_str:
+            contact_ids = [id.strip() for id in contact_ids_str.split(',') if id.strip()]
+    
     user_id = request.POST.get('user_id')
     
     if not contact_ids:
@@ -786,6 +803,9 @@ def bulk_assign_user(request):
     try:
         from mobilize.authentication.models import User
         user = get_object_or_404(User, id=user_id)
+        
+        # Convert string IDs to integers
+        contact_ids = [int(id) for id in contact_ids if id]
         
         # Get the contacts to update
         contacts = Contact.objects.filter(id__in=contact_ids, type='person')
