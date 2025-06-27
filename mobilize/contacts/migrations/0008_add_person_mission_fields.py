@@ -20,7 +20,9 @@ class SafeAddField(migrations.AddField):
     
     def database_forwards(self, app_label, schema_editor, from_state, to_state):
         model = to_state.apps.get_model(app_label, self.model_name)
-        if not check_column_exists(model._meta.db_table, self.field.column):
+        # Get the column name - use db_column if set, otherwise use field name
+        column_name = self.field.db_column or self.name
+        if not check_column_exists(model._meta.db_table, column_name):
             super().database_forwards(app_label, schema_editor, from_state, to_state)
         else:
             # Column already exists, skip the operation
