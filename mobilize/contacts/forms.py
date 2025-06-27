@@ -33,6 +33,12 @@ class PersonForm(forms.ModelForm):
     zip_code = forms.CharField(max_length=255, required=False, label="ZIP Code")
     country = forms.CharField(max_length=100, required=False, label="Country")
     notes = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}), required=False)
+    initial_notes = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 3}), 
+        required=False,
+        label="Initial Notes",
+        help_text="Notes from first contact or initial interaction"
+    )
     pipeline_stage = forms.ChoiceField(choices=[], required=False)
     priority = forms.ChoiceField(choices=Contact.PRIORITY_CHOICES, required=False)
     status = forms.ChoiceField(choices=Contact.STATUS_CHOICES, required=False)
@@ -100,6 +106,7 @@ class PersonForm(forms.ModelForm):
             self.fields['zip_code'].initial = contact.zip_code
             self.fields['country'].initial = contact.country
             self.fields['notes'].initial = contact.notes
+            self.fields['initial_notes'].initial = contact.initial_notes
             # Get pipeline stage from the relationship system
             current_stage = contact.get_current_pipeline_stage()
             self.fields['pipeline_stage'].initial = current_stage.name if current_stage else None
@@ -248,6 +255,7 @@ class PersonForm(forms.ModelForm):
             # Notes & Tags Section
             Div(
                 HTML('<div class="card mb-4"><div class="card-header bg-dark text-white"><h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes & Tags</h5></div><div class="card-body">'),
+                'initial_notes',
                 'notes',
                 'tags',
                 HTML('</div></div>')
@@ -282,6 +290,7 @@ class PersonForm(forms.ModelForm):
         contact.zip_code = self.cleaned_data.get('zip_code')
         contact.country = self.cleaned_data.get('country')
         contact.notes = self.cleaned_data.get('notes')
+        contact.initial_notes = self.cleaned_data.get('initial_notes')
         contact.priority = self.cleaned_data.get('priority')
         contact.status = self.cleaned_data.get('status') or 'active'
         
