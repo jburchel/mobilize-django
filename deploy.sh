@@ -3,6 +3,9 @@
 echo "🚀 Starting comprehensive database synchronization and debugging..."
 python manage.py comprehensive_schema_sync --verbose
 
+echo "🔧 Fixing migration state for columns that already exist..."
+python manage.py fix_migration_state
+
 echo "Running Django migrations..."
 python manage.py migrate --run-syncdb
 
