@@ -132,14 +132,16 @@
     }
     
     .pipeline-stage.active .stage-circle {
-        background: rgba(255, 255, 255, 0.9);
-        border-color: #fff;
-        box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        background: #28a745;
+        border-color: #28a745;
+        box-shadow: 0 0 20px rgba(40, 167, 69, 0.6);
+        transform: scale(1.1);
     }
     
     .pipeline-stage:hover .stage-circle {
         background: rgba(255, 255, 255, 0.3);
         border-color: rgba(255, 255, 255, 0.6);
+        transform: scale(1.05);
     }
     
     .stage-number {
@@ -149,7 +151,8 @@
     }
     
     .pipeline-stage.active .stage-number {
-        color: #667eea;
+        color: white;
+        font-weight: 900;
     }
     
     .stage-label {
@@ -163,7 +166,9 @@
     
     .pipeline-stage.active .stage-label {
         opacity: 1;
-        font-weight: 600;
+        font-weight: 700;
+        color: #28a745;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
     }
     
     .pipeline-connector {
