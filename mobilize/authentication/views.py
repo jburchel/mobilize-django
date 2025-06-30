@@ -238,14 +238,15 @@ def google_auth_callback(request):
             else:
                 # Create new token
                 cursor.execute("""
-                    INSERT INTO google_tokens (user_id, access_token, refresh_token, expires_at, scopes, created_at, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
+                    INSERT INTO google_tokens (user_id, access_token, refresh_token, expires_at, scopes, token_type, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
                 """, [
                     str(user_id),
                     tokens.get('access_token'),
                     tokens.get('refresh_token'),
                     expires_at,
-                    scopes_string
+                    scopes_string,
+                    'Bearer'  # Standard OAuth2 token type
                 ])
                 print(f"Created Google tokens for user ID {user_id}")
         
