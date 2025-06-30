@@ -349,47 +349,88 @@ class GmailService:
         
         return body
     
-    def sync_emails_to_communications(self, days_back: int = 7):
+    def sync_emails_to_communications(self, days_back: int = 7, contacts_only: bool = True):
         """Sync recent Gmail messages to communications table"""
         if not self.service:
             return {'success': False, 'error': 'Gmail service not authenticated'}
         
         from datetime import datetime, timedelta
         
+        # Get all known contact emails if we're filtering by contacts only
+        if contacts_only:
+            known_emails = set()
+            try:
+                from mobilize.contacts.models import Person
+                from mobilize.churches.models import Church
+                
+                # Get all person emails
+                person_emails = Person.objects.filter(
+                    contact__email__isnull=False
+                ).exclude(contact__email='').values_list('contact__email', flat=True)
+                known_emails.update(person_emails)
+                
+                # Get all church emails
+                church_emails = Church.objects.filter(
+                    contact__email__isnull=False
+                ).exclude(contact__email='').values_list('contact__email', flat=True)
+                known_emails.update(church_emails)
+                
+                print(f"Found {len(known_emails)} known contact emails")
+            except Exception as e:
+                print(f"Error getting known emails: {e}")
+                known_emails = set()
+        
         # Query for recent emails
         since_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y/%m/%d')
         query = f'after:{since_date}'
         
-        messages = self.get_messages(query=query, max_results=100)
+        messages = self.get_messages(query=query, max_results=500)  # Increased limit
         synced_count = 0
+        skipped_count = 0
         
         for message in messages:
             # Check if communication already exists
-            if not Communication.objects.filter(
-                gmail_message_id=message['id']
-            ).exists():
+            if Communication.objects.filter(gmail_message_id=message['id']).exists():
+                continue
                 
-                # Try to match to contacts by email
-                person = self._find_person_by_email(message['sender'])
-                church = self._find_church_by_email(message['sender'])
-                
-                Communication.objects.create(
-                    type='email',
-                    subject=message['subject'],
-                    message=message['body'][:250],  # Truncate for database field
-                    direction='inbound',
-                    date=timezone.now().date(),
-                    person=person,
-                    church=church,
-                    gmail_message_id=message['id'],
-                    gmail_thread_id=message['thread_id'],
-                    email_status='received',
-                    sender=message['sender'],
-                    user=self.user
-                )
-                synced_count += 1
+            # If contacts_only is True, skip emails not from known contacts
+            if contacts_only and message.get('sender'):
+                sender_email = message['sender'].lower().strip()
+                if sender_email not in known_emails:
+                    skipped_count += 1
+                    continue
+            
+            # Try to match to contacts by email
+            person = self._find_person_by_email(message['sender'])
+            church = self._find_church_by_email(message['sender'])
+            
+            # Only create if we found a matching contact (when contacts_only=True)
+            if contacts_only and not person and not church:
+                skipped_count += 1
+                continue
+            
+            Communication.objects.create(
+                type='email',
+                subject=message['subject'],
+                message=message['body'][:250],  # Truncate for database field
+                direction='inbound',
+                date=timezone.now().date(),
+                person=person,
+                church=church,
+                gmail_message_id=message['id'],
+                gmail_thread_id=message['thread_id'],
+                email_status='received',
+                sender=message['sender'],
+                user=self.user
+            )
+            synced_count += 1
         
-        return {'success': True, 'synced_count': synced_count}
+        result = {'success': True, 'synced_count': synced_count}
+        if contacts_only:
+            result['skipped_count'] = skipped_count
+            result['message'] = f'Synced {synced_count} emails from known contacts, skipped {skipped_count} emails from unknown contacts'
+        
+        return result
     
     def _find_person_by_email(self, email_address: str):
         """Find person by email address"""

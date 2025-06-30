@@ -25,19 +25,34 @@ class Command(BaseCommand):
             action='store_true',
             help='Show what would be synced without actually syncing'
         )
+        parser.add_argument(
+            '--all-emails',
+            action='store_true',
+            help='Sync ALL emails, not just from known contacts (default: False)'
+        )
+        parser.add_argument(
+            '--contacts-only',
+            action='store_true',
+            default=True,
+            help='Only sync emails from contacts in database (default: True)'
+        )
     
     def handle(self, *args, **options):
         user_id = options.get('user_id')
         days_back = options['days_back']
         dry_run = options['dry_run']
+        all_emails = options['all_emails']
+        contacts_only = not all_emails  # If --all-emails is specified, contacts_only = False
+        
+        sync_mode = "ALL emails" if all_emails else "emails from known contacts ONLY"
         
         if dry_run:
             self.stdout.write(
-                self.style.SUCCESS(f'[DRY RUN] Gmail sync for last {days_back} days')
+                self.style.SUCCESS(f'[DRY RUN] Gmail sync for last {days_back} days ({sync_mode})')
             )
         else:
             self.stdout.write(
-                self.style.SUCCESS(f'Starting Gmail sync for last {days_back} days...')
+                self.style.SUCCESS(f'Starting Gmail sync for last {days_back} days ({sync_mode})...')
             )
         
         # Get users to sync
@@ -76,18 +91,18 @@ class Command(BaseCommand):
                     users_processed += 1
                 else:
                     # Actually sync emails
-                    result = gmail_service.sync_emails_to_communications(days_back)
+                    result = gmail_service.sync_emails_to_communications(days_back, contacts_only=contacts_only)
                     
                     if result['success']:
                         synced_count = result['synced_count']
                         total_synced += synced_count
                         users_processed += 1
                         
-                        self.stdout.write(
-                            self.style.SUCCESS(
-                                f'User {user.username} ({user.id}) - Synced {synced_count} emails'
-                            )
-                        )
+                        message = f'User {user.username} ({user.id}) - Synced {synced_count} emails'
+                        if 'skipped_count' in result:
+                            message += f', skipped {result["skipped_count"]} from unknown contacts'
+                        
+                        self.stdout.write(self.style.SUCCESS(message))
                     else:
                         self.stdout.write(
                             self.style.ERROR(

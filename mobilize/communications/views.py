@@ -442,7 +442,7 @@ class ComposeEmailView(LoginRequiredMixin, FormView):
         )
         context['email_signatures'] = EmailSignature.objects.filter(
             user=self.request.user
-        )
+        ).only('id', 'name', 'content', 'is_default', 'user')
         return context
 
 
@@ -613,7 +613,7 @@ class GmailComposeView(LoginRequiredMixin, FormView):
         
         try:
             context['email_templates'] = EmailTemplate.objects.filter(is_active=True)
-            context['email_signatures'] = EmailSignature.objects.filter(user=self.request.user)
+            context['email_signatures'] = EmailSignature.objects.filter(user=self.request.user).only('id', 'name', 'content', 'is_default', 'user')
         except Exception:
             context['email_templates'] = []
             context['email_signatures'] = []
