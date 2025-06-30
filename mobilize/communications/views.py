@@ -230,6 +230,12 @@ class CommunicationListView(LoginRequiredMixin, ListView):
             import logging
             logging.error(f"Error in CommunicationListView.get_queryset: {e}")
             return Communication.objects.none()
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['type_choices'] = Communication.TYPE_CHOICES
+        context['direction_choices'] = Communication.DIRECTION_CHOICES
+        return context
 
 
 class CommunicationDetailView(LoginRequiredMixin, DetailView):

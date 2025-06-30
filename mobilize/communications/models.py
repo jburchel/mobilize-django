@@ -88,12 +88,28 @@ class Communication(models.Model):
     
     Matches the 'communications' table in the Supabase database.
     """
+    
+    # Communication Type Choices
+    TYPE_CHOICES = [
+        ('Email', 'Email'),
+        ('Phone Call', 'Phone Call'),
+        ('Text Message', 'Text Message'),
+        ('Meeting', 'Meeting'),
+        ('Video Call', 'Video Call'),
+    ]
+    
+    # Direction Choices
+    DIRECTION_CHOICES = [
+        ('inbound', 'Inbound'),
+        ('outbound', 'Outbound'),
+    ]
+    
     # Basic Information
     id = models.AutoField(primary_key=True)
-    type = models.CharField(max_length=255, blank=True, null=True)
+    type = models.CharField(max_length=255, choices=TYPE_CHOICES, blank=True, null=True)
     message = models.CharField(max_length=255, blank=True, null=True)
     subject = models.CharField(max_length=255, blank=True, null=True)
-    direction = models.CharField(max_length=255, blank=True, null=True)
+    direction = models.CharField(max_length=255, choices=DIRECTION_CHOICES, blank=True, null=True)
     
     # Dates and Times
     date = models.DateField(blank=True, null=True)
