@@ -107,7 +107,7 @@ class Communication(models.Model):
     # Basic Information
     id = models.AutoField(primary_key=True)
     type = models.CharField(max_length=255, choices=TYPE_CHOICES, blank=True, null=True)
-    message = models.CharField(max_length=255, blank=True, null=True)
+    message = models.CharField(max_length=1000, blank=True, null=True)
     subject = models.CharField(max_length=255, blank=True, null=True)
     direction = models.CharField(max_length=255, choices=DIRECTION_CHOICES, blank=True, null=True)
     
