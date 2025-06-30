@@ -306,6 +306,20 @@ class LazyLoader {
             });
         });
     }
+    
+    updateFilters(filters) {
+        // Update search parameters with new filter values
+        Object.keys(filters).forEach(key => {
+            if (filters[key]) {
+                this.searchParams.set(key, filters[key]);
+            } else {
+                this.searchParams.delete(key);
+            }
+        });
+        
+        // Reset pagination and reload data with new filters
+        this.resetAndLoad();
+    }
 }
 
 // Export for use in templates
