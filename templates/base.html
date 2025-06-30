@@ -710,5 +710,80 @@
     {% endcompress %}
     
     {% block extra_js %}{% endblock %}
+    
+    <!-- Gmail Notification System -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check for Gmail notifications periodically
+        function checkGmailNotifications() {
+            fetch('/communications/api/check-notifications/')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.has_notification) {
+                        showNotification(data.message, data.new_emails);
+                    }
+                })
+                .catch(error => {
+                    console.log('Gmail notification check failed:', error);
+                });
+        }
+        
+        function showNotification(message, emailCount) {
+            // Remove any existing notification
+            const existingNotification = document.getElementById('gmail-notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+            
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.id = 'gmail-notification';
+            notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+            notification.style.cssText = `
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                max-width: 400px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                border-left: 4px solid #0d6efd;
+            `;
+            
+            notification.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-envelope me-2 text-primary"></i>
+                    <div class="flex-grow-1">
+                        <strong>New Email${emailCount > 1 ? 's' : ''}!</strong><br>
+                        <small>${message}</small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            
+            // Add click handler to go to communications
+            notification.style.cursor = 'pointer';
+            notification.addEventListener('click', function(e) {
+                if (!e.target.closest('.btn-close')) {
+                    window.location.href = '/communications/';
+                }
+            });
+            
+            // Add to page
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 10 seconds
+            setTimeout(() => {
+                if (notification && notification.parentNode) {
+                    notification.remove();
+                }
+            }, 10000);
+        }
+        
+        // Check immediately on page load
+        checkGmailNotifications();
+        
+        // Check every 2 minutes for new notifications
+        setInterval(checkGmailNotifications, 120000);
+    });
+    </script>
 </body>
 </html>

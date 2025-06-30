@@ -1106,6 +1106,29 @@ def get_contacts_json(request):
 
 
 @login_required
+def check_gmail_notifications(request):
+    """Check for new Gmail notifications for the current user"""
+    from django.core.cache import cache
+    
+    notification_key = f"gmail_notification_{request.user.id}"
+    notification = cache.get(notification_key)
+    
+    if notification and not notification.get('read'):
+        # Mark as read
+        notification['read'] = True
+        cache.set(notification_key, notification, timeout=86400)
+        
+        return JsonResponse({
+            'has_notification': True,
+            'message': notification['message'],
+            'timestamp': notification['timestamp'],
+            'new_emails': notification['new_emails']
+        })
+    
+    return JsonResponse({'has_notification': False})
+
+
+@login_required
 def create_meet_link(request):
     """Create a Google Meet link for video calls"""
     if request.method == 'POST':

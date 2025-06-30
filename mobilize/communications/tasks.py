@@ -161,52 +161,24 @@ def sync_gmail_emails(self, user_id: int, days_back: int = 7):
         user = User.objects.get(id=user_id)
         gmail_service = GmailService(user)
         
-        # Calculate date range
-        since_date = timezone.now() - timedelta(days=days_back)
+        if not gmail_service.is_authenticated():
+            logger.warning(f"User {user_id} Gmail not authenticated, skipping sync")
+            return {'status': 'skipped', 'reason': 'not_authenticated'}
         
-        # Get emails from Gmail
-        emails = gmail_service.get_emails(since_date=since_date)
+        # Use the actual Gmail service sync method
+        result = gmail_service.sync_emails_to_communications(days_back, contacts_only=True)
         
-        synced_count = 0
-        for email_data in emails:
-            try:
-                # Extract email information
-                sender_email = email_data.get('sender_email', '')
-                recipient_emails = email_data.get('recipient_emails', [])
-                
-                # Find related contacts
-                related_contacts = Contact.objects.filter(
-                    email__in=[sender_email] + recipient_emails
-                ).first()
-                
-                if related_contacts:
-                    # Create communication record
-                    communication, created = Communication.objects.get_or_create(
-                        external_id=email_data.get('id', ''),
-                        defaults={
-                            'user': user,
-                            'person': getattr(related_contacts, 'person', None),
-                            'type': 'email',
-                            'subject': email_data.get('subject', ''),
-                            'content': email_data.get('body', ''),
-                            'status': 'sent',
-                            'date_sent': email_data.get('date', timezone.now()),
-                            'created_at': timezone.now(),
-                        }
-                    )
-                    
-                    if created:
-                        synced_count += 1
-                        
-            except Exception as e:
-                logger.error(f"Error syncing email {email_data.get('id', '')}: {str(e)}")
-        
-        logger.info(f"Synced {synced_count} emails for user {user_id}")
-        return {
-            'user_id': user_id,
-            'synced_count': synced_count,
-            'total_emails': len(emails)
-        }
+        if result['success']:
+            logger.info(f"Synced {result['synced_count']} emails for user {user_id}")
+            return {
+                'user_id': user_id,
+                'synced_count': result['synced_count'],
+                'skipped_count': result.get('skipped_count', 0),
+                'status': 'success'
+            }
+        else:
+            logger.error(f"Gmail sync failed for user {user_id}: {result['error']}")
+            return {'status': 'error', 'reason': result['error']}
         
     except User.DoesNotExist:
         logger.error(f"User {user_id} not found")
@@ -215,6 +187,137 @@ def sync_gmail_emails(self, user_id: int, days_back: int = 7):
     except Exception as exc:
         logger.error(f"Error syncing Gmail emails for user {user_id}: {str(exc)}")
         raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=300)
+def sync_all_users_gmail(self, days_back: int = 1):
+    """
+    Sync Gmail emails for all authenticated users and send notifications for new emails.
+    
+    Args:
+        days_back: Number of days back to sync emails (default: 1 for frequent syncing)
+    """
+    try:
+        # Get all users who have Gmail tokens
+        from mobilize.authentication.models import GoogleToken
+        
+        authenticated_users = User.objects.filter(
+            id__in=GoogleToken.objects.filter(
+                access_token__isnull=False
+            ).values_list('user_id', flat=True),
+            is_active=True
+        )
+        
+        total_synced = 0
+        users_processed = 0
+        users_with_new_emails = []
+        
+        for user in authenticated_users:
+            try:
+                result = sync_gmail_emails.delay(user.id, days_back).get()
+                
+                if result.get('status') == 'success':
+                    synced_count = result.get('synced_count', 0)
+                    total_synced += synced_count
+                    users_processed += 1
+                    
+                    # If user has new emails, add to notification list
+                    if synced_count > 0:
+                        users_with_new_emails.append({
+                            'user': user,
+                            'new_emails': synced_count,
+                            'skipped_count': result.get('skipped_count', 0)
+                        })
+                        
+                elif result.get('status') == 'skipped':
+                    logger.info(f"Skipped user {user.username} - {result.get('reason')}")
+                else:
+                    logger.warning(f"Gmail sync failed for user {user.username}: {result.get('reason')}")
+                    
+            except Exception as e:
+                logger.error(f"Error syncing Gmail for user {user.username}: {str(e)}")
+        
+        # Send notifications for users with new emails
+        if users_with_new_emails:
+            send_new_email_notifications.delay(users_with_new_emails)
+        
+        logger.info(f"Gmail auto-sync completed: {total_synced} emails synced for {users_processed} users")
+        return {
+            'total_synced': total_synced,
+            'users_processed': users_processed,
+            'users_with_new_emails': len(users_with_new_emails),
+            'status': 'completed'
+        }
+        
+    except Exception as exc:
+        logger.error(f"Error in auto Gmail sync: {str(exc)}")
+        raise self.retry(exc=exc)
+
+
+@shared_task(bind=True)
+def send_new_email_notifications(self, users_with_new_emails: List[Dict]):
+    """
+    Send notifications to users who received new emails.
+    
+    Args:
+        users_with_new_emails: List of dictionaries with user info and email counts
+    """
+    try:
+        from django.contrib.messages import get_messages
+        from django.contrib.messages.storage.fallback import FallbackStorage
+        
+        notifications_sent = 0
+        
+        for user_data in users_with_new_emails:
+            try:
+                user = user_data['user']
+                new_email_count = user_data['new_emails']
+                skipped_count = user_data.get('skipped_count', 0)
+                
+                # Create a notification message
+                if new_email_count == 1:
+                    message = f"📧 You have 1 new email from a contact in your CRM."
+                else:
+                    message = f"📧 You have {new_email_count} new emails from contacts in your CRM."
+                
+                if skipped_count > 0:
+                    message += f" ({skipped_count} emails from unknown contacts were skipped.)"
+                
+                # Log the notification (in a real app, you might use Django's messaging framework,
+                # push notifications, or email notifications)
+                logger.info(f"📧 NEW EMAIL NOTIFICATION for {user.username}: {message}")
+                
+                # Here you could:
+                # 1. Create a Notification model record
+                # 2. Send a push notification
+                # 3. Add to user's session messages for next login
+                # 4. Send an email notification
+                # 5. Use WebSocket for real-time notification
+                
+                # For now, we'll create a simple log entry that could be displayed in the UI
+                from django.core.cache import cache
+                notification_key = f"gmail_notification_{user.id}"
+                cache.set(notification_key, {
+                    'message': message,
+                    'timestamp': timezone.now().isoformat(),
+                    'new_emails': new_email_count,
+                    'read': False
+                }, timeout=86400)  # Cache for 24 hours
+                
+                notifications_sent += 1
+                
+            except Exception as e:
+                logger.error(f"Error sending notification: {str(e)}")
+        
+        logger.info(f"Sent {notifications_sent} new email notifications")
+        return {
+            'notifications_sent': notifications_sent,
+            'total_users': len(users_with_new_emails)
+        }
+        
+    except Exception as exc:
+        logger.error(f"Error sending new email notifications: {str(exc)}")
+        return {'status': 'error', 'reason': str(exc)}
 
 
 @shared_task(bind=True)

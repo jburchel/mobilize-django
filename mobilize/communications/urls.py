@@ -55,4 +55,5 @@ urlpatterns = [
     # API endpoints
     path('api/contacts/', views.get_contacts_json, name='get_contacts_json'),
     path('api/create-meet/', views.create_meet_link, name='create_meet_link'),
+    path('api/check-notifications/', views.check_gmail_notifications, name='check_gmail_notifications'),
 ]

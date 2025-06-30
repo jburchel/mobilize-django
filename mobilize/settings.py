@@ -386,6 +386,12 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 300.0,  # Every 5 minutes
         'options': {'queue': 'email'},
     },
+    'sync-gmail-auto': {
+        'task': 'mobilize.communications.tasks.sync_all_users_gmail',
+        'schedule': 900.0,  # Every 15 minutes
+        'options': {'queue': 'email'},
+        'kwargs': {'days_back': 1},  # Only sync last 1 day for frequent checks
+    },
 }
 
 # Worker configuration
