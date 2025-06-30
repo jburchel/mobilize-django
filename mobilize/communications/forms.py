@@ -227,7 +227,7 @@ class CommunicationForm(forms.ModelForm):
             try:
                 # Check if the person actually exists in the database
                 from mobilize.contacts.models import Person
-                Person.objects.get(id=person.id)
+                Person.objects.get(pk=person.pk)
             except Person.DoesNotExist:
                 raise forms.ValidationError(f'Selected person "{person}" does not exist in the database.')
         
@@ -237,7 +237,7 @@ class CommunicationForm(forms.ModelForm):
             try:
                 # Check if the church actually exists in the database
                 from mobilize.churches.models import Church
-                Church.objects.get(id=church.id)
+                Church.objects.get(pk=church.pk)
             except Church.DoesNotExist:
                 raise forms.ValidationError(f'Selected church "{church}" does not exist in the database.')
         
