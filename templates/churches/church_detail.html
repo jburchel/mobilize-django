@@ -10,6 +10,38 @@
     <a href="{% url 'churches:church_edit' church.pk %}" class="btn btn-primary">
         <i class="fas fa-edit"></i> Edit
     </a>
+    
+    <!-- Communications Dropdown -->
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-comment-alt"></i> Communications
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#" onclick="composeChurchEmail('{{ church.contact.id }}', '{{ church.name|default:church.contact.church_name }}', '{{ church.contact.email }}')">
+                <i class="fas fa-envelope me-2"></i> Compose Email
+            </a></li>
+            <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('{{ church.contact.id }}', '{{ church.name|default:church.contact.church_name }}', 'phone')">
+                <i class="fas fa-phone me-2"></i> Log Phone Call
+            </a></li>
+            <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('{{ church.contact.id }}', '{{ church.name|default:church.contact.church_name }}', 'text')">
+                <i class="fas fa-sms me-2"></i> Log Text
+            </a></li>
+            <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('{{ church.contact.id }}', '{{ church.name|default:church.contact.church_name }}', 'video_call')">
+                <i class="fas fa-video me-2"></i> Log Video Call
+            </a></li>
+            <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('{{ church.contact.id }}', '{{ church.name|default:church.contact.church_name }}', 'meeting')">
+                <i class="fas fa-users me-2"></i> Log Meeting
+            </a></li>
+            <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('{{ church.contact.id }}', '{{ church.name|default:church.contact.church_name }}', 'other')">
+                <i class="fas fa-comment me-2"></i> Log Other
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="/communications/?contact_id={{ church.contact.id }}">
+                <i class="fas fa-list me-2"></i> View All Communications
+            </a></li>
+        </ul>
+    </div>
+    
     <div class="btn-group">
         <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="fas fa-ellipsis-v"></i>
@@ -884,6 +916,126 @@ function handlePhoneClick(phoneNumber, contactId) {
     } else {
         window.location.href = `/communications/?open_log_modal=phone&contact_id=${contactId}`;
     }
+}
+
+// Handle church email composition
+function composeChurchEmail(contactId, churchName, email) {
+    const composeUrl = `/communications/gmail/compose/?recipient=${encodeURIComponent(email || '')}&name=${encodeURIComponent(churchName)}&contact_id=${contactId}&church=true`;
+    window.location.href = composeUrl;
+}
+
+// Handle church communication logging
+function logChurchCommunication(contactId, churchName, type) {
+    // Create a modal for logging communications
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'communicationModal';
+    modal.setAttribute('tabindex', '-1');
+    modal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Log ${getTypeDisplayName(type)} - ${churchName}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="communicationForm">
+                        <input type="hidden" name="contact_id" value="${contactId}">
+                        <input type="hidden" name="type" value="${type}">
+                        <input type="hidden" name="church" value="true">
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">Subject</label>
+                            <input type="text" class="form-control" id="subject" name="subject" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Notes/Details</label>
+                            <textarea class="form-control" id="message" name="message" rows="4" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="date" class="form-label">Date</label>
+                            <input type="datetime-local" class="form-control" id="date" name="date" value="${new Date().toISOString().slice(0, 16)}" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCommunication()">Save Communication</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+    
+    // Clean up modal after hiding
+    modal.addEventListener('hidden.bs.modal', () => {
+        modal.remove();
+    });
+}
+
+// Get display name for communication type
+function getTypeDisplayName(type) {
+    const types = {
+        'phone': 'Phone Call',
+        'text': 'Text Message',
+        'video_call': 'Video Call',
+        'meeting': 'Meeting',
+        'other': 'Other Communication'
+    };
+    return types[type] || type;
+}
+
+// Save communication log
+function saveCommunication() {
+    const form = document.getElementById('communicationForm');
+    const formData = new FormData(form);
+    
+    const data = {
+        contact_id: formData.get('contact_id'),
+        type: formData.get('type'),
+        subject: formData.get('subject'),
+        message: formData.get('message'),
+        date: formData.get('date'),
+        church: formData.get('church') === 'true'
+    };
+    
+    // Show loading state
+    const saveBtn = document.querySelector('#communicationModal .btn-primary');
+    const originalText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+    
+    fetch('/communications/create/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('success', 'Communication logged successfully!');
+            bootstrap.Modal.getInstance(document.getElementById('communicationModal')).hide();
+            // Refresh the communications section
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showMessage('error', data.error || 'Failed to save communication');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('error', 'An error occurred while saving the communication');
+    })
+    .finally(() => {
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalText;
+    });
 }
 
 // Pipeline stage update functionality for churches
