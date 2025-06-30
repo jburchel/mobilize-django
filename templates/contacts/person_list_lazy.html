@@ -173,6 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
         tableBody: document.getElementById('person-table-body'),
         apiUrl: '{% url "contacts:person_list_api" %}',
         perPage: 25,
+        enableInfiniteScroll: false,  // Disable auto-scroll for manual pagination
         filters: {
             q: '{{ query }}',
             priority: '{{ priority }}',
@@ -217,10 +218,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalCountSpan = document.getElementById('total-count');
     const endReachedSpan = document.getElementById('end-reached');
     
-    // Load more button click handler
-    loadMoreBtn.addEventListener('click', () => {
-        personLoader.loadMore();
-    });
+    // Load more button click handler (only if infinite scroll is disabled)
+    if (!personLoader.enableInfiniteScroll) {
+        loadMoreBtn.addEventListener('click', () => {
+            personLoader.loadMore();
+        });
+    }
     
     // Listen for loader updates to get accurate total count
     window.addEventListener('lazyLoaderUpdate', (event) => {

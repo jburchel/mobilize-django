@@ -13,13 +13,16 @@ class LazyLoader {
         this.hasMore = true;
         this.totalCount = 0;
         this.currentCount = 0;
+        this.enableInfiniteScroll = options.enableInfiniteScroll !== false; // Default true
         this.searchParams = new URLSearchParams(window.location.search);
         
         // Create loading indicator
         this.loadingIndicator = this.createLoadingIndicator();
         
-        // Initialize intersection observer for infinite scroll
-        this.initIntersectionObserver();
+        // Initialize intersection observer for infinite scroll (only if enabled)
+        if (this.enableInfiniteScroll) {
+            this.initIntersectionObserver();
+        }
         
         // Initialize search/filter handlers
         this.initSearchHandlers();
@@ -342,18 +345,20 @@ class LazyLoader {
             totalCountSpan.textContent = this.totalCount;
         }
         
-        // Update load more button visibility
-        const loadMoreBtn = document.getElementById('load-more-btn');
-        const endReachedSpan = document.getElementById('end-reached');
-        
-        if (loadMoreBtn && endReachedSpan) {
-            if (this.hasMore && this.currentCount > 0) {
-                loadMoreBtn.style.display = 'inline-block';
-                endReachedSpan.style.display = 'none';
-            } else {
-                loadMoreBtn.style.display = 'none';
-                if (this.currentCount >= this.totalCount && this.totalCount > 0) {
-                    endReachedSpan.style.display = 'inline-block';
+        // Update load more button visibility (only if infinite scroll is disabled)
+        if (!this.enableInfiniteScroll) {
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            const endReachedSpan = document.getElementById('end-reached');
+            
+            if (loadMoreBtn && endReachedSpan) {
+                if (this.hasMore && this.currentCount > 0) {
+                    loadMoreBtn.style.display = 'inline-block';
+                    endReachedSpan.style.display = 'none';
+                } else {
+                    loadMoreBtn.style.display = 'none';
+                    if (this.currentCount >= this.totalCount && this.totalCount > 0) {
+                        endReachedSpan.style.display = 'inline-block';
+                    }
                 }
             }
         }
