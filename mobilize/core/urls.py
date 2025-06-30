@@ -12,4 +12,5 @@ urlpatterns = [
     path('export/<str:report_type>/', views.export_report, name='export_report'),
     path('customize-dashboard/', views.customize_dashboard, name='customize_dashboard'),
     path('db-diagnostic/', views.db_diagnostic, name='db_diagnostic'),
+    path('permissions-debug/', views.permissions_debug, name='permissions_debug'),
 ]

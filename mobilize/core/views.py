@@ -531,9 +531,9 @@ def db_diagnostic(request):
         cursor.execute("SELECT current_database(), current_user, inet_server_addr(), inet_server_port();")
         db_name, db_user, server_addr, server_port = cursor.fetchone()
         
-        # Get some sample data
+        # Get total person contacts
         cursor.execute("SELECT COUNT(*) FROM contacts WHERE type = 'person'")
-        person_count = cursor.fetchone()[0]
+        total_person_count = cursor.fetchone()[0]
         
         # Check for Olivia Tanchak to identify which database
         cursor.execute("""
@@ -548,88 +548,131 @@ def db_diagnostic(request):
         database_url = os.environ.get('DATABASE_URL', 'Not set')
         debug_mode = getattr(settings, 'DEBUG', 'Unknown')
         
-        # Mask password in DATABASE_URL
-        masked_url = database_url
-        if '@' in masked_url and ':' in masked_url:
-            parts = masked_url.split('@')
-            if ':' in parts[0]:
-                auth_parts = parts[0].split(':')
-                if len(auth_parts) >= 3:
-                    auth_parts[2] = '****'
-                    parts[0] = ':'.join(auth_parts)
-            masked_url = '@'.join(parts)
-        
-        # Check DataAccessManager filtering
-        from mobilize.core.permissions import DataAccessManager
-        access_manager = DataAccessManager(request.user, 'default')
-        visible_people = access_manager.get_people_queryset().count()
-        visible_churches = access_manager.get_churches_queryset().count()
-        
-        # Check user details
-        user_info = {
-            'id': request.user.id,
-            'username': request.user.username,
-            'role': getattr(request.user, 'role', 'unknown'),
-            'office_id': getattr(request.user, 'office_id', None),
-            'is_superuser': request.user.is_superuser,
-        }
-        
-        # Check for people with no names in visible set
-        cursor.execute("""
-            SELECT c.id, c.first_name, c.last_name, c.email, c.user_id, c.office_id
-            FROM contacts c
-            INNER JOIN people p ON c.id = p.contact_id
-            WHERE c.type = 'person'
-            AND (c.first_name IS NULL OR c.first_name = '')
-            AND (c.last_name IS NULL OR c.last_name = '')
-            LIMIT 10
-        """)
-        empty_name_people = cursor.fetchall()
-        
-        # Check user_id distribution
-        cursor.execute("""
-            SELECT user_id, COUNT(*) as count
-            FROM contacts 
-            WHERE type = 'person'
-            GROUP BY user_id
-            ORDER BY count DESC
-            LIMIT 10
-        """)
-        user_distribution = cursor.fetchall()
-        
+        # Basic data structure
         data = {
             'database': db_name,
             'user': db_user,
             'server': f"{server_addr}:{server_port}",
-            'total_person_contacts': person_count,
-            'visible_people': visible_people,
-            'visible_churches': visible_churches,
-            'user_info': user_info,
-            'empty_name_people': [
-                {
-                    'contact_id': row[0],
-                    'first_name': row[1],
-                    'last_name': row[2], 
-                    'email': row[3],
-                    'user_id': row[4],
-                    'office_id': row[5]
-                } for row in empty_name_people
-            ],
-            'user_distribution': [
-                {'user_id': row[0], 'count': row[1]} for row in user_distribution
-            ],
+            'total_person_contacts': total_person_count,
             'olivia_tanchak': {
                 'found': olivia_result is not None,
                 'contact_id': olivia_result[0] if olivia_result else None,
                 'email': olivia_result[3] if olivia_result else None
             },
             'is_supabase': 'supabase' in str(server_addr).lower() or 'aws' in str(server_addr).lower(),
-            'database_url': masked_url,
             'debug_mode': debug_mode,
             'timestamp': timezone.now().isoformat()
         }
         
+        # Try to add permission information
+        try:
+            from mobilize.core.permissions import DataAccessManager
+            access_manager = DataAccessManager(request.user, 'default')
+            visible_people = access_manager.get_people_queryset().count()
+            visible_churches = access_manager.get_churches_queryset().count()
+            
+            data['visible_people'] = visible_people
+            data['visible_churches'] = visible_churches
+            data['user_role'] = getattr(request.user, 'role', 'unknown')
+            data['user_id'] = request.user.id
+            data['office_id'] = getattr(request.user, 'office_id', None)
+            
+        except Exception as e:
+            data['permission_error'] = str(e)
+        
+        # Try to check for empty name people
+        try:
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM contacts c
+                WHERE c.type = 'person'
+                AND (c.first_name IS NULL OR c.first_name = '')
+                AND (c.last_name IS NULL OR c.last_name = '')
+            """)
+            empty_names_count = cursor.fetchone()[0]
+            data['empty_names_count'] = empty_names_count
+            
+        except Exception as e:
+            data['empty_names_error'] = str(e)
+        
+        # Mask password in DATABASE_URL for display
+        if database_url != 'Not set':
+            masked_url = database_url
+            if '@' in masked_url and ':' in masked_url:
+                parts = masked_url.split('@')
+                if ':' in parts[0]:
+                    auth_parts = parts[0].split(':')
+                    if len(auth_parts) >= 3:
+                        auth_parts[2] = '****'
+                        parts[0] = ':'.join(auth_parts)
+                masked_url = '@'.join(parts)
+            data['database_url'] = masked_url
+        
         return JsonResponse(data, json_dumps_params={'indent': 2})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+def permissions_debug(request):
+    """Debug endpoint specifically for checking permission filtering."""
+    if not request.user.is_authenticated or request.user.role != 'super_admin':
+        return HttpResponse("Unauthorized", status=401)
+    
+    try:
+        from mobilize.core.permissions import DataAccessManager
+        from mobilize.contacts.models import Person, Contact
+        
+        # Test different view modes
+        results = {}
+        
+        for view_mode in ['default', 'my_only']:
+            access_manager = DataAccessManager(request.user, view_mode)
+            people_queryset = access_manager.get_people_queryset()
+            
+            # Get sample of visible people
+            sample_people = people_queryset[:5]
+            people_data = []
+            
+            for person in sample_people:
+                people_data.append({
+                    'contact_id': person.contact.id,
+                    'first_name': person.contact.first_name,
+                    'last_name': person.contact.last_name,
+                    'email': person.contact.email,
+                    'user_id': person.contact.user_id,
+                    'office_id': person.contact.office_id
+                })
+            
+            results[view_mode] = {
+                'total_visible': people_queryset.count(),
+                'sample_people': people_data
+            }
+        
+        # Also check raw SQL for people with empty names
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT c.id, c.first_name, c.last_name, c.email, c.user_id, c.office_id
+            FROM contacts c
+            WHERE c.type = 'person'
+            AND (c.first_name IS NULL OR c.first_name = '')
+            AND (c.last_name IS NULL OR c.last_name = '')
+            LIMIT 5
+        """)
+        empty_name_people = cursor.fetchall()
+        
+        results['empty_name_people'] = [
+            {
+                'contact_id': row[0],
+                'first_name': row[1],
+                'last_name': row[2],
+                'email': row[3],
+                'user_id': row[4],
+                'office_id': row[5]
+            } for row in empty_name_people
+        ]
+        
+        return JsonResponse(results, json_dumps_params={'indent': 2})
         
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
