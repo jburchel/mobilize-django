@@ -217,34 +217,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalCountSpan = document.getElementById('total-count');
     const endReachedSpan = document.getElementById('end-reached');
     
-    // Override loadMore to update pagination controls
-    const originalLoadMore = personLoader.loadMore.bind(personLoader);
-    personLoader.loadMore = async function() {
-        await originalLoadMore();
-        updatePaginationControls();
-    };
-    
     // Load more button click handler
     loadMoreBtn.addEventListener('click', () => {
         personLoader.loadMore();
     });
-    
-    function updatePaginationControls() {
-        const currentCount = document.querySelectorAll('#person-table-body tr:not(#load-more-sentinel)').length;
-        currentCountSpan.textContent = currentCount;
-        
-        // Show/hide load more button
-        if (personLoader.hasMore && currentCount > 0) {
-            loadMoreBtn.style.display = 'inline-block';
-            endReachedSpan.style.display = 'none';
-        } else if (currentCount > 0) {
-            loadMoreBtn.style.display = 'none';
-            endReachedSpan.style.display = 'inline-block';
-        } else {
-            loadMoreBtn.style.display = 'none';
-            endReachedSpan.style.display = 'none';
-        }
-    }
     
     // Listen for loader updates to get accurate total count
     window.addEventListener('lazyLoaderUpdate', (event) => {

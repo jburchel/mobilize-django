@@ -11,6 +11,8 @@ class LazyLoader {
         this.currentPage = 1;
         this.isLoading = false;
         this.hasMore = true;
+        this.totalCount = 0;
+        this.currentCount = 0;
         this.searchParams = new URLSearchParams(window.location.search);
         
         // Create loading indicator
@@ -143,6 +145,10 @@ class LazyLoader {
             this.currentPage++;
             this.hasMore = data.has_next;
             this.totalCount = data.total || 0;
+            this.currentCount = this.tableBody.querySelectorAll('tr:not(#load-more-sentinel):not(#loading-indicator)').length;
+            
+            // Update pagination display
+            this.updatePaginationDisplay();
             
             // Update URL without page reload
             this.updateUrl();
@@ -150,6 +156,12 @@ class LazyLoader {
             // Trigger custom event for pagination updates
             window.dispatchEvent(new CustomEvent('lazyLoaderUpdate', {
                 detail: {
+                    total: this.totalCount,
+                    loaded: this.currentCount,
+                    hasMore: this.hasMore,
+                    currentPage: this.currentPage
+                }
+            }));
                     currentPage: this.currentPage,
                     hasMore: this.hasMore,
                     total: this.totalCount,
@@ -256,6 +268,8 @@ class LazyLoader {
         // Reset pagination
         this.currentPage = 1;
         this.hasMore = true;
+        this.totalCount = 0;
+        this.currentCount = 0;
         
         // Load first page
         this.loadMore();
@@ -319,6 +333,36 @@ class LazyLoader {
         
         // Reset pagination and reload data with new filters
         this.resetAndLoad();
+    }
+    
+    updatePaginationDisplay() {
+        // Update pagination counts in the UI
+        const currentCountSpan = document.getElementById('current-count');
+        const totalCountSpan = document.getElementById('total-count');
+        
+        if (currentCountSpan) {
+            currentCountSpan.textContent = this.currentCount;
+        }
+        
+        if (totalCountSpan) {
+            totalCountSpan.textContent = this.totalCount;
+        }
+        
+        // Update load more button visibility
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        const endReachedSpan = document.getElementById('end-reached');
+        
+        if (loadMoreBtn && endReachedSpan) {
+            if (this.hasMore && this.currentCount > 0) {
+                loadMoreBtn.style.display = 'inline-block';
+                endReachedSpan.style.display = 'none';
+            } else {
+                loadMoreBtn.style.display = 'none';
+                if (this.currentCount >= this.totalCount && this.totalCount > 0) {
+                    endReachedSpan.style.display = 'inline-block';
+                }
+            }
+        }
     }
 }
 
