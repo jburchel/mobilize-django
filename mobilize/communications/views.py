@@ -197,10 +197,63 @@ class CommunicationListView(LoginRequiredMixin, ListView):
         return super().dispatch(request, *args, **kwargs)
     
     def get_queryset(self):
-        # Simplified queryset for debugging - just return all communications for now
+        # Filter by user's access with optimized queries and defensive error handling
         try:
-            queryset = Communication.objects.all()
+            queryset = Communication.objects.select_related('person', 'church', 'office', 'user')
+            
+            # Apply office-level filtering (keep it simple since 500 error is fixed)
+            if self.request.user.role != 'super_admin':
+                try:
+                    user_offices = list(self.request.user.useroffice_set.values_list('office_id', flat=True))
+                    
+                    if user_offices:
+                        # Communications visible if:
+                        # 1. User created the communication
+                        # 2. Person/church belongs to user's office  
+                        # 3. Communication office matches user's office
+                        queryset = queryset.filter(
+                            models.Q(user=self.request.user) |
+                            models.Q(person__contact__office__in=user_offices) |
+                            models.Q(church__contact__office__in=user_offices) |
+                            models.Q(office__in=user_offices)
+                        ).distinct()
+                    else:
+                        # If user has no office assignments, only show their own communications
+                        queryset = queryset.filter(user=self.request.user)
+                except Exception:
+                    # If there's any error with office filtering, fall back to user's own communications
+                    queryset = queryset.filter(user=self.request.user)
+            
+            # Apply filters from GET parameters
+            type_filter = self.request.GET.get('type')
+            if type_filter:
+                queryset = queryset.filter(type=type_filter)
+            
+            direction_filter = self.request.GET.get('direction')
+            if direction_filter:
+                queryset = queryset.filter(direction=direction_filter)
+            
+            date_from = self.request.GET.get('date_from')
+            if date_from:
+                queryset = queryset.filter(date__gte=date_from)
+            
+            search_query = self.request.GET.get('search')
+            if search_query:
+                from django.db.models import Q
+                queryset = queryset.filter(
+                    Q(subject__icontains=search_query) |
+                    Q(sender__icontains=search_query) |
+                    Q(message__icontains=search_query) |
+                    # Search in person names
+                    Q(person__contact__first_name__icontains=search_query) |
+                    Q(person__contact__last_name__icontains=search_query) |
+                    # Search in church names  
+                    Q(church__contact__church_name__icontains=search_query) |
+                    Q(church__name__icontains=search_query)
+                )
+            
             return queryset.order_by('-date')
+            
         except Exception as e:
             # If there's any database error, return empty queryset
             import logging
