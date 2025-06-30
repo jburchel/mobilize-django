@@ -404,7 +404,12 @@ class CommunicationUpdateView(LoginRequiredMixin, UpdateView):
         return super().form_invalid(form)
     
     def get_success_url(self):
-        return reverse('communications:communication_detail', kwargs={'pk': self.object.pk})
+        try:
+            return reverse('communications:communication_detail', kwargs={'pk': self.object.pk})
+        except Exception as e:
+            print(f"Error getting success URL: {e}")
+            # Fallback to communication list if detail view fails
+            return reverse('communications:communication_list')
 
 
 class CommunicationDeleteView(LoginRequiredMixin, DeleteView):

@@ -240,13 +240,21 @@ class CommunicationForm(forms.ModelForm):
             
         if not instance.direction:
             instance.direction = 'Outgoing'  # Use valid choice from DIRECTION_CHOICES
+        
+        # Ensure we don't have conflicting person/church relationships
+        # If person is set, clear church, and vice versa (based on the original logic)
+        if instance.person and instance.church:
+            # Prioritize person over church
+            instance.church = None
             
         try:
             if commit:
                 instance.save()
+                print(f"Successfully saved communication {instance.id}")
         except Exception as e:
-            # Log the error but don't crash
+            # Log the error with more details
             print(f"Error saving communication: {e}")
+            print(f"Communication data: person={instance.person}, church={instance.church}, type={instance.type}, direction={instance.direction}")
             raise
             
         return instance
