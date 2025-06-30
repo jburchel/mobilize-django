@@ -133,6 +133,13 @@ class CommunicationForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
+        # Set choices for type and direction fields
+        if hasattr(Communication, 'TYPE_CHOICES'):
+            self.fields['type'].widget = forms.Select(choices=Communication.TYPE_CHOICES, attrs={'class': 'form-control'})
+        
+        if hasattr(Communication, 'DIRECTION_CHOICES'):
+            self.fields['direction'].widget = forms.Select(choices=Communication.DIRECTION_CHOICES, attrs={'class': 'form-control'})
+        
         # Set up form helper
         self.helper = FormHelper()
         self.helper.form_method = 'post'

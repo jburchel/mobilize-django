@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {% if object %}
+        Edit Communication
+    {% else %}
+        Create Communication
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        {% if object %}
+                            Edit Communication
+                        {% else %}
+                            Create Communication
+                        {% endif %}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong>Please correct the following errors:</strong>
+                            <ul>
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>{{ field }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.type.id_for_label }}">Type</label>
+                                    {{ form.type }}
+                                    {% if form.type.errors %}
+                                        <div class="text-danger">{{ form.type.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.direction.id_for_label }}">Direction</label>
+                                    {{ form.direction }}
+                                    {% if form.direction.errors %}
+                                        <div class="text-danger">{{ form.direction.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.date.id_for_label }}">Date</label>
+                                    {{ form.date }}
+                                    {% if form.date.errors %}
+                                        <div class="text-danger">{{ form.date.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.date_sent.id_for_label }}">Date Sent</label>
+                                    {{ form.date_sent }}
+                                    {% if form.date_sent.errors %}
+                                        <div class="text-danger">{{ form.date_sent.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Subject and Message -->
+                        <div class="form-group">
+                            <label for="{{ form.subject.id_for_label }}">Subject</label>
+                            {{ form.subject }}
+                            {% if form.subject.errors %}
+                                <div class="text-danger">{{ form.subject.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.message.id_for_label }}">Message</label>
+                            {{ form.message }}
+                            {% if form.message.errors %}
+                                <div class="text-danger">{{ form.message.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Related Contacts -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.person.id_for_label }}">Person</label>
+                                    {{ form.person }}
+                                    {% if form.person.errors %}
+                                        <div class="text-danger">{{ form.person.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.church.id_for_label }}">Church</label>
+                                    {{ form.church }}
+                                    {% if form.church.errors %}
+                                        <div class="text-danger">{{ form.church.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Office -->
+                        <div class="form-group">
+                            <label for="{{ form.office.id_for_label }}">Office</label>
+                            {{ form.office }}
+                            {% if form.office.errors %}
+                                <div class="text-danger">{{ form.office.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Email Details -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.sender.id_for_label }}">Sender</label>
+                                    {{ form.sender }}
+                                    {% if form.sender.errors %}
+                                        <div class="text-danger">{{ form.sender.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.email_status.id_for_label }}">Email Status</label>
+                                    {{ form.email_status }}
+                                    {% if form.email_status.errors %}
+                                        <div class="text-danger">{{ form.email_status.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Gmail Integration -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.gmail_message_id.id_for_label }}">Gmail Message ID</label>
+                                    {{ form.gmail_message_id }}
+                                    {% if form.gmail_message_id.errors %}
+                                        <div class="text-danger">{{ form.gmail_message_id.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.gmail_thread_id.id_for_label }}">Gmail Thread ID</label>
+                                    {{ form.gmail_thread_id }}
+                                    {% if form.gmail_thread_id.errors %}
+                                        <div class="text-danger">{{ form.gmail_thread_id.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Attachments and Additional Info -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.attachments.id_for_label }}">Attachments</label>
+                                    {{ form.attachments }}
+                                    {% if form.attachments.errors %}
+                                        <div class="text-danger">{{ form.attachments.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.owner_id.id_for_label }}">Owner ID</label>
+                                    {{ form.owner_id }}
+                                    {% if form.owner_id.errors %}
+                                        <div class="text-danger">{{ form.owner_id.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Google Calendar Integration -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.google_calendar_event_id.id_for_label }}">Google Calendar Event ID</label>
+                                    {{ form.google_calendar_event_id }}
+                                    {% if form.google_calendar_event_id.errors %}
+                                        <div class="text-danger">{{ form.google_calendar_event_id.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.google_meet_link.id_for_label }}">Google Meet Link</label>
+                                    {{ form.google_meet_link }}
+                                    {% if form.google_meet_link.errors %}
+                                        <div class="text-danger">{{ form.google_meet_link.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                {% if object %}
+                                    Update Communication
+                                {% else %}
+                                    Create Communication
+                                {% endif %}
+                            </button>
+                            <a href="{% url 'communications:communication_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar with helpful information -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Help</h4>
+                </div>
+                <div class="card-body">
+                    <h5>Communication Types</h5>
+                    <ul>
+                        <li>Email</li>
+                        <li>Phone Call</li>
+                        <li>Text Message</li>
+                        <li>Meeting</li>
+                        <li>Video Call</li>
+                    </ul>
+                    
+                    <h5>Direction</h5>
+                    <ul>
+                        <li><strong>Inbound:</strong> Communication received from contact</li>
+                        <li><strong>Outbound:</strong> Communication sent to contact</li>
+                    </ul>
+                    
+                    {% if object %}
+                        <h5>Communication Info</h5>
+                        <p><strong>Created:</strong> {{ object.created_at|date:"M d, Y" }}</p>
+                        <p><strong>Updated:</strong> {{ object.updated_at|date:"M d, Y" }}</p>
+                        {% if object.user %}
+                            <p><strong>User:</strong> {{ object.user.get_full_name|default:object.user.username }}</p>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

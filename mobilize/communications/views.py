@@ -329,7 +329,7 @@ class CommunicationCreateView(LoginRequiredMixin, CreateView):
                     subject=data.get('subject', ''),
                     message=data.get('message', ''),
                     date=data.get('date'),
-                    user_id=str(request.user.id),
+                    user=request.user,
                     direction='outbound'  # Default to outbound for logged communications
                 )
                 
@@ -388,6 +388,16 @@ class CommunicationUpdateView(LoginRequiredMixin, UpdateView):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
         return kwargs
+    
+    def form_valid(self, form):
+        # Add logging to see if form is valid
+        print(f"Communication form is valid, saving: {form.cleaned_data}")
+        return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        # Add logging to see form errors
+        print(f"Communication form is invalid, errors: {form.errors}")
+        return super().form_invalid(form)
     
     def get_success_url(self):
         return reverse('communications:communication_detail', kwargs={'pk': self.object.pk})
