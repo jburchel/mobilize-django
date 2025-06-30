@@ -117,12 +117,14 @@ class Command(BaseCommand):
         # Get users to sync
         if user_id:
             users = User.objects.filter(id=user_id)
+            self.stdout.write(f'Syncing for specific user ID: {user_id}')
         else:
             from mobilize.authentication.models import GoogleToken
             authenticated_users = GoogleToken.objects.filter(
                 access_token__isnull=False
             ).values_list('user_id', flat=True)
             users = User.objects.filter(id__in=authenticated_users, is_active=True)
+            self.stdout.write(f'Found {users.count()} authenticated users: {[u.username for u in users]}')
         
         total_synced = 0
         total_matched_by_name = 0
@@ -134,6 +136,13 @@ class Command(BaseCommand):
             gmail_service = GmailService(user)
             if not gmail_service.is_authenticated():
                 self.stdout.write(self.style.WARNING(f'Gmail not authenticated for {user.username}'))
+                # Check if token exists
+                from mobilize.authentication.models import GoogleToken
+                try:
+                    token = GoogleToken.objects.get(user=user)
+                    self.stdout.write(f'  Token exists, expires: {token.expires_at}')
+                except GoogleToken.DoesNotExist:
+                    self.stdout.write('  No token found')
                 continue
             
             # Get messages
@@ -142,7 +151,21 @@ class Command(BaseCommand):
             query = f'after:{since_date}'
             
             messages = gmail_service.get_messages(query=query, max_results=500)
+            self.stdout.write(f'Gmail query: "{query}"')
             self.stdout.write(f'Found {len(messages)} emails in the last {days_back} days')
+            
+            # Debug: show first few messages
+            if messages:
+                self.stdout.write('Sample messages:')
+                for msg in messages[:3]:
+                    subject = msg.get('subject', 'No subject')[:50]
+                    sender = msg.get('sender', 'No sender')[:50] 
+                    self.stdout.write(f'  - "{subject}" from {sender}')
+            else:
+                self.stdout.write('No messages found - trying broader search...')
+                # Try without date filter
+                broader_messages = gmail_service.get_messages(query='', max_results=10)
+                self.stdout.write(f'Found {len(broader_messages)} emails without date filter')
             
             user_synced = 0
             user_name_matched = 0
