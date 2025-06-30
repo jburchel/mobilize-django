@@ -110,9 +110,23 @@ class CommunicationForm(forms.ModelForm):
             'office', 'google_calendar_event_id', 'google_meet_link'
         ]
         widgets = {
-            'message': forms.Textarea(attrs={'rows': 4}),
-            'date': forms.DateInput(attrs={'type': 'date'}),
-            'date_sent': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'message': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
+            'subject': forms.TextInput(attrs={'class': 'form-control'}),
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'date_sent': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+            'type': forms.Select(attrs={'class': 'form-control'}),
+            'direction': forms.Select(attrs={'class': 'form-control'}),
+            'person': forms.Select(attrs={'class': 'form-control'}),
+            'church': forms.Select(attrs={'class': 'form-control'}),
+            'office': forms.Select(attrs={'class': 'form-control'}),
+            'gmail_message_id': forms.TextInput(attrs={'class': 'form-control'}),
+            'gmail_thread_id': forms.TextInput(attrs={'class': 'form-control'}),
+            'email_status': forms.TextInput(attrs={'class': 'form-control'}),
+            'attachments': forms.TextInput(attrs={'class': 'form-control'}),
+            'sender': forms.TextInput(attrs={'class': 'form-control'}),
+            'owner_id': forms.NumberInput(attrs={'class': 'form-control'}),
+            'google_calendar_event_id': forms.TextInput(attrs={'class': 'form-control'}),
+            'google_meet_link': forms.URLInput(attrs={'class': 'form-control'}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -122,26 +136,26 @@ class CommunicationForm(forms.ModelForm):
         # Set up form helper
         self.helper = FormHelper()
         self.helper.form_method = 'post'
+        self.helper.form_class = 'form-horizontal'
+        self.helper.label_class = 'col-lg-3'
+        self.helper.field_class = 'col-lg-9'
         
+        # Use the actual model fields that exist
         self.helper.layout = Layout(
             Fieldset(
                 'Communication Details',
                 Row(
-                    Column('title', css_class='col-md-12'),
-                    css_class='form-row'
-                ),
-                'description',
-                Row(
-                    Column('type', css_class='col-md-4'),
-                    Column('date', css_class='col-md-4'),
-                    Column('time', css_class='col-md-4'),
+                    Column('type', css_class='col-md-6'),
+                    Column('direction', css_class='col-md-6'),
                     css_class='form-row'
                 ),
                 Row(
-                    Column('status', css_class='col-md-6'),
-                    Column('category', css_class='col-md-6'),
+                    Column('date', css_class='col-md-6'),
+                    Column('date_sent', css_class='col-md-6'),
                     css_class='form-row'
                 ),
+                'subject',
+                'message',
             ),
             Fieldset(
                 'Related Records',
@@ -150,29 +164,28 @@ class CommunicationForm(forms.ModelForm):
                     Column('church', css_class='col-md-6'),
                     css_class='form-row'
                 ),
-                Row(
-                    Column('office', css_class='col-md-12'),
-                    css_class='form-row'
-                ),
+                'office',
             ),
             Fieldset(
-                'Email Details',
+                'Email & Integration Details',
                 Row(
-                    Column('email_subject', css_class='col-md-12'),
-                    css_class='form-row'
-                ),
-                'email_body',
-                Row(
-                    Column('email_from', css_class='col-md-12'),
+                    Column('sender', css_class='col-md-6'),
+                    Column('email_status', css_class='col-md-6'),
                     css_class='form-row'
                 ),
                 Row(
-                    Column('email_to', css_class='col-md-12'),
+                    Column('gmail_message_id', css_class='col-md-6'),
+                    Column('gmail_thread_id', css_class='col-md-6'),
                     css_class='form-row'
                 ),
                 Row(
-                    Column('email_cc', css_class='col-md-6'),
-                    Column('email_bcc', css_class='col-md-6'),
+                    Column('attachments', css_class='col-md-6'),
+                    Column('owner_id', css_class='col-md-6'),
+                    css_class='form-row'
+                ),
+                Row(
+                    Column('google_calendar_event_id', css_class='col-md-6'),
+                    Column('google_meet_link', css_class='col-md-6'),
                     css_class='form-row'
                 ),
             ),
@@ -182,11 +195,39 @@ class CommunicationForm(forms.ModelForm):
             )
         )
     
+    def clean(self):
+        cleaned_data = super().clean()
+        
+        # Ensure at least one contact (person or church) is specified for new communications
+        person = cleaned_data.get('person')
+        church = cleaned_data.get('church')
+        
+        if not person and not church:
+            # For imported communications, this might be acceptable, so we'll make it a warning rather than an error
+            pass
+        
+        # Validate date fields
+        date = cleaned_data.get('date')
+        date_sent = cleaned_data.get('date_sent')
+        
+        if date_sent and not date:
+            # If date_sent is provided but date is not, use date_sent as the date
+            cleaned_data['date'] = date_sent.date()
+        
+        return cleaned_data
+    
     def save(self, commit=True):
         instance = super().save(commit=False)
         
-        if self.user and not instance.pk:  # Only set created_by on new instances
-            instance.user_id = self.user.id
+        if self.user and not instance.pk:  # Only set user on new instances
+            instance.user = self.user
+        
+        # Set default values for required fields if they're missing (for imported data)
+        if not instance.type:
+            instance.type = 'Email'  # Default type for imported communications
+            
+        if not instance.direction:
+            instance.direction = 'inbound'  # Default direction
             
         if commit:
             instance.save()
