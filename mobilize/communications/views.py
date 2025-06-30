@@ -506,15 +506,19 @@ class GmailAuthView(LoginRequiredMixin, View):
     """Initiate Gmail OAuth flow"""
     
     def get(self, request):
-        gmail_service = GmailService(request.user)
-        redirect_uri = request.build_absolute_uri(reverse('communications:gmail_callback'))
-        
-        if gmail_service.is_authenticated():
-            messages.info(request, 'Gmail is already connected for your account.')
+        try:
+            gmail_service = GmailService(request.user)
+            redirect_uri = request.build_absolute_uri(reverse('communications:gmail_callback'))
+            
+            if gmail_service.is_authenticated():
+                messages.info(request, 'Gmail is already connected for your account.')
+                return redirect('communications:communication_list')
+            
+            auth_url = gmail_service.get_authorization_url(redirect_uri)
+            return redirect(auth_url)
+        except Exception as e:
+            messages.error(request, f'Gmail authentication error: {str(e)}. Please check your Google OAuth settings.')
             return redirect('communications:communication_list')
-        
-        auth_url = gmail_service.get_authorization_url(redirect_uri)
-        return redirect(auth_url)
 
 
 class GmailCallbackView(LoginRequiredMixin, View):
@@ -557,30 +561,40 @@ class GmailComposeView(LoginRequiredMixin, FormView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        gmail_service = GmailService(self.request.user)
         
-        context['gmail_authenticated'] = gmail_service.is_authenticated()
+        try:
+            gmail_service = GmailService(self.request.user)
+            context['gmail_authenticated'] = gmail_service.is_authenticated()
+        except Exception as e:
+            # If Gmail service initialization fails, assume not authenticated
+            context['gmail_authenticated'] = False
+            context['gmail_error'] = str(e)
+        
         context['email_templates'] = EmailTemplate.objects.filter(is_active=True)
         context['email_signatures'] = EmailSignature.objects.filter(user=self.request.user)
         
         # Pre-populate recipient if specified
-        contact_type = self.request.GET.get('contact_type')
+        recipient = self.request.GET.get('recipient')
+        name = self.request.GET.get('name')
         contact_id = self.request.GET.get('contact_id')
         
-        if contact_type and contact_id:
-            context['preselected_contact'] = {
-                'type': contact_type,
-                'id': contact_id
-            }
+        if recipient:
+            context['preselected_recipient'] = recipient
+            context['preselected_name'] = name
+            context['preselected_contact_id'] = contact_id
         
         return context
     
     def form_valid(self, form):
-        gmail_service = GmailService(self.request.user)
-        
-        if not gmail_service.is_authenticated():
-            messages.error(self.request, 'Gmail is not connected. Please authorize Gmail access first.')
-            return redirect('communications:gmail_auth')
+        try:
+            gmail_service = GmailService(self.request.user)
+            
+            if not gmail_service.is_authenticated():
+                messages.error(self.request, 'Gmail is not connected. Please authorize Gmail access first.')
+                return redirect('communications:gmail_auth')
+        except Exception as e:
+            messages.error(self.request, f'Gmail service error: {str(e)}. Please try again later.')
+            return self.form_invalid(form)
         
         # Extract form data
         to_emails = [email.strip() for email in form.cleaned_data['recipients'].split(',')]
