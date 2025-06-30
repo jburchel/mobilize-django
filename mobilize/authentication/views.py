@@ -203,47 +203,56 @@ def google_auth_callback(request):
     
     # Store Google OAuth tokens for Gmail/Calendar/Contacts API access
     try:
-        # Get the actual Django User object for token storage
-        User = get_user_model()
-        django_user = User.objects.get(id=user_id)
+        # Store tokens using raw SQL to match the user creation approach
+        scopes_string = ' '.join([
+            'https://www.googleapis.com/auth/userinfo.email',
+            'https://www.googleapis.com/auth/userinfo.profile',
+            'https://www.googleapis.com/auth/gmail.readonly',
+            'https://www.googleapis.com/auth/gmail.send',
+            'https://www.googleapis.com/auth/calendar',
+            'https://www.googleapis.com/auth/contacts.readonly'
+        ])
         
-        # Store or update the Google tokens
-        google_token, created = GoogleToken.objects.get_or_create(
-            user=django_user,
-            defaults={
-                'access_token': tokens.get('access_token'),
-                'refresh_token': tokens.get('refresh_token'),
-                'expires_at': expires_at,
-                'scopes': ' '.join([
-                    'https://www.googleapis.com/auth/userinfo.email',
-                    'https://www.googleapis.com/auth/userinfo.profile',
-                    'https://www.googleapis.com/auth/gmail.readonly',
-                    'https://www.googleapis.com/auth/gmail.send',
-                    'https://www.googleapis.com/auth/calendar',
-                    'https://www.googleapis.com/auth/contacts.readonly'
-                ])
-            }
-        )
-        
-        if not created:
-            # Update existing token
-            google_token.access_token = tokens.get('access_token')
-            google_token.refresh_token = tokens.get('refresh_token')
-            google_token.expires_at = expires_at
-            google_token.scopes = ' '.join([
-                'https://www.googleapis.com/auth/userinfo.email',
-                'https://www.googleapis.com/auth/userinfo.profile',
-                'https://www.googleapis.com/auth/gmail.readonly',
-                'https://www.googleapis.com/auth/gmail.send',
-                'https://www.googleapis.com/auth/calendar',
-                'https://www.googleapis.com/auth/contacts.readonly'
-            ])
-            google_token.save()
+        with connection.cursor() as cursor:
+            # Check if token already exists
+            cursor.execute(
+                "SELECT id FROM google_tokens WHERE user_id = %s", 
+                [str(user_id)]
+            )
+            existing_token = cursor.fetchone()
             
-        print(f"Stored Google tokens for user {django_user.username}")
+            if existing_token:
+                # Update existing token
+                cursor.execute("""
+                    UPDATE google_tokens 
+                    SET access_token = %s, refresh_token = %s, expires_at = %s, scopes = %s, updated_at = NOW()
+                    WHERE user_id = %s
+                """, [
+                    tokens.get('access_token'),
+                    tokens.get('refresh_token'), 
+                    expires_at,
+                    scopes_string,
+                    str(user_id)
+                ])
+                print(f"Updated Google tokens for user ID {user_id}")
+            else:
+                # Create new token
+                cursor.execute("""
+                    INSERT INTO google_tokens (user_id, access_token, refresh_token, expires_at, scopes, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
+                """, [
+                    str(user_id),
+                    tokens.get('access_token'),
+                    tokens.get('refresh_token'),
+                    expires_at,
+                    scopes_string
+                ])
+                print(f"Created Google tokens for user ID {user_id}")
         
     except Exception as e:
         print(f"Error storing Google tokens: {e}")
+        import traceback
+        traceback.print_exc()
         # Don't fail the login process if token storage fails
     
     # Store OAuth info in session for contact sync setup
