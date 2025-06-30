@@ -201,8 +201,50 @@ def google_auth_callback(request):
     expires_in = tokens.get('expires_in', 3600)
     expires_at = timezone.now() + timedelta(seconds=expires_in)
     
-    # Skip token storage for now - focus on getting login working
-    # TODO: Add token storage once user authentication is working
+    # Store Google OAuth tokens for Gmail/Calendar/Contacts API access
+    try:
+        # Get the actual Django User object for token storage
+        User = get_user_model()
+        django_user = User.objects.get(id=user_id)
+        
+        # Store or update the Google tokens
+        google_token, created = GoogleToken.objects.get_or_create(
+            user=django_user,
+            defaults={
+                'access_token': tokens.get('access_token'),
+                'refresh_token': tokens.get('refresh_token'),
+                'expires_at': expires_at,
+                'scopes': ' '.join([
+                    'https://www.googleapis.com/auth/userinfo.email',
+                    'https://www.googleapis.com/auth/userinfo.profile',
+                    'https://www.googleapis.com/auth/gmail.readonly',
+                    'https://www.googleapis.com/auth/gmail.send',
+                    'https://www.googleapis.com/auth/calendar',
+                    'https://www.googleapis.com/auth/contacts.readonly'
+                ])
+            }
+        )
+        
+        if not created:
+            # Update existing token
+            google_token.access_token = tokens.get('access_token')
+            google_token.refresh_token = tokens.get('refresh_token')
+            google_token.expires_at = expires_at
+            google_token.scopes = ' '.join([
+                'https://www.googleapis.com/auth/userinfo.email',
+                'https://www.googleapis.com/auth/userinfo.profile',
+                'https://www.googleapis.com/auth/gmail.readonly',
+                'https://www.googleapis.com/auth/gmail.send',
+                'https://www.googleapis.com/auth/calendar',
+                'https://www.googleapis.com/auth/contacts.readonly'
+            ])
+            google_token.save()
+            
+        print(f"Stored Google tokens for user {django_user.username}")
+        
+    except Exception as e:
+        print(f"Error storing Google tokens: {e}")
+        # Don't fail the login process if token storage fails
     
     # Store OAuth info in session for contact sync setup
     request.session['oauth_completed'] = True
