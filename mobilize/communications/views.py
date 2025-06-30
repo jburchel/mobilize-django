@@ -572,13 +572,36 @@ class GmailComposeView(LoginRequiredMixin, FormView):
     template_name = 'communications/gmail_compose.html'
     form_class = ComposeEmailForm
     
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            return super().dispatch(request, *args, **kwargs)
+        except Exception as e:
+            # If there's any error in dispatch, show error message and redirect
+            messages.error(request, f'Email compose error: {str(e)}. Gmail may not be properly configured.')
+            return redirect('communications:communication_list')
+    
     def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
+        try:
+            kwargs = super().get_form_kwargs()
+            kwargs['user'] = self.request.user
+            return kwargs
+        except Exception as e:
+            # If form kwargs fail, provide minimal kwargs
+            return {'user': self.request.user}
     
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        try:
+            context = super().get_context_data(**kwargs)
+        except Exception as e:
+            # If context data fails, create minimal context with basic form
+            from django import forms
+            class SimpleEmailForm(forms.Form):
+                recipients = forms.CharField(widget=forms.Textarea(attrs={'rows': 2}))
+                subject = forms.CharField()
+                body = forms.CharField(widget=forms.Textarea(attrs={'rows': 10}))
+            
+            simple_form = SimpleEmailForm()
+            context = {'form': simple_form, 'view': self, 'form_error': str(e)}
         
         try:
             gmail_service = GmailService(self.request.user)
@@ -588,8 +611,12 @@ class GmailComposeView(LoginRequiredMixin, FormView):
             context['gmail_authenticated'] = False
             context['gmail_error'] = str(e)
         
-        context['email_templates'] = EmailTemplate.objects.filter(is_active=True)
-        context['email_signatures'] = EmailSignature.objects.filter(user=self.request.user)
+        try:
+            context['email_templates'] = EmailTemplate.objects.filter(is_active=True)
+            context['email_signatures'] = EmailSignature.objects.filter(user=self.request.user)
+        except Exception:
+            context['email_templates'] = []
+            context['email_signatures'] = []
         
         # Pre-populate recipient if specified
         recipient = self.request.GET.get('recipient')
