@@ -136,6 +136,50 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
             ).distinct()
         
         return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        task = self.object
+        
+        # Collect all associated people from different relationships
+        associated_people = []
+        
+        # 1. Direct person relationship
+        if task.person:
+            associated_people.append({
+                'person': task.person,
+                'relationship_type': 'Direct Assignment',
+                'description': 'Task directly assigned to this person'
+            })
+        
+        # 2. If task has a church, get church contacts (people associated with the church)
+        if task.church:
+            # Get people who are members or contacts of this church
+            church_people = task.church.members.select_related('contact').all()
+            for person in church_people:
+                associated_people.append({
+                    'person': person,
+                    'relationship_type': 'Church Member',
+                    'description': f'Member of {task.church.name}'
+                })
+        
+        # 3. If task has a generic contact that's a person
+        if task.contact and task.contact.type == 'person':
+            try:
+                person = task.contact.person
+                # Only add if not already in the list (avoid duplicates)
+                if not any(ap['person'].pk == person.pk for ap in associated_people):
+                    associated_people.append({
+                        'person': person,
+                        'relationship_type': 'Contact Reference',
+                        'description': 'Referenced through contact field'
+                    })
+            except:
+                pass  # Handle case where person doesn't exist for contact
+        
+        context['associated_people'] = associated_people
+        
+        return context
 
 
 class TaskCreateView(LoginRequiredMixin, CreateView):
