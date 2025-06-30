@@ -175,6 +175,15 @@ def church_detail(request, pk):
     except ImportError:
         recent_communications = []
     
+    # Get related tasks for this church
+    try:
+        from mobilize.tasks.models import Task
+        church_tasks = Task.objects.filter(
+            church=church
+        ).order_by('-created_at')[:5]
+    except ImportError:
+        church_tasks = []
+    
     # Get pipeline stages for the interactive slider
     from mobilize.pipeline.models import Pipeline, PipelineStage, PipelineContact
     main_pipeline = Pipeline.get_main_church_pipeline()
@@ -198,6 +207,7 @@ def church_detail(request, pk):
         'church': church,
         'memberships': memberships,
         'recent_communications': recent_communications,
+        'church_tasks': church_tasks,
         'pipeline_stages': pipeline_stages,
         'current_stage': current_stage,
         'main_pipeline': main_pipeline,

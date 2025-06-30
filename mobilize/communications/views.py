@@ -293,6 +293,53 @@ class CommunicationCreateView(LoginRequiredMixin, CreateView):
         if redirect_to:
             return redirect_to
         return reverse('communications:communication_detail', kwargs={'pk': self.object.pk})
+    
+    def post(self, request, *args, **kwargs):
+        # Handle JSON requests for API calls
+        if request.content_type == 'application/json':
+            import json
+            from django.http import JsonResponse
+            
+            try:
+                data = json.loads(request.body)
+                
+                # Get the contact
+                contact_id = data.get('contact_id')
+                if not contact_id:
+                    return JsonResponse({'success': False, 'error': 'Contact ID is required'})
+                
+                from mobilize.contacts.models import Contact
+                try:
+                    contact = Contact.objects.get(id=contact_id)
+                except Contact.DoesNotExist:
+                    return JsonResponse({'success': False, 'error': 'Contact not found'})
+                
+                # Create the communication
+                communication = Communication.objects.create(
+                    contact=contact,
+                    person=getattr(contact, 'person_details', None) if contact.type == 'person' else None,
+                    church=getattr(contact, 'church_details', None) if contact.type == 'church' else None,
+                    type=data.get('type', 'other'),
+                    subject=data.get('subject', ''),
+                    message=data.get('message', ''),
+                    date=data.get('date'),
+                    user_id=str(request.user.id),
+                    direction='outbound'  # Default to outbound for logged communications
+                )
+                
+                return JsonResponse({
+                    'success': True, 
+                    'message': 'Communication logged successfully',
+                    'communication_id': communication.id
+                })
+                
+            except json.JSONDecodeError:
+                return JsonResponse({'success': False, 'error': 'Invalid JSON data'})
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)})
+        
+        # Handle regular form submission
+        return super().post(request, *args, **kwargs)
 
 
 class CommunicationUpdateView(LoginRequiredMixin, UpdateView):
