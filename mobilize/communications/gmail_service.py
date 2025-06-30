@@ -59,8 +59,15 @@ class GmailService:
             from mobilize.authentication.models import GoogleToken
             token = GoogleToken.objects.filter(user=self.user).first()
             if token and token.access_token:
-                # Use the actual stored scopes instead of hardcoded ones
-                stored_scopes = token.scopes if token.scopes else self.SCOPES
+                # Convert stored scopes from string to list if needed
+                if token.scopes:
+                    if isinstance(token.scopes, str):
+                        stored_scopes = token.scopes.split()
+                    else:
+                        stored_scopes = token.scopes
+                else:
+                    stored_scopes = self.SCOPES
+                    
                 creds_data = {
                     'token': token.access_token,
                     'refresh_token': token.refresh_token,
