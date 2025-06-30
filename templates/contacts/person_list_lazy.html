@@ -225,9 +225,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Listen for loader updates to get accurate total count
     window.addEventListener('lazyLoaderUpdate', (event) => {
         const { total, loaded, hasMore } = event.detail;
-        currentCountSpan.textContent = loaded;
-        totalCountSpan.textContent = total || (hasMore ? `${loaded}+` : loaded);
-        updatePaginationControls();
+        // The LazyLoader now handles updating the counts directly
+        // This listener is kept for any future custom logic if needed
     });
     
     // Bulk operations management

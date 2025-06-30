@@ -162,12 +162,6 @@ class LazyLoader {
                     currentPage: this.currentPage
                 }
             }));
-                    currentPage: this.currentPage,
-                    hasMore: this.hasMore,
-                    total: this.totalCount,
-                    loaded: this.tableBody.querySelectorAll('tr:not(#load-more-sentinel)').length
-                }
-            }));
             
         } catch (error) {
             console.error('Error loading data:', error);
