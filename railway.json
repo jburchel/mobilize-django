@@ -1,14 +1,24 @@
 {
-  "$schema": "https://railway.app/railway.schema.json",
-  "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "python manage.py collectstatic --noinput"
+  "deprecated": true,
+  "note": "This file is deprecated. The project has migrated from Railway to Render.",
+  "migration_info": {
+    "new_platform": "Render",
+    "production_url": "https://mobilize-crm-new.onrender.com",
+    "deployment_guide": "docs/deployment/render-deployment-guide.md",
+    "migration_date": "2025-01-20"
   },
-  "deploy": {
-    "startCommand": "python manage.py migrate && gunicorn mobilize.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 2 --worker-class sync --log-file -",
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 30,
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
+  "original_config": {
+    "$schema": "https://railway.app/railway.schema.json",
+    "build": {
+      "builder": "NIXPACKS",
+      "buildCommand": "python manage.py collectstatic --noinput"
+    },
+    "deploy": {
+      "startCommand": "python manage.py migrate && gunicorn mobilize.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 2 --worker-class sync --log-file -",
+      "healthcheckPath": "/",
+      "healthcheckTimeout": 30,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10
+    }
   }
 }

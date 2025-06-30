@@ -303,11 +303,11 @@ The Mobilize CRM interface is built with a consistent layout structure across al
 
 ### Deployment
 
-- Railway for Django application hosting
+- Render for Django application hosting (https://mobilize-crm-new.onrender.com)
 - Supabase for PostgreSQL database
-- Cloudflare CDN for static assets
+- WhiteNoise middleware for static file serving
 - GitHub for version control
-- Railway's automatic deployment from GitHub
+- Manual deployment via Render dashboard
 
 ## Core Functionality
 
@@ -847,9 +847,9 @@ LOG_TO_STDOUT=True
 
 4. **Deployment Process**
    - Ensure you're on the stable branch
-   - Run `./deploy.sh` script for Google Cloud Run deployment
-   - Update environment variables in Cloud Run console
-   - Verify deployment success
+   - Deploy via Render dashboard (manual deployment)
+   - Update environment variables in Render console
+   - Verify deployment success via production URL
 
 5. **Post-Deployment Verification**
    - Check application logs
@@ -876,29 +876,32 @@ LOG_TO_STDOUT=True
    python manage.py migrate
    ```
 
-### Deploying to Railway
+### Deploying to Render
 
-1. Create a Railway account at https://railway.app/
+1. Create a Render account at https://render.com/
 2. Connect your GitHub repository
-3. Create a new project from your repo
-4. Set environment variables in Railway dashboard:
+3. Create a new Web Service from your repo
+4. Configure the service:
+   - **Build Command**: `pip install -r requirements.txt && python manage.py collectstatic --noinput`
+   - **Start Command**: `./deploy.sh`
+   - **Environment**: Python 3.11.9
+5. Set environment variables in Render dashboard:
    - Copy all variables from `.env` file
-   - Ensure DATABASE_URL points to your Supabase instance
+   - Ensure SUPABASE_DATABASE_URL points to your Supabase instance
    - Set DJANGO_SETTINGS_MODULE=mobilize.settings
-5. Railway will automatically deploy on each push to main branch
-6. Custom domain setup (optional):
-   - Add your domain in Railway settings
-   - Update DNS records as instructed
+   - Add RENDER_EXTERNAL_URL for proper ALLOWED_HOSTS configuration
+6. Deploy manually via Render dashboard
+7. **Production URL**: https://mobilize-crm-new.onrender.com
 
 ### Cost Optimization
 
-- Railway provides $5/month credit (covers Django app hosting)
+- Render Web Service: $7/month (512MB RAM, shared CPU)
 - Supabase free tier includes:
   - 500MB database storage
   - 2GB bandwidth
   - Unlimited API requests
-- Use Cloudflare (free) for CDN and static assets
-- Total monthly cost: $0-5 depending on usage
+- Static files served via WhiteNoise (no additional cost)
+- Total monthly cost: $7 for hosting + $0 for database (free tier)
 
 ## Important Deployment Checks
 
@@ -911,15 +914,17 @@ LOG_TO_STDOUT=True
    - Ensure API calls are properly rate-limited
    - Use appropriate caching strategies
 
-3. **Railway-Specific Checks**
-   - Ensure PORT environment variable is not set (Railway provides it)
-   - Verify Procfile or railway.json configuration
-   - Check that static files are properly collected
+3. **Render-Specific Checks**
+   - Ensure RENDER_EXTERNAL_URL is set for proper ALLOWED_HOSTS configuration
+   - Verify render.yaml configuration matches actual deployment settings
+   - Check that static files are properly collected via collectstatic
+   - Monitor deployment logs in Render dashboard
 
 4. **Emergency Rollback Procedure**
-   - Use Railway's deployment history to rollback
+   - Use Render's deployment history to rollback
    - Each deployment creates a snapshot for easy rollback
    - Database changes may need manual rollback via migrations
+   - Access deployment logs via Render dashboard for debugging
 
 ## Final Notes
 

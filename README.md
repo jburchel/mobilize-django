@@ -20,7 +20,7 @@ Mobilize CRM is designed to help missionaries and church organizations manage th
 
 - **Backend**: Django 4.2, Python 3.9+
 - **Database**: PostgreSQL (Supabase)
-- **Hosting**: Railway
+- **Hosting**: Render
 - **Authentication**: Google OAuth
 - **Frontend**: HTML5, CSS3, Bootstrap 5, JavaScript
 - **Email Integration**: Gmail API
@@ -90,23 +90,33 @@ The application will be available at http://localhost:8000
 
 ## Deployment
 
-### Quick Deploy to Railway
+### Production Application
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/yourusername/mobilize-django)
+**Live URL**: https://mobilize-crm-new.onrender.com
 
-### Manual Deployment
+### Manual Deployment to Render
 
 1. **Set up Supabase Database**
    - Create a free account at [Supabase](https://supabase.com)
    - Create a new project and copy the database URL
 
-2. **Deploy to Railway**
-   - Create account at [Railway](https://railway.app)
+2. **Deploy to Render**
+   - Create account at [Render](https://render.com)
    - Connect your GitHub repository
-   - Add environment variables from `.env.example`
-   - Deploy!
+   - Create a Web Service with the following settings:
+     - **Build Command**: `pip install -r requirements.txt && python manage.py collectstatic --noinput`
+     - **Start Command**: `./deploy.sh`
+     - **Environment**: Python 3.11.9
+   - Add environment variables from `.env` file
+   - Deploy manually via Render dashboard
 
-For detailed deployment instructions, see [Railway Deployment Guide](docs/deployment/railway-deployment-guide.md).
+### Static Files and Background Tasks
+
+- **Static Files**: Served via WhiteNoise middleware
+- **Background Tasks**: Celery configured but requires separate Redis and Worker services
+- **Database**: Supabase PostgreSQL with connection pooling
+
+For detailed deployment instructions, see [Render Deployment Guide](docs/deployment/render-deployment-guide.md).
 
 ## Project Structure
 
