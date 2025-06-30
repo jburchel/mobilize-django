@@ -74,9 +74,9 @@ class Command(BaseCommand):
             self.stdout.write('STEP 1: CLEANUP EXISTING EMAILS')
             self.stdout.write('='*30)
             
-            # Check current Gmail email count
+            # Check current Gmail email count - handle both 'email' and 'Email' types
             gmail_emails = Communication.objects.filter(
-                type='email',
+                type__iexact='email',
                 gmail_message_id__isnull=False
             )
             
@@ -138,7 +138,7 @@ class Command(BaseCommand):
             
             # Show new count
             new_gmail_emails = Communication.objects.filter(
-                type='email',
+                type__iexact='email',
                 gmail_message_id__isnull=False
             )
             if user_id:
@@ -149,7 +149,7 @@ class Command(BaseCommand):
             
             # Show manual communications preserved
             manual_comms = Communication.objects.filter(
-                type='email',
+                type__iexact='email',
                 gmail_message_id__isnull=True
             )
             if user_id:

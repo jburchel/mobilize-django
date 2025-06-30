@@ -1,0 +1,376 @@
+1,707,2024-08-28 19:12:05.95773+00,Email,9,This is a BRAND new test message,Outgoing,Email,Test message,1
+2,707,2024-08-28 19:14:32.217603+00,Email,9,"Yet another TEST message to test email signature...
+
+For the Kingdom,
+
+Jim Burchel
+(336) 601-9440",Outgoing,Email,Yet another TEST,1
+3,707,2024-08-30 12:58:20.840556+00,Email,9,"Just testing the email functionality and I added an email signature.  Let me know the test results. :)
+
+Thanks for all your work on this Jim!
+
+Matthew Rule 
+Executive Director | USA Office
+7520 Monticello Road | Columbia, SC | 29203
+P: 803.691.0688 | www.crossover.global",Outgoing,Email,Test Email,2
+4,707,2024-09-04 19:37:51.91698+00,phone,7,Spoke to Jim ... this is a test,Outgoing,"","",1
+5,707,2024-09-18 20:37:25.984814+00,phone,7,Test log # 1,Outgoing,"","",1
+6,707,2024-09-18 20:38:13.475906+00,phone,7,Test Log # 2,Outgoing,"","",1
+7,707,2024-09-18 20:38:36.506555+00,phone,7,Test log # 3,Outgoing,"","",1
+8,707,2024-09-19 13:41:35.915658+00,phone,9,TEST TASK # 1,Outgoing,"","",1
+9,707,2024-09-19 20:15:15.609207+00,text,9,Test log # 20,Outgoing,"","",1
+10,707,2024-09-19 20:25:51.747328+00,Email,7,"Jim,
+
+This is another test email",Outgoing,Email,Test email,1
+11,707,2024-09-19 20:34:41.643309+00,Email,7,"Jim,
+
+This is another test email",Outgoing,Email,Test email,1
+12,707,2024-09-19 20:44:16.599323+00,Email,7,"Jim,
+
+This is another test email",Outgoing,Email,Test email,1
+13,707,2024-09-23 14:27:37.967999+00,Email,7,"Jim,
+
+This is a test from production to see if signature is working as indended.",Outgoing,Email,Test from Production,1
+14,707,2024-09-23 14:57:43.819394+00,Email,7,to Task Create in deployment,Outgoing,Email,Testing email to create task in deployment,1
+15,705,2024-09-23 16:22:15.851746+00,Email,7,"Jeff,
+
+Hey brother... It''s been way too long.  That''s on me.  I''ve been working on a new project that''s kept me quite busy the last couple months.  I trust you''re doing well.  
+
+I just wanted to circle back around with you to check-in and see how your journey is progressing.  I know when we met (at Waffle House) you were praying about what your next steps might be and felt like you might want to move into a more ''UPG'' focused ministry.  I''ve been thinking about our conversation and praying for you.  
+
+Please let me know if there''s anything I can do to encourage or help in any way!  I look forward to connecting again in the near future!",Outgoing,Email,Just Checking In,1
+16,695,2024-09-23 16:27:29.680991+00,Email,7,"Janis,
+
+It''s been WAY too long since we spoke.  I apologize for dropping the ball on my end.  I know you have had a lot going on too.  
+
+I''ve continued praying for you that God would begin to make His plans for you abundantly clear.  I wanted to shoot you a quick email to let you know about a new on-boarding process we are getting ready to roll out in the next few weeks/months.  I''m not sure exactly when it will be finalized, but I thought it might be something you''d find interesting.
+
+Once it''s rolled out, it will just be a way for folks to get to know us and for us to get to know folks...  Kind of like the first stage of the ''dating'' process between Crossover Global and folks who are praying about next steps into the missions world.  It will involve watching a series of videos and then speaking to someone from our office about what you watched.  Let me know if this sounds like something you''d be interested in.  
+
+Again... I trust you''re well and I look forward to hearing from you soon.  Thanks...",Outgoing,Email,New Onboarding Process Coming in the near future,1
+17,712,2024-09-23 17:34:17.470753+00,Email,7,"Matthew,
+
+I fixed a situation where email wasn''t recognizing line breaks such as between paragraphs.
+
+So now you''ll see that the paragraphs is separated!!  Slowly but surely...",Outgoing,Email,Fixed line break in email,1
+18,707,2024-09-23 17:34:48.222495+00,Email,7,"Dear Jim,
+
+I''m testing line breaks
+
+in production",Outgoing,Email,Test line breaks in production,1
+19,712,2024-09-23 20:04:28.152793+00,Email,7,test,Outgoing,Email,Introduction,2
+20,712,2024-09-25 19:51:14.829401+00,text,9,This is another test text,Outgoing,"","",1
+21,707,2024-09-25 20:32:08.164203+00,text,9,Text communication initiated to 3366019440,Outgoing,"","",1
+22,707,2024-09-26 01:32:25.828327+00,phone,9,Phone communication initiated to 3366019440,Outgoing,"","",1
+23,713,2024-09-26 01:34:58.591929+00,phone,9,Phone communication initiated to 3363013909,Outgoing,"","",1
+24,712,2024-09-26 14:03:45.840396+00,text,9,I'm waiting to be let into the meeting...  it promoted me to ask to be let in. ,Outgoing,"","",1
+25,712,2024-09-26 14:05:50.440987+00,text,9,I was on the wrong account,Outgoing,"","",1
+26,712,2024-09-26 17:25:26.082367+00,text,9,Text communication initiated to 479-657-1119,Outgoing,"","",1
+27,714,2024-10-02 17:38:01.994414+00,email,8,Sent email including EN42 overview and CG church planting networks.,Outgoing,"","",2
+29,715,2024-10-04 17:32:46.900915+00,email,9,Sent follow up email to schedule a virtual meeting on Oct 7th @ 10:00. Awaiting confirmation.,Outgoing,"","",2
+28,715,2024-10-02 17:48:42.353141+00,email,9,"Hello Caleigh,
+
+We appreciate you reaching out to us with your interest in short-term ministry.
+Let me know your availability to discuss this opportunity further.
+Once we confirm a date and time I''ll schedule a virtual meeting.
+
+All for His glory,",Outgoing,Email,Crossover Global Interest,2
+53,730,2025-03-27 13:55:50.338017+00,Email,7,"Hello Bess,
+
+Thanks for stopping by to express your interest in serving with Crossover Global.  It was great meeting you and I look forward to scheduling a time to discuss this opportunity in more detail.  Let me know your availability both day/time and I''ll get something on our calendar.
+
+Blessings,",Outgoing,Email,Crossover Global Introduction,2
+54,731,2025-04-07 15:26:00.824272+00,email,9,Sent email to follow up on Perspectives 'Be Different' card she completed,Outgoing,"","",1
+55,732,2025-04-09 13:16:45.589786+00,email,9,Sent follow up email from Send Cola... he is interested in an international internship... ICS major...,Outgoing,"","",1
+56,733,2025-04-09 13:24:16.644405+00,email,9,"Sent an initial follow up to Perspectives (WS, NC) he checked ''joining the team'' on the Be Different card... Goal to schedule a video call",Outgoing,"","",1
+57,734,2025-04-09 13:33:34.453107+00,email,9,Sent Perspectives follow up email after he signed up for the mailing list via Be Different,Outgoing,"","",1
+58,735,2025-04-09 13:38:40.670858+00,email,9,Following up on Perspectives -- checked (3 times) 'join the team' on Be Different card... Former missionary in Japan and from India...,Outgoing,"","",1
+30,717,2024-10-16 19:11:20.582021+00,email,8,"Good afternoon Jon,
+
+I was referred to you by Caleigh Adams, a CIU student who attends Radius Church.
+
+I serve as the director of the US office for Crossover Global, a church planting organization whose vision is to provide gospel access. I''d love to connect with you to share how we seek to serve local Churches like Radius in connecting them to the unreached areas of the world.
+
+I''ll be traveling over the next few weeks but would love to grab lunch or a coffee sometime mid-November to meet and discuss a potential partnership.
+
+Let me know your interest and availability the week of Nov 11-15.
+
+All for His glory,
+
+Matthew Rule 
+Executive Director | USA Office
+7520 Monticello Road | Columbia, SC | 29203
+P: 803.691.0688 | www.crossover.global",Outgoing,"","",2
+31,718,2024-10-17 19:56:44.983813+00,email,8,"Good afternoon,
+
+Thanks for connecting us Ken!
+
+Pastor Phil and Brandy I''d love to schedule time to discuss a potential partnership with The Gathering in church engagement with us Crossover Global.
+
+Let me know if you are available any of the following dates/times:
+Monday, Nov 11 - anytime between 9:00-5:00 EST
+Friday, Nov 15 - anytime between 9:00-5:00 EST
+
+All for His glory,
+
+Matthew Rule 
+Executive Director | USA Office7520 Monticello Road | Columbia, SC | 29203
+P: 803.691.0688 | www.crossover.global",Outgoing,"","",2
+32,707,2024-10-21 18:15:48.586232+00,Email,7,"Jim,
+
+Test email to see if the email feature is still working?",Outgoing,Email,This is a test email to go to task create,1
+33,707,2024-10-21 18:17:00.213635+00,text,9,This is a text message...,Outgoing,"","",1
+34,707,2024-10-21 18:21:11.992221+00,text,9,Test message,Outgoing,"","",1
+35,707,2024-10-22 12:17:18.040241+00,text,9,Text communication initiated to 3366019440,Outgoing,"","",1
+36,707,2024-10-22 13:18:45.047518+00,text,9,Text communication initiated to 3366019440,Outgoing,"","",1
+37,719,2024-10-24 13:46:54.861776+00,text,9,"Anna,  I enjoyed talking this morning.  I''d love to connect again sometime over coffee or lunch.  I''d you could reply to this text so I know I have the right number.  Thanks",Outgoing,"","",1
+38,683,2024-10-25 16:15:55.8459+00,Email,7,"Jennifer,
+
+I apologize for letting the ball drop on keeping up with your path.  I know it''s been over a year since I checked in.  Are you still dreaming about possible cross-cultural work?  If so, where?  I''d love to help in any way I can as you continue to consider how to leverage your life for the Kingdom and for Unreached People Groups around the world.  I look forward to hearing how things are going for you.  Blessings...",Outgoing,Email,Following up,1
+39,262,2024-10-25 16:29:51.783578+00,text,8,Texted Joey Apologies for not getting back in September... Would you be able to catch lunch or code in the next couple weeks before we get into the holidays?,Outgoing,"","",1
+40,229,2024-10-29 13:55:18.795435+00,phone,8,"Spoke to Luke about banquet in GSBO.  He couldn''t come, but we had a great conversation about the future of Church Planting and Mt. Zion becoming a sending church.  They want to eventually throw their resources into sending church planters.  We will schedule a zoom to discuss and get him more information.",Outgoing,"","",1
+41,254,2024-11-11 01:54:17.58447+00,meeting,8,"Met with Aaron Martin, Sr. Pastor for breakfast.  Great time to catch up and challenge him to continue in their support...",Outgoing,"","",1
+42,714,2024-11-11 18:44:16.825219+00,email,8,Sent follow-up email to schedule time to discuss EN42.,Outgoing,"","",2
+43,718,2024-11-11 18:47:38.540427+00,email,8,Meeting scheduled for 11/11/2024 to discuss EN42.,Outgoing,"","",2
+44,729,2024-11-11 19:58:40.665192+00,meeting,9,Great meeting with Randy.  He has lots of great questions about EN42 and mentioned blind spots.  He wants to make sure we bring the church into the conversation about what the partnership looks like.  Feels like maybe it's been a little one sided CG benefits and not as much what we can offer the church.... Good conversation with a lot of clarifying questions.,Outgoing,"","",1
+45,718,2024-11-12 20:33:44.579228+00,video,8,"Had video conference with Brandy who is the Mission Pastor, and her husband is an elder.
+
+Follow-up email sent with EN42 next steps, church planting network map, & EN42 flyer.",Outgoing,"","",2
+46,220,2024-12-13 19:37:39.415371+00,meeting,8,Met with Chuck Hill and Kent Fancher from Grace Life to follow up on banquet and talk about EN42.  They are going to begin praying about a UPG or place and are VERY interested in pursuing EN42 partnership,Outgoing,"","",1
+47,702,2024-12-16 18:39:40.011+00,Email,7,"Nate,
+
+I noticed you on the Zoom call for the grader/mentors the other night.  It was good to see you.  I trust you''re doing well.  I just wanted to check-in and see how things are going for you.  I look forward to talking again soon!",Outgoing,Email,Saw you on the Zoom with Perspectives,1
+48,565,2025-01-13 15:11:17.855066+00,text,9,Texted Ian about meeting up to talk about Super bowl party and even in June/July for Frontier workers,Outgoing,"","",1
+49,564,2025-01-13 15:13:47.124597+00,text,9,texted Sammy and Allie about meeting up to talk about super bowl party and frontier workers event in June/July... set appt. for 1/20 @ 10am @ Loveland coffee,Outgoing,"","",1
+50,566,2025-01-13 15:19:23.834714+00,text,9,Set appt to talk about super bowl party and frontier workers event in june/july,Outgoing,"","",1
+51,566,2025-01-17 15:30:43.490294+00,meeting,9,Great breakfast with Johnny King.  Talked about his engagement to Avery (June wedding) and his dreams about future. He is co-leading a group of discipleship with Ian and is an RA too.  He and Avery will reside in the apartments on campus.  He has one more year and she is a sophomore.  He is thinking about cross-cultural church planting.  When I asked if money was no object and you could just imagine yourself doing anything what would you imagine yourself doing/being...  He replied that it would be church-planting.  I asked here or cross-culturally and he said cross-culturally.  He said (w/o prompting of any kind) he would imagine planting a church and growing up leadership so that he could move on and do it all over again somewhere else.  Doing that over and over again.  He did discuss being nervous about raising a family in a frontier place.  Also a little squeemish about support raising mostly just not being sure he knows enough people to effectively raise support.  SUCH GOOD Conversation!!!,Outgoing,"","",1
+52,565,2025-01-24 18:53:07.585415+00,meeting,9,Met breakfast w/ Ian -- Updates on his life/studies...  He's taking Victor's Church Planting class and loving it.  Changed major to ICS from ICD.  Discussed next steps for him including praying about and narrowing his focus in terms of platform...  He's also been continuing his research for an org...  We also discussed what church planting looks like for CG church planters.  His dream of 'missionary' day is relational discipleship... I explained that his dream and being a CG church planter were'nt that much different...  Explained multiplication and our system of networks...,Outgoing,"","",1
+59,736,2025-04-09 13:45:34.849422+00,email,9,Followed up on Be Different card from Perspectives (both boxes checked)...to schedule a Google Meet call,Outgoing,"","",1
+60,737,2025-04-09 13:52:17.447021+00,email,9,Followed up on Perspectives BE Differenty card where she checked 'joining the team' ... Schedule a Google Meet ASAP,Outgoing,"","",1
+61,738,2025-04-09 13:56:18.982421+00,email,9,Sent email following up on Be Different 'joining the team' and mailing list... Shceulde a google meet.,Outgoing,"","",1
+62,739,2025-04-09 16:09:21.152099+00,email,9,Sent follow up email Perspectives Charleston -- checked 'join the team' on Be Different -- schedule a google meet,Outgoing,"","",1
+63,740,2025-04-09 16:21:13.914574+00,email,9,Follow up Perspectives Be Different 'join the team' -- set Google meet,Outgoing,"","",1
+64,742,2025-04-09 16:28:33.768579+00,email,8,Emailed TJ Higgins about his church partnering with CG...,Outgoing,"","",1
+65,687,2025-04-14 12:18:57.486587+00,email,9,"Sent invitation to Google Meet on Tuesday, April 15 @ 10:00",Outgoing,"","",1
+66,731,2025-04-14 12:44:35.106892+00,text,9,Texted to follow up on email sent 4/7 --- texted 4/14 one week later,Outgoing,"","",1
+67,733,2025-04-14 12:50:32.595384+00,email,9,He replied to my follow up email on 4/11 --- my email was sent 4/9 --we met in Perspectives in W.S. on 4/7,Outgoing,"","",1
+68,735,2025-04-14 13:03:36.355154+00,email,9,He replied to my email from 4/9 the same day... asked me for days and times to meet.  I replied 4/14 with several days and times to meet,Outgoing,"","",1
+69,736,2025-04-14 13:12:02.356808+00,text,9,Following up on email sent 4/9/25 Charleston Perspectives checked 'join the team' on Be Different -- Text sent 4/14/25,Outgoing,"","",1
+70,731,2025-04-14 13:13:21.946602+00,text,9,4/14 she replied to my text she is moving this week -- I need to set a reminder to follow up with her next week via text,Outgoing,"","",1
+71,737,2025-04-14 13:24:18.83499+00,text,9,4/14 texted following up on Be Different card checked 'join the team' after sending email follow up on 4/9 --- She attended Perspectives Charleston I taught on 4/8,Outgoing,"","",1
+72,738,2025-04-14 13:26:02.633881+00,text,9,Followed up on email sent 4/9/25 after he was @ Perspectives 4/8 in Charleston -- he checked 'join the team' on Be Different card,Outgoing,"","",1
+73,739,2025-04-14 13:32:02.886483+00,text,9,Texted follow up to email sent 4/9 on 4/14-- she checked 'join the team' on Be Different card...,Outgoing,"","",1
+74,743,2025-04-14 14:10:38.340707+00,email,8,Emailed to follow up on Be Different card and conversation... wants us to video call in June or July to get 1st Pres Greenville more involved with CG,Outgoing,"","",1
+75,687,2025-04-14 17:34:46.619497+00,email,9,She replied to meeting invite for 4/15 10 am... meeting then,Outgoing,"","",1
+76,742,2025-04-14 17:36:52.311982+00,email,8,Per his request... sent him materials for his committee/leadership to review,Outgoing,"","",1
+77,687,2025-04-15 14:45:32.317039+00,video,9,"Talked for 35 minutes or so ... wanted to here her story.  She is from CT and moved to Mt Airy in 2022.  Feeling like an outsider in the South (a good thing)... She attended a missions conf at her home church that got her fired up for missions and UPG''s... was initially interested in Middle East and muslims but had opp. to go to India and went 3 times in a year... with the. missions pastor from Calvary Baptist Matt (who facilitated the Perspectives class I taught in W.S.  She seems to have a clear call to the point she is putting off guys who aren''t aligned.  She''s not sure of her timelin just convinced it is not now... God has said wait even though she experessed she would gladly get on a plane tomorrow.  She is planting a house church in Mt. Airy with her parents.  She is working for a guy sort of doing BAM (sustainable products from India, Srilanka, Turkey, Nepal...  She is doing sales part-time for him and it could be a platform potentially...  She went to Pioneers and met with them.  Felt like now wasn''t the right time (sounded like she wasn''t sure about them)... We plan to reconnect in a month to 6 weeks",Outgoing,"","",1
+78,735,2025-04-16 13:45:47.461253+00,video,9,"Met w/ him 4/16 after Perspectives Charleston.  He is from India and lived in Japan for several years where he met his American wife.  They are living in Charleston after being connected w/ a church plant from a church in the UK that they knew of from India...  Freedom church... sounds like they are a sending church.  He feels called (they) wife is Sarah to ministry and are praying about where they might serve longer term, but are very interested in serving among Unengaged people and he has 16 yrs. experience with Nissan working in ''Strategy'' and wants to be able to use those skills (strategic planning and strategy) for the Kingdom...  He also wants to connect us to his church in Charleston (Couragous Church) and their pastor to learn more about partnership.  I will follow up in a month to see about connecting with his pastor...",Outgoing,"","",1
+79,735,2025-04-16 13:53:33.898877+00,Email,7,"Niranjan,
+
+It was GREAT speaking with you today!  I enjoyed learning more about your story and where God has led you to this point.  I am SUPER excited about how God is going to use you and Sarah moving forward.  
+
+I mentioned our MMC training coming up in May and I''d like to send you the dates.  We don''t have any type of ''registration'' or anything like that but we would love to invite you to join us if you''re interested.  We can find a place for you to lay your head in the evening so you don''t have to drive back and forth to Charleston (unless you want to)...  I just realized I got the dates mixed up... we are doing a staff training on organizational culture in May.  The MMC training I mentioned is actuall the first week of July and is mid-week (Tue-Thurs) July 1-3.  Again, we would love to have you join us if you are able.  
+
+Again, I am so grateful to have met you and greatly enjoyed our conversation.  I look forward to seeing where the Lord leads moving forward.  Blessings brother... enjoy your vacation!!",Outgoing,Email,Training in May @ Crossover Global,1
+80,733,2025-04-23 20:40:07.947107+00,video,9,"talked w/ Paul (WS Persp)... he is eager to deploy.  Young, seriously dating his gf who was also in Perspectives.  He wants to serve cross-culturally and among UPG or UUPG.  Lots of good discussion.  He''s getting an associates at Carolina U lots of Bible... has concerns about good teaching and doctrine...  Sounds like a potential candidate.  I explained the ''On boarding'' process and he will pray about if he wants to get into that...  Follow up in 2-3 weeks!",Outgoing,"","",1
+81,739,2025-04-24 16:51:19.802868+00,video,9,Spoke about her calling... she is working for Water Mission as an engineer and coming off Persp (Charlston) and a month long trip to Indonesia is wondering if God has more for her.  Out of H.S. thought she might be called but had people advising against cross-cultural work... She is praying for clarity...  Follow up in a month,Outgoing,"","",1
+82,744,2025-04-25 15:00:31.838862+00,Email,7,"Hey Mara,
+
+It was great meeting with you, and sharing more about opportunities to go or serve with Crossover Global.  As you continue to seek the Lord''s guidance on the possibility of serving cross-culturally we typically ask 5 '"P'" questions to pray and ponder over:
+
+1. Place - Do you feel God is leading you to a particular place? Azerbaijan! - More specific location (city) based on the unreached people group.
+2. People - What specific unreached unengaged people group (UUPG) are you seeking to engage with?
+3. Passion - What giftings, hobbies, or desires have compelled this passion to reach the unreached?
+4. Platform - What education, job experiences, or marketable skills will be a platform to grant long-term access to this location?
+5. Position - Finally, based on the above questions, how can we best position you to fulfill the mission of providing gospel access?
+
+In addition, based on my own personal experience with cross-cultural missions, I find these discerning questions to be helpful:
+
+1. Biblical confirmation - Is your desire rooted in Christ''s command to make disciples of all nations?
+2. Burden & passion - Do you feel a strong, sustained burden for a particular people group or region?
+3. Gifts & skills - Has God given you abilities that align with mission work (evangelism, teaching, language learning, etc.)?
+4. Community affirmation - Have mature believers, mentors, or church leaders affirmed your calling and abilities?
+5. Open doors & opportunities - Is God providing a way - through connections, resources, or circumstances?
+6. Local Outreach - Are you seeking out ways locally to engage with the international community or cross-cultural experiences?
+
+Also, please note we have a free mission training opportunity this summer July 1-3.  I would like to invite you both, so let me know if you are interested in more details.
+
+Lastly, are you acquainted to a couple named Sam & Ali?  He is a CIU nursing major and they both have a desire to be sent out the Arab speaking world as well! We would love to connect you if not already.
+
+I very much look forward to discussing and praying through in more detail.  Blessings!",Outgoing,Email,Crossover Global Follow-Up,2
+83,745,2025-04-25 15:38:03.771671+00,Email,7,"Hey Eric,
+
+It was great meeting with you to hear your testimony, and your passion to serve with an organization that makes a global eternal impact.  As discussed, we are looking to build out our team for both fundraising and mobilization.  Based on your passion and experience it would be an honor if you were to serve with us!
+
+The next best step would be to complete our onboarding process, so be on the lookout for an email invitation to start.  As discussed, this is a non-committal step but is very helpful for us to begin exploring with you more the opportunities here with us as a global organization.
+
+Please keep me posted and I''ll reach back out in a couple of weeks to see how you are progressing in this prayerful exploration to join us!",Outgoing,Email,Crossover Global Follow-Up,2
+84,738,2025-04-29 15:41:02.852774+00,text,9,Jim from Crossover Global here... Just checking in... I sent you an email but it's not showing up in my sent folder so I'm not sure you got it... Is love to schedule a quick video meeting sometime so I can here about your story... Let me know!!,Outgoing,"","",1
+85,738,2025-04-29 15:43:36.351948+00,text,9,Texted and emaailed follow up to schedule video meeting,Outgoing,"","",1
+86,737,2025-04-29 15:45:21.883541+00,text,9,Texting to follow up on Perspectives week 13... Jim here from Crossover Global.  Let me know if you want to continue the conversation. Is love to here your story and answer any questions you might have!!,Outgoing,"","",1
+87,737,2025-04-29 15:47:00.5106+00,text,9,Followed up to say let me know if you want to continue the conv...,Outgoing,"","",1
+88,736,2025-04-29 15:50:49.010265+00,text,9,I'm just following up on Perspectives interest in Crossover Global...  If love to here your story and answer any questions I can about Crossover Global... Let me know if you'd like to continue the conversation!!,Outgoing,"","",1
+89,736,2025-04-29 15:52:52.793876+00,text,9,texted to see if she wants to continue the conv... after completing Be Different card and checking interest in joining the team...,Outgoing,"","",1
+90,731,2025-04-29 16:01:35.477507+00,text,9,Followed up late on her text about moving...,Outgoing,"","",1
+91,740,2025-04-29 16:05:55.469988+00,email,9,Emailed to follow u on initial email sent 4/9 and text sent 4/14 ---,Outgoing,"","",1
+92,742,2025-04-30 12:15:35.621732+00,email,8,Emailed TJ to follow up on the material I sent him... and to see about scheduling a time to come down to Charleston to meet with leadership...,Outgoing,"","",1
+93,746,2025-05-08 19:20:57.564207+00,email,9,"Good morning Jonathan and Katie,
+
+It was a joy to meet with you both last night!
+
+First Jonathan, if you would please confirm your contact information (email & phone) as it appears I only have Katie''s email addresses.  Thanks!
+
+I wanted to follow-up with our conversation just to express how encouraging it was to hear your testimonies and how the Lord is working in your hearts.  It would be an honor for us Crossover Global to send you out to pioneer a new ministry in Japan.
+
+As you continue to pray and explore this opportunity, I am here to walk with you and help facilitate this process as you journey with God.
+
+As discussed, here are some initial things to pray and plan for:
+
+1) People - below are more details for the unreached people groups in Japan
+https://joshuaproject.net/people_groups/12322/JA
+https://joshuaproject.net/people_groups/11136/JA
+https://joshuaproject.net/people_groups/11228/JA
+
+2) Platform - I would recommend researching the options for long-term visas for the country of Japan, which could potentially identify your platform reason for being (teacher, business, work, student).
+
+3) Budget - it would also be good to research the cost of living for a married couple for different locations in Japan as this will help determine a desired salary (for business) or support raising goals.
+
+4) Raising Support - once you have clear confirmation to move forward with Crossover Global as your sending organization, we are a 501c3 (non-profit) that can process your ministry support as a team member.  We can also assist with coaching and training for support raising, and I recommend reading the following book:
+https://a.co/d/3l1JooV
+
+5) Training - we Crossover Global will be hosting a training at the Columbia, SC office on July 1-3, 2025, which will be a great opportunity for you to learn more about us and our ministry model.  If you are interested and available to attend I''ll send you more details. In addition, we have other resources available for cross-cultural training in preparation for moving overseas.
+
+6) Language Learning - We as an organization highly recommend committing to learning the language for effective ministry in the heart language of the people. It would be good to explore options for language learning, as there are many different approaches to this (formal classroom setting or personal tutor).  In some cases, you can be a student learning the language at a school in the country, and this is a means to get a student visa. 
+
+Please don''t hesitate to reach out to me if you have any questions or need to chat.
+
+May the Lord confirm your calling!
+
+Until all have heard,
+
+Matthew Rule 
+Executive Director | USA Office
+7520 Monticello Road | Columbia, SC | 29203
+P: 803.973.9026 | www.crossover.global
+
+
+
+Tachmonite <jsingrum@gmail.com>
+May 5, 2025, 3:22 PM (3 days ago)
+to me
+
+Matthew,
+
+  I have been extremely busy for the last while with work and travel. Please forgive my delay in response. I don''t remember whether I already confirmed my contact information, so if I haven''t already done so:
+
+Email: jsingrum@gmail.com 
+Phone: 256.714.6338
+
+We are still actively thinking about the content that you sent for us to think over, and especially the reason for having a visa and staying long term. There''s part of me that finds the idea of a language school to be intriguing... And something that has been a concern of mine for ministry reasons is that the work culture there is incredibly demanding. If I were to go there as an engineer, I''m not sure how much gospel work I could accomplish if there were expectations of my job being my life. 
+
+Do you think you could tell me more about the conference in July that you mentioned? 
+
+All the Best,
+
+Jonathan Ingrum
+
+	
+Tachmonite (jsingrum@gmail.com)
+Hey Jonathan,
+
+It''s great to hear from you again.  No worries!  This is a lot to process and pray through.
+
+I just want to again emphasize we are here to serve you, and would be honored if you are ultimately sent out with us.
+
+As it relates to your platform for long-term access you are thinking well that language school is a great option, and would allow more time for ministry compared to a full-time high commitment engineering role.  But both are great options to explore! I''ll be praying for the Lord to give direction and open the right opportunity to give discernment on this.  These are things I would intentionally explore on your trip to Japan.  Speaking of which, can you remind me of your Japan trip dates?  Ken, our president, will be traveling to Korea around the same timeline (best I recall), and could possibly meet you in Japan to make some connections if that would be helpful.
+
+In regards to the training in July, it will cover the Ministry Multiplication Cycle (MMC) which is our foundational training for church planting. It''s based on a book authored by our founder Bill Jones. There is no cost to the training, and we would love to have you here with us. Here is an overview of the MMC training daily schedule that will be held at the office July 1-3 here in Columbia:
+
+9:00-9:30 worship and prayer
+9:30-12:00 teaching session
+12:00-1:15 lunch break
+1:15-4:30 teaching session
+4:30-5:00 questions & answers
+
+Teaching sessions cover the four ministry tactics (Evangelism, Establishing, Equipping, & Extending)
+
+Here is my personal cell phone number: 479-657-1119.
+
+Feel free to reach out to me anytime with questions or to discuss any part of this process.
+
+Until all have heard,
+
+Matthew Rule 
+Executive Director | USA Office
+7520 Monticello Road | Columbia, SC | 29203
+P: 803.973.9026 | www.crossover.global
+
+
+
+On Mon, May 5, 2025 at 3:22 PM Tachmonite <jsingrum@gmail.com> wrote:
+Matthew,
+
+  I have been extremely busy for the last while with work and travel. Please forgive my delay in response. I don''t remember whether I already confirmed my contact information, so if I haven''t already done so:
+
+Email: jsingrum@gmail.com 
+Phone: 256.714.6338
+
+We are still actively thinking about the content that you sent for us to think over, and especially the reason for having a visa and staying long term. There''s part of me that finds the idea of a language school to be intriguing... And something that has been a concern of mine for ministry reasons is that the work culture there is incredibly demanding. If I were to go there as an engineer, I''m not sure how much gospel work I could accomplish if there were expectations of my job being my life. 
+
+Do you think you could tell me more about the conference in July that you mentioned? 
+
+All the Best,
+
+Jonathan Ingrum
+
+
+On Wed, Apr 2, 2025, 9:42 AM Matthew Rule <m.rule@crossoverglobal.net> wrote:
+Good morning Jonathan and Katie,
+
+It was a joy to meet with you both last night!
+
+First Jonathan, if you would please confirm your contact information (email & phone) as it appears I only have Katie''s email addresses.  Thanks!
+
+I wanted to follow-up with our conversation just to express how encouraging it was to hear your testimonies and how the Lord is working in your hearts.  It would be an honor for us Crossover Global to send you out to pioneer a new ministry in Japan.
+
+As you continue to pray and explore this opportunity, I am here to walk with you and help facilitate this process as you journey with God.
+
+As discussed, here are some initial things to pray and plan for:
+
+1) People - below are more details for the unreached people groups in Japan
+https://joshuaproject.net/people_groups/12322/JA
+https://joshuaproject.net/people_groups/11136/JA
+https://joshuaproject.net/people_groups/11228/JA
+
+2) Platform - I would recommend researching the options for long-term visas for the country of Japan, which could potentially identify your platform reason for being (teacher, business, work, student).
+
+3) Budget - it would also be good to research the cost of living for a married couple for different locations in Japan as this will help determine a desired salary (for business) or support raising goals.
+
+4) Raising Support - once you have clear confirmation to move forward with Crossover Global as your sending organization, we are a 501c3 (non-profit) that can process your ministry support as a team member.  We can also assist with coaching and training for support raising, and I recommend reading the following book:
+https://a.co/d/3l1JooV
+
+5) Training - we Crossover Global will be hosting a training at the Columbia, SC office on July 1-3, 2025, which will be a great opportunity for you to learn more about us and our ministry model.  If you are interested and available to attend I''ll send you more details. In addition, we have other resources available for cross-cultural training in preparation for moving overseas.
+
+6) Language Learning - We as an organization highly recommend committing to learning the language for effective ministry in the heart language of the people. It would be good to explore options for language learning, as there are many different approaches to this (formal classroom setting or personal tutor).  In some cases, you can be a student learning the language at a school in the country, and this is a means to get a student visa. 
+
+Please don''t hesitate to reach out to me if you have any questions or need to chat.
+
+May the Lord confirm your calling!
+
+Until all have heard,
+
+Matthew Rule 
+Executive Director | USA Office
+7520 Monticello Road | Columbia, SC | 29203
+P: 803.973.9026 | www.crossover.global",Outgoing,"","",2
+94,747,2025-05-13 20:34:13.155979+00,text,9,Sent text to confirm meeting date/time.,Outgoing,"","",2
+95,687,2025-05-14 16:03:24.446213+00,text,9,"Hey, this is Jim at Crossover Global.  I would love to connect again in the next few days as you''re able.  Let me know a good day and time and I''ll get it scheduled!!",Outgoing,"","",1
+96,739,2025-05-14 16:07:39.69672+00,text,9,Text communication initiated to (302) 256-1203,Outgoing,"","",1
+97,739,2025-05-14 16:08:44.501634+00,text,9,This is Jim from Crossover Global... Just wanting to schedule a second call... What's your schedule look like.  Give me a couple days and times and let's get it scheduled.  I trust your doing well... We've been pressing for you!,Outgoing,"","",1
+98,735,2025-05-14 16:11:04.300118+00,text,9,This is Jim at Crossover Global... I would love to meet again for a follow-up conversation too see where God is leading.  Let me know a couple days and times when we could connect and I'll get it scheduled,Outgoing,"","",1
+99,687,2025-05-14 16:20:30.648219+00,text,9,She texted back .. she's going to India next week and will get with me when she returns,Outgoing,"","",1
+100,733,2025-05-14 16:21:47.356665+00,text,9,Jim from Crossover Global here... Are you up for a follow up call?  What's a good day or time for your and I'll get it scheduled!!,Outgoing,"","",1
+101,733,2025-05-23 15:55:28.965871+00,text,9,He texted back and 'passed' on a follow up...,Outgoing,"","",1
+102,733,2025-05-23 16:01:08.925582+00,Email,7,"Paul,
+
+I got your text and wanted to just let you know if you ever need anything or have any additional questions... we''re always available!  I''m excited about what God has in store for you in the coming months and years and I''ll be continuing to pray He gives you clear direction as you seek to move His Kingdom forward!!  Blessings brother.",Outgoing,Email,Let me know how I can help moving forward!!,1

@@ -45,8 +45,8 @@ class Command(BaseCommand):
         preserve_manual = options['preserve_manual']
         days_old = options.get('days_old')
         
-        # Build the deletion criteria
-        queryset = Communication.objects.filter(type='email')
+        # Build the deletion criteria - handle both 'email' and 'Email' types
+        queryset = Communication.objects.filter(type__iexact='email')
         
         # Filter by user if specified
         if user_id:
@@ -88,30 +88,40 @@ class Command(BaseCommand):
             )
             return
         
-        # Show breakdown by user
+        # Show breakdown by user (avoid the problematic join for now)
         self.stdout.write('\n' + '='*50)
         self.stdout.write('DELETION SUMMARY')
         self.stdout.write('='*50)
         
-        user_breakdown = {}
-        for comm in queryset.select_related('user'):
-            username = comm.user.username if comm.user else 'Unknown'
-            user_breakdown[username] = user_breakdown.get(username, 0) + 1
+        # Count by user_id without joining to avoid the type casting issue
+        from django.db.models import Count
+        user_counts = queryset.values('user_id').annotate(count=Count('id')).order_by('-count')
         
-        for username, count in user_breakdown.items():
+        for user_data in user_counts:
+            user_id = user_data['user_id']
+            count = user_data['count']
+            if user_id:
+                try:
+                    # Try to get the username, but handle the type mismatch
+                    user = User.objects.get(id=int(user_id)) if isinstance(user_id, str) else User.objects.get(id=user_id)
+                    username = user.username
+                except (User.DoesNotExist, ValueError, TypeError):
+                    username = f'Unknown (ID: {user_id})'
+            else:
+                username = 'No User'
             self.stdout.write(f'{username}: {count} emails')
         
         self.stdout.write(f'\nTOTAL: {total_count} communications to be deleted')
         
-        # Show sample of what will be deleted
-        sample_comms = queryset.select_related('user', 'person')[:5]
+        # Show sample of what will be deleted (without complex joins)
+        sample_comms = queryset[:5]
         if sample_comms:
             self.stdout.write('\nSample of emails to be deleted:')
             for comm in sample_comms:
-                person_name = comm.person.contact.first_name + ' ' + comm.person.contact.last_name if comm.person else 'Unknown'
-                self.stdout.write(
-                    f'  - {comm.subject[:50]}... (from {comm.sender or person_name}, {comm.date})'
-                )
+                subject = comm.subject[:50] if comm.subject else 'No Subject'
+                sender = comm.sender[:30] if comm.sender else 'Unknown'
+                date = comm.date or 'No Date'
+                self.stdout.write(f'  - {subject}... (from {sender}, {date})')
         
         if dry_run:
             self.stdout.write(
@@ -135,7 +145,29 @@ class Command(BaseCommand):
         # Perform the deletion
         try:
             with transaction.atomic():
-                deleted_count = queryset.delete()[0]
+                # Handle the missing EmailAttachment table gracefully
+                from django.db import connection
+                cursor = connection.cursor()
+                
+                # Check if the django_email_attachments table exists
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_name = 'django_email_attachments'
+                    );
+                """)
+                table_exists = cursor.fetchone()[0]
+                
+                if not table_exists:
+                    self.stdout.write(
+                        self.style.WARNING('EmailAttachment table does not exist, proceeding with direct deletion...')
+                    )
+                    # Delete communications directly without cascade to avoid the attachment table error
+                    comm_ids = list(queryset.values_list('id', flat=True))
+                    deleted_count = Communication.objects.filter(id__in=comm_ids).delete()[0]
+                else:
+                    # Normal deletion with cascades
+                    deleted_count = queryset.delete()[0]
                 
             self.stdout.write(
                 self.style.SUCCESS(f'Successfully deleted {deleted_count} communications.')
