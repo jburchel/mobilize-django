@@ -140,6 +140,22 @@ class CommunicationForm(forms.ModelForm):
         if hasattr(Communication, 'DIRECTION_CHOICES'):
             self.fields['direction'].widget = forms.Select(choices=Communication.DIRECTION_CHOICES, attrs={'class': 'form-control'})
         
+        # Filter person and church fields to only show valid records
+        from mobilize.contacts.models import Person
+        from mobilize.churches.models import Church
+        
+        # Only show persons that actually exist and have valid contact relationships
+        try:
+            self.fields['person'].queryset = Person.objects.select_related('contact').filter(contact__isnull=False)
+        except:
+            self.fields['person'].queryset = Person.objects.none()
+            
+        # Only show churches that actually exist and have valid contact relationships  
+        try:
+            self.fields['church'].queryset = Church.objects.select_related('contact').filter(contact__isnull=False)
+        except:
+            self.fields['church'].queryset = Church.objects.none()
+        
         # Set up form helper
         self.helper = FormHelper()
         self.helper.form_method = 'post'
@@ -205,10 +221,27 @@ class CommunicationForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         
-        # Ensure at least one contact (person or church) is specified for new communications
+        # Validate person exists
         person = cleaned_data.get('person')
-        church = cleaned_data.get('church')
+        if person:
+            try:
+                # Check if the person actually exists in the database
+                from mobilize.contacts.models import Person
+                Person.objects.get(id=person.id)
+            except Person.DoesNotExist:
+                raise forms.ValidationError(f'Selected person "{person}" does not exist in the database.')
         
+        # Validate church exists  
+        church = cleaned_data.get('church')
+        if church:
+            try:
+                # Check if the church actually exists in the database
+                from mobilize.churches.models import Church
+                Church.objects.get(id=church.id)
+            except Church.DoesNotExist:
+                raise forms.ValidationError(f'Selected church "{church}" does not exist in the database.')
+        
+        # Ensure at least one contact (person or church) is specified for new communications
         if not person and not church:
             # For imported communications, this might be acceptable, so we'll make it a warning rather than an error
             pass

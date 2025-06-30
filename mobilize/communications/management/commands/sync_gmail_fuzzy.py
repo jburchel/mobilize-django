@@ -193,36 +193,54 @@ class Command(BaseCommand):
                         )
                     
                     if not dry_run:
-                        # Create communication record
-                        person = contact if contact_type == 'person' else None
-                        church = contact if contact_type == 'church' else None
-                        
-                        # Update contact's email if matched by name
-                        if match_type != 'email' and sender_email:
-                            if not contact.contact.email:
-                                contact.contact.email = sender_email
-                                contact.contact.save()
-                                self.stdout.write(
-                                    self.style.SUCCESS(
-                                        f'    Updated email for {contact}: {sender_email}'
+                        try:
+                            # Create communication record
+                            person = contact if contact_type == 'person' else None
+                            church = contact if contact_type == 'church' else None
+                            
+                            # Update contact's email if matched by name
+                            if match_type != 'email' and sender_email:
+                                if not contact.contact.email:
+                                    contact.contact.email = sender_email
+                                    contact.contact.save()
+                                    self.stdout.write(
+                                        self.style.SUCCESS(
+                                            f'    Updated email for {contact}: {sender_email}'
+                                        )
                                     )
+                            
+                            # Parse the email date properly
+                            email_date = None
+                            if msg.get('date'):
+                                try:
+                                    from email.utils import parsedate_to_datetime
+                                    email_date = parsedate_to_datetime(msg.get('date'))
+                                except (ValueError, TypeError):
+                                    # Fallback to current time if date parsing fails
+                                    from django.utils import timezone
+                                    email_date = timezone.now()
+                            
+                            Communication.objects.create(
+                                type='Email',
+                                subject=msg.get('subject', ''),
+                                message=msg.get('body', '')[:250],
+                                direction='inbound',
+                                date=email_date,
+                                person=person,
+                                church=church,
+                                gmail_message_id=msg['id'],
+                                gmail_thread_id=msg.get('thread_id'),
+                                email_status='received',
+                                sender=sender_full,
+                                user=user
+                            )
+                            user_synced += 1
+                        except Exception as e:
+                            self.stdout.write(
+                                self.style.WARNING(
+                                    f'    Error creating communication for {contact}: {e}'
                                 )
-                        
-                        Communication.objects.create(
-                            type='Email',
-                            subject=msg.get('subject', ''),
-                            message=msg.get('body', '')[:250],
-                            direction='inbound',
-                            date=msg.get('date'),
-                            person=person,
-                            church=church,
-                            gmail_message_id=msg['id'],
-                            gmail_thread_id=msg.get('thread_id'),
-                            email_status='received',
-                            sender=sender_full,
-                            user=user
-                        )
-                        user_synced += 1
+                            )
                     else:
                         user_synced += 1
                 else:
