@@ -116,7 +116,7 @@ class Communication(models.Model):
     date_sent = models.DateTimeField(blank=True, null=True)
     
     # Related Entities
-    person = models.ForeignKey(Person, on_delete=models.SET_NULL, blank=True, null=True, related_name='person_communications', db_column='person_id')
+    person = models.ForeignKey(Person, on_delete=models.SET_NULL, blank=True, null=True, related_name='person_communications')
     church = models.ForeignKey(Church, on_delete=models.SET_NULL, blank=True, null=True, related_name='church_communications', db_column='church_id')
     
     # Gmail Integration
