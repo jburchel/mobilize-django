@@ -217,16 +217,21 @@ class CommunicationForm(forms.ModelForm):
         date = cleaned_data.get('date')
         date_sent = cleaned_data.get('date_sent')
         
-        if date_sent and not date:
-            # If date_sent is provided but date is not, use date_sent as the date
-            cleaned_data['date'] = date_sent.date()
+        try:
+            if date_sent and not date:
+                # If date_sent is provided but date is not, use date_sent as the date
+                cleaned_data['date'] = date_sent.date()
+        except (AttributeError, ValueError):
+            # Handle cases where date_sent might not be a valid datetime
+            pass
         
         return cleaned_data
     
     def save(self, commit=True):
         instance = super().save(commit=False)
         
-        if self.user and not instance.pk:  # Only set user on new instances
+        # Only set user on new instances
+        if self.user and not instance.pk:
             instance.user = self.user
         
         # Set default values for required fields if they're missing (for imported data)
@@ -234,10 +239,16 @@ class CommunicationForm(forms.ModelForm):
             instance.type = 'Email'  # Default type for imported communications
             
         if not instance.direction:
-            instance.direction = 'inbound'  # Default direction
+            instance.direction = 'Outgoing'  # Use valid choice from DIRECTION_CHOICES
             
-        if commit:
-            instance.save()
+        try:
+            if commit:
+                instance.save()
+        except Exception as e:
+            # Log the error but don't crash
+            print(f"Error saving communication: {e}")
+            raise
+            
         return instance
 
 

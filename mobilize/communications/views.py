@@ -392,7 +392,11 @@ class CommunicationUpdateView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         # Add logging to see if form is valid
         print(f"Communication form is valid, saving: {form.cleaned_data}")
-        return super().form_valid(form)
+        try:
+            return super().form_valid(form)
+        except Exception as e:
+            print(f"Error in form_valid: {e}")
+            raise
     
     def form_invalid(self, form):
         # Add logging to see form errors
