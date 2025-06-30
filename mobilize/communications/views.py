@@ -40,13 +40,21 @@ class EmailTemplateListView(LoginRequiredMixin, ListView):
             return queryset
         
         # Other users see templates from their offices or created by them
-        user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
-        
-        # Templates are shared within offices
-        return queryset.filter(
-            models.Q(created_by=self.request.user) |
-            models.Q(created_by__useroffice__office__in=user_offices)
-        ).distinct()
+        try:
+            user_offices = list(self.request.user.useroffice_set.values_list('office_id', flat=True))
+            
+            if user_offices:
+                # Templates are shared within offices
+                return queryset.filter(
+                    models.Q(created_by=self.request.user) |
+                    models.Q(created_by__useroffice__office__in=user_offices)
+                ).distinct()
+            else:
+                # If user has no office assignments, only show their own templates
+                return queryset.filter(created_by=self.request.user)
+        except Exception:
+            # If there's any error with office filtering, fall back to user's own templates
+            return queryset.filter(created_by=self.request.user)
 
 
 class EmailTemplateDetailView(LoginRequiredMixin, DetailView):
@@ -194,18 +202,26 @@ class CommunicationListView(LoginRequiredMixin, ListView):
         
         # Apply office-level filtering
         if self.request.user.role != 'super_admin':
-            user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
-            
-            # Communications visible if:
-            # 1. User created the communication
-            # 2. Person/church belongs to user's office
-            # 3. Communication office matches user's office
-            queryset = queryset.filter(
-                models.Q(user=self.request.user) |
-                models.Q(person__contact__office__in=user_offices) |
-                models.Q(church__contact__office__in=user_offices) |
-                models.Q(office__in=user_offices)
-            ).distinct()
+            try:
+                user_offices = list(self.request.user.useroffice_set.values_list('office_id', flat=True))
+                
+                if user_offices:
+                    # Communications visible if:
+                    # 1. User created the communication
+                    # 2. Person/church belongs to user's office
+                    # 3. Communication office matches user's office
+                    queryset = queryset.filter(
+                        models.Q(user=self.request.user) |
+                        models.Q(person__contact__office__in=user_offices) |
+                        models.Q(church__contact__office__in=user_offices) |
+                        models.Q(office__in=user_offices)
+                    ).distinct()
+                else:
+                    # If user has no office assignments, only show their own communications
+                    queryset = queryset.filter(user=self.request.user)
+            except Exception:
+                # If there's any error with office filtering, fall back to user's own communications
+                queryset = queryset.filter(user=self.request.user)
         
         # Apply filters from GET parameters
         type_filter = self.request.GET.get('type')
@@ -248,14 +264,22 @@ class CommunicationDetailView(LoginRequiredMixin, DetailView):
         
         # Apply office-level filtering
         if self.request.user.role != 'super_admin':
-            user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
-            
-            queryset = queryset.filter(
-                models.Q(user=self.request.user) |
-                models.Q(person__contact__office__in=user_offices) |
-                models.Q(church__contact__office__in=user_offices) |
-                models.Q(office__in=user_offices)
-            ).distinct()
+            try:
+                user_offices = list(self.request.user.useroffice_set.values_list('office_id', flat=True))
+                
+                if user_offices:
+                    queryset = queryset.filter(
+                        models.Q(user=self.request.user) |
+                        models.Q(person__contact__office__in=user_offices) |
+                        models.Q(church__contact__office__in=user_offices) |
+                        models.Q(office__in=user_offices)
+                    ).distinct()
+                else:
+                    # If user has no office assignments, only show their own communications
+                    queryset = queryset.filter(user=self.request.user)
+            except Exception:
+                # If there's any error with office filtering, fall back to user's own communications
+                queryset = queryset.filter(user=self.request.user)
         
         return queryset
 
@@ -306,14 +330,22 @@ class CommunicationUpdateView(LoginRequiredMixin, UpdateView):
         
         # Apply office-level filtering
         if self.request.user.role != 'super_admin':
-            user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
-            
-            queryset = queryset.filter(
-                models.Q(user=self.request.user) |
-                models.Q(person__contact__office__in=user_offices) |
-                models.Q(church__contact__office__in=user_offices) |
-                models.Q(office__in=user_offices)
-            ).distinct()
+            try:
+                user_offices = list(self.request.user.useroffice_set.values_list('office_id', flat=True))
+                
+                if user_offices:
+                    queryset = queryset.filter(
+                        models.Q(user=self.request.user) |
+                        models.Q(person__contact__office__in=user_offices) |
+                        models.Q(church__contact__office__in=user_offices) |
+                        models.Q(office__in=user_offices)
+                    ).distinct()
+                else:
+                    # If user has no office assignments, only show their own communications
+                    queryset = queryset.filter(user=self.request.user)
+            except Exception:
+                # If there's any error with office filtering, fall back to user's own communications
+                queryset = queryset.filter(user=self.request.user)
         
         return queryset
     
@@ -343,14 +375,22 @@ class CommunicationDeleteView(LoginRequiredMixin, DeleteView):
         
         # Apply office-level filtering
         if self.request.user.role != 'super_admin':
-            user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
-            
-            queryset = queryset.filter(
-                models.Q(user=self.request.user) |
-                models.Q(person__contact__office__in=user_offices) |
-                models.Q(church__contact__office__in=user_offices) |
-                models.Q(office__in=user_offices)
-            ).distinct()
+            try:
+                user_offices = list(self.request.user.useroffice_set.values_list('office_id', flat=True))
+                
+                if user_offices:
+                    queryset = queryset.filter(
+                        models.Q(user=self.request.user) |
+                        models.Q(person__contact__office__in=user_offices) |
+                        models.Q(church__contact__office__in=user_offices) |
+                        models.Q(office__in=user_offices)
+                    ).distinct()
+                else:
+                    # If user has no office assignments, only show their own communications
+                    queryset = queryset.filter(user=self.request.user)
+            except Exception:
+                # If there's any error with office filtering, fall back to user's own communications
+                queryset = queryset.filter(user=self.request.user)
         
         return queryset
 
@@ -845,7 +885,6 @@ class CalendarEventCreateView(LoginRequiredMixin, View):
     def post(self, request):
         from .google_calendar_service import GoogleCalendarService
         from datetime import datetime
-        import pytz
         
         calendar_service = GoogleCalendarService(request.user)
         
