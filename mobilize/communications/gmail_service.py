@@ -416,13 +416,24 @@ class GmailService:
                 skipped_count += 1
                 continue
             
+            # Handle the person ID mapping correctly
+            person_id = None
+            if person:
+                # Get the actual person.id from the database (not contact_id)
+                from django.db import connection
+                with connection.cursor() as cursor:
+                    cursor.execute('SELECT id FROM people WHERE contact_id = %s', [person.pk])
+                    result = cursor.fetchone()
+                    if result:
+                        person_id = result[0]
+            
             Communication.objects.create(
                 type='email',
                 subject=message['subject'],
                 message=message['body'][:250],  # Truncate for database field
                 direction='inbound',
                 date=timezone.now().date(),
-                person=person,
+                person_id=person_id,  # Use person_id instead of person object
                 church=church,
                 gmail_message_id=message['id'],
                 gmail_thread_id=message['thread_id'],

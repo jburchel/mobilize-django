@@ -198,6 +198,17 @@ class Command(BaseCommand):
                             person = contact if contact_type == 'person' else None
                             church = contact if contact_type == 'church' else None
                             
+                            # Handle the person ID mapping correctly
+                            person_id = None
+                            if person:
+                                # Get the actual person.id from the database (not contact_id)
+                                from django.db import connection
+                                with connection.cursor() as cursor:
+                                    cursor.execute('SELECT id FROM people WHERE contact_id = %s', [person.pk])
+                                    result = cursor.fetchone()
+                                    if result:
+                                        person_id = result[0]
+                            
                             # Update contact's email if matched by name
                             if match_type != 'email' and sender_email:
                                 if not contact.contact.email:
@@ -226,7 +237,7 @@ class Command(BaseCommand):
                                 message=msg.get('body', '')[:250],
                                 direction='inbound',
                                 date=email_date,
-                                person=person,
+                                person_id=person_id,  # Use person_id instead of person object
                                 church=church,
                                 gmail_message_id=msg['id'],
                                 gmail_thread_id=msg.get('thread_id'),
