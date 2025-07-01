@@ -12,7 +12,7 @@ from django.views import View
 from django.core.exceptions import PermissionDenied
 from django.db import models
 
-from .models import EmailTemplate, EmailSignature, Communication, EmailAttachment
+from .models import EmailTemplate, EmailSignature, Communication
 from .forms import EmailTemplateForm, EmailSignatureForm, CommunicationForm, ComposeEmailForm
 from .gmail_service import GmailService
 from .google_contacts_service import GoogleContactsService
@@ -425,28 +425,49 @@ class CommunicationDeleteView(LoginRequiredMixin, DeleteView):
         return super().dispatch(request, *args, **kwargs)
     
     def get_queryset(self):
-        queryset = Communication.objects.select_related('person', 'church', 'office', 'user')
-        
-        # Apply office-level filtering
-        if self.request.user.role != 'super_admin':
-            try:
-                user_offices = list(self.request.user.useroffice_set.values_list('office_id', flat=True))
-                
-                if user_offices:
-                    queryset = queryset.filter(
-                        models.Q(user=self.request.user) |
-                        models.Q(person__contact__office__in=user_offices) |
-                        models.Q(church__contact__office__in=user_offices) |
-                        models.Q(office__in=user_offices)
-                    ).distinct()
-                else:
-                    # If user has no office assignments, only show their own communications
+        try:
+            # Use basic queryset without complex select_related to avoid foreign key issues
+            queryset = Communication.objects.all()
+            
+            # Apply office-level filtering
+            if self.request.user.role != 'super_admin':
+                try:
+                    user_offices = list(self.request.user.useroffice_set.values_list('office_id', flat=True))
+                    
+                    if user_offices:
+                        # Simplified filtering to avoid complex joins that might fail
+                        queryset = queryset.filter(
+                            models.Q(user=self.request.user) |
+                            models.Q(office__in=user_offices)
+                        ).distinct()
+                    else:
+                        # If user has no office assignments, only show their own communications
+                        queryset = queryset.filter(user=self.request.user)
+                except Exception:
+                    # If there's any error with office filtering, fall back to user's own communications
                     queryset = queryset.filter(user=self.request.user)
-            except Exception:
-                # If there's any error with office filtering, fall back to user's own communications
-                queryset = queryset.filter(user=self.request.user)
-        
-        return queryset
+            
+            return queryset
+        except Exception as e:
+            # If any error occurs, return basic queryset filtered by user
+            print(f"Error in CommunicationDeleteView.get_queryset: {e}")
+            return Communication.objects.filter(user=self.request.user)
+    
+    def delete(self, request, *args, **kwargs):
+        """Override delete method with error handling"""
+        try:
+            print(f"CommunicationDeleteView.delete called with pk: {kwargs.get('pk')}")
+            obj = self.get_object()
+            print(f"Found object: {obj.id} - {obj.subject}")
+            result = super().delete(request, *args, **kwargs)
+            print("Delete successful")
+            return result
+        except Exception as e:
+            print(f"Error deleting communication: {e}")
+            import traceback
+            traceback.print_exc()
+            messages.error(request, f'Error deleting communication: {str(e)}')
+            return redirect('communications:communication_list')
 
 
 # Email Composition
@@ -515,13 +536,13 @@ def send_email(request):
                 office=form.cleaned_data.get('office'),
             )
             
-            # Save attachments
-            for file in request.FILES.getlist('attachments'):
-                EmailAttachment.objects.create(
-                    communication=communication,
-                    file=file,
-                    name=file.name
-                )
+            # Save attachments - temporarily disabled due to missing EmailAttachment table
+            # for file in request.FILES.getlist('attachments'):
+            #     EmailAttachment.objects.create(
+            #         communication=communication,
+            #         file=file,
+            #         name=file.name
+            #     )
             
             return redirect('communications:communication_detail', pk=communication.pk)
     else:

@@ -1,12 +1,13 @@
 from django.contrib import admin
-from .models import EmailTemplate, EmailSignature, Communication, EmailAttachment
+from .models import EmailTemplate, EmailSignature, Communication  # EmailAttachment temporarily removed
 
 
-class EmailAttachmentInline(admin.TabularInline):
-    model = EmailAttachment
-    extra = 0
-    readonly_fields = ('size', 'content_type', 'created_at')
-    fk_name = 'communication'
+# EmailAttachmentInline temporarily disabled due to missing EmailAttachment table
+# class EmailAttachmentInline(admin.TabularInline):
+#     model = EmailAttachment
+#     extra = 0
+#     readonly_fields = ('size', 'content_type', 'created_at')
+#     fk_name = 'communication'
 
 
 @admin.register(EmailTemplate)
@@ -56,7 +57,7 @@ class CommunicationAdmin(admin.ModelAdmin):
     search_fields = ('subject', 'message', 'sender', 'person__first_name', 'person__last_name', 'church__name')
     readonly_fields = ('created_at', 'updated_at')
     date_hierarchy = 'date'
-    inlines = [EmailAttachmentInline]
+    # inlines = [EmailAttachmentInline]  # Temporarily disabled due to missing EmailAttachment table
     
     def get_person(self, obj):
         return obj.person.full_name if obj.person else None

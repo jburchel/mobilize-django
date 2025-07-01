@@ -178,26 +178,29 @@ class Communication(models.Model):
         return self.subject if self.subject else f"Communication {self.id}"
 
 
-class EmailAttachment(models.Model):
-    """Model for storing email attachments
-    
-    Note: This model is for Django admin interface only and doesn't correspond
-    to a table in the Supabase database. Attachments in Supabase are stored as
-    text in the 'attachments' column of the communications table.
-    """
-    communication = models.ForeignKey(
-        Communication,
-        on_delete=models.CASCADE,
-        related_name='email_attachments'
-    )
-    file = models.FileField(upload_to='email_attachments/%Y/%m/%d/')
-    filename = models.CharField(max_length=255)
-    content_type = models.CharField(max_length=100)
-    size = models.PositiveIntegerField()  # Size in bytes
-    created_at = models.DateTimeField(default=timezone.now)
-    
-    class Meta:
-        db_table = 'django_email_attachments'
-    
-    def __str__(self):
-        return self.filename
+# EmailAttachment model temporarily removed due to missing table
+# Attachments are stored as text in the 'attachments' column of the communications table
+# 
+# class EmailAttachment(models.Model):
+#     """Model for storing email attachments
+#     
+#     Note: This model is for Django admin interface only and doesn't correspond
+#     to a table in the Supabase database. Attachments in Supabase are stored as
+#     text in the 'attachments' column of the communications table.
+#     """
+#     communication = models.ForeignKey(
+#         Communication,
+#         on_delete=models.CASCADE,
+#         related_name='email_attachments'
+#     )
+#     file = models.FileField(upload_to='email_attachments/%Y/%m/%d/')
+#     filename = models.CharField(max_length=255)
+#     content_type = models.CharField(max_length=100)
+#     size = models.PositiveIntegerField()  # Size in bytes
+#     created_at = models.DateTimeField(default=timezone.now)
+#     
+#     class Meta:
+#         db_table = 'django_email_attachments'
+#     
+#     def __str__(self):
+#         return self.filename

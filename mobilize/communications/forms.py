@@ -3,7 +3,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Row, Column, Fieldset, HTML
 from crispy_forms.bootstrap import FormActions
 
-from .models import EmailTemplate, EmailSignature, Communication, EmailAttachment
+from .models import EmailTemplate, EmailSignature, Communication  # EmailAttachment temporarily removed
 
 
 class EmailTemplateForm(forms.ModelForm):
@@ -293,37 +293,38 @@ class CommunicationForm(forms.ModelForm):
         return instance
 
 
-class EmailAttachmentForm(forms.ModelForm):
-    """Form for uploading email attachments"""
-    
-    class Meta:
-        model = EmailAttachment
-        fields = ['file']
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        self.helper = FormHelper()
-        self.helper.form_method = 'post'
-        self.helper.form_class = 'form-inline'
-        
-        self.helper.layout = Layout(
-            'file',
-            Submit('upload', 'Upload', css_class='btn btn-primary ml-2')
-        )
-    
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        
-        # Set filename and content_type based on the uploaded file
-        if instance.file:
-            instance.filename = instance.file.name
-            instance.content_type = instance.file.content_type
-            instance.size = instance.file.size
-            
-        if commit:
-            instance.save()
-        return instance
+# EmailAttachmentForm temporarily disabled due to missing EmailAttachment table
+# class EmailAttachmentForm(forms.ModelForm):
+#     """Form for uploading email attachments"""
+#     
+#     class Meta:
+#         model = EmailAttachment
+#         fields = ['file']
+#     
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         
+#         self.helper = FormHelper()
+#         self.helper.form_method = 'post'
+#         self.helper.form_class = 'form-inline'
+#         
+#         self.helper.layout = Layout(
+#             'file',
+#             Submit('upload', 'Upload', css_class='btn btn-primary ml-2')
+#         )
+#     
+#     def save(self, commit=True):
+#         instance = super().save(commit=False)
+#         
+#         # Set filename and content_type based on the uploaded file
+#         if instance.file:
+#             instance.filename = instance.file.name
+#             instance.content_type = instance.file.content_type
+#             instance.size = instance.file.size
+#             
+#         if commit:
+#             instance.save()
+#         return instance
 
 
 class ComposeEmailForm(forms.Form):
