@@ -45,7 +45,7 @@ class DataAccessManager:
         if self.user_role == 'super_admin':
             if self.view_mode == 'my_only':
                 # Super admin viewing only their assigned people
-                return Person.objects.filter(contact__user=self.user)
+                return Person.objects.filter(contact__user_id=self.user.id)
             elif self.selected_office_id:
                 # Super admin viewing people from a specific office
                 return Person.objects.filter(contact__office_id=self.selected_office_id)
@@ -56,18 +56,18 @@ class DataAccessManager:
         elif self.user_role == 'office_admin':
             if self.view_mode == 'my_only':
                 # Office admin viewing only their assigned people
-                return Person.objects.filter(contact__user=self.user)
+                return Person.objects.filter(contact__user_id=self.user.id)
             else:
                 # Office admin viewing all people in their office(s)
                 user_offices = self._get_user_offices()
                 return Person.objects.filter(
                     Q(contact__office_id__in=user_offices) |
-                    Q(contact__user=self.user)
+                    Q(contact__user_id=self.user.id)
                 ).distinct()
                 
         else:  # standard_user or limited_user
             # Standard/limited users see only their assigned people
-            return Person.objects.filter(contact__user=self.user)
+            return Person.objects.filter(contact__user_id=self.user.id)
     
     def get_churches_queryset(self):
         """
@@ -161,7 +161,7 @@ class DataAccessManager:
         
         try:
             user_offices = UserOffice.objects.filter(
-                user_id=str(self.user.id)
+                user_id=self.user.id
             ).values_list('office_id', flat=True)
             return list(user_offices)
         except:
