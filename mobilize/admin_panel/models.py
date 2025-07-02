@@ -43,9 +43,19 @@ class Office(models.Model):
     @property
     def admin_count(self):
         """Get the number of admin users assigned to this office."""
-        return self.useroffice_set.filter(
-            user__role__in=['super_admin', 'office_admin']
-        ).count()
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        # Get user_ids from this office
+        user_ids = self.useroffice_set.values_list('user_id', flat=True)
+        # Convert to integers and count admin users
+        try:
+            int_user_ids = [int(uid) for uid in user_ids if uid]
+            return User.objects.filter(
+                id__in=int_user_ids,
+                role__in=['super_admin', 'office_admin']
+            ).count()
+        except (ValueError, TypeError):
+            return 0
 
 
 class UserOfficeManager(models.Manager):
@@ -86,28 +96,45 @@ class UserOffice(models.Model):
     
     Allows users to be assigned to multiple offices.
     Office permissions are derived from the user's overall role.
+    
+    Note: user_id is stored as VARCHAR in the database due to legacy reasons.
     """
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    office = models.ForeignKey(Office, on_delete=models.CASCADE)
+    user_id = models.CharField(max_length=50, db_column='user_id')  # Explicitly define as CharField to match database
+    office = models.ForeignKey(Office, on_delete=models.CASCADE, db_column='office_id')
     is_primary = models.BooleanField(default=False)
     permissions = models.JSONField(blank=True, null=True)
     assigned_at = models.DateTimeField(default=django_timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     
+    objects = UserOfficeManager()
+    
     class Meta:
         db_table = 'user_offices'
-        unique_together = ('user', 'office')
+        unique_together = ('user_id', 'office')
         indexes = [
-            models.Index(fields=['user']),
+            models.Index(fields=['user_id']),
             models.Index(fields=['office']),
         ]
     
+    @property
+    def user(self):
+        """Get the User object for this UserOffice."""
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        try:
+            return User.objects.get(id=int(self.user_id))
+        except (User.DoesNotExist, ValueError):
+            return None
+    
     def __str__(self):
-        return f"{self.user.username} - {self.office.name} ({self.user.get_role_display()})"
+        user = self.user
+        if user:
+            return f"{user.username} - {self.office.name}"
+        return f"User {self.user_id} - {self.office.name}"
     
     def save(self, *args, **kwargs):
         """Override save to ensure only one primary office per user."""
         if self.is_primary:
             # Set all other offices for this user as non-primary
-            UserOffice.objects.filter(user=self.user, is_primary=True).update(is_primary=False)
+            UserOffice.objects.filter(user_id=self.user_id, is_primary=True).update(is_primary=False)
         super().save(*args, **kwargs)
