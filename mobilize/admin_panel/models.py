@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone as django_timezone
 from django.conf import settings
+from django.db.models import Q
 
 
 class Office(models.Model):
@@ -47,25 +48,65 @@ class Office(models.Model):
         ).count()
 
 
+class UserOfficeManager(models.Manager):
+    """
+    Custom manager for UserOffice that handles user_id type conversion.
+    
+    This is needed because the user_id column in the database is VARCHAR,
+    but Django's User model has an integer primary key.
+    """
+    def get_queryset(self):
+        """Override to handle string conversion when needed."""
+        return super().get_queryset()
+    
+    def filter(self, **kwargs):
+        """Override filter to convert user_id to string if needed."""
+        if 'user_id' in kwargs and kwargs['user_id'] is not None:
+            kwargs['user_id'] = str(kwargs['user_id'])
+        if 'user' in kwargs and hasattr(kwargs['user'], 'id'):
+            # Convert the user object to user_id string
+            kwargs['user_id'] = str(kwargs['user'].id)
+            del kwargs['user']
+        return super().filter(**kwargs)
+    
+    def get(self, **kwargs):
+        """Override get to convert user_id to string if needed."""
+        if 'user_id' in kwargs and kwargs['user_id'] is not None:
+            kwargs['user_id'] = str(kwargs['user_id'])
+        if 'user' in kwargs and hasattr(kwargs['user'], 'id'):
+            # Convert the user object to user_id string
+            kwargs['user_id'] = str(kwargs['user'].id)
+            del kwargs['user']
+        return super().get(**kwargs)
+
+
 class UserOffice(models.Model):
     """
     Junction model for User-Office relationship.
     
     Allows users to be assigned to multiple offices.
     Office permissions are derived from the user's overall role.
+    
+    Note: The user_id field in the database is VARCHAR, not integer,
+    due to a data migration issue. We handle the type conversion 
+    automatically in queries.
     """
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    # Use CharField for user_id to match database type
+    user_id = models.CharField(max_length=128, db_column='user_id')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, db_column='user_id_fk', null=True, blank=True)
     office = models.ForeignKey(Office, on_delete=models.CASCADE)
     is_primary = models.BooleanField(default=False)
     permissions = models.JSONField(blank=True, null=True)
     assigned_at = models.DateTimeField(default=django_timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     
+    # Use custom manager
+    objects = UserOfficeManager()
+    
     class Meta:
         db_table = 'user_offices'
-        unique_together = ('user', 'office')
         indexes = [
-            models.Index(fields=['user']),
+            models.Index(fields=['user_id']),
             models.Index(fields=['office']),
         ]
     

@@ -160,8 +160,9 @@ class DataAccessManager:
         from mobilize.admin_panel.models import UserOffice
         
         try:
+            # Cast user.id to string to match VARCHAR column type in database
             user_offices = UserOffice.objects.filter(
-                user_id=self.user.id
+                user_id=str(self.user.id)
             ).values_list('office_id', flat=True)
             return list(user_offices)
         except:

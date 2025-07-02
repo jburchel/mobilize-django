@@ -10,9 +10,19 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Since we can't alter the column type due to RLS policies, we'll work with the existing VARCHAR type
+        # and ensure the application code handles the conversion properly
         migrations.RunSQL(
-            # Fix the user_id column type in user_offices table
-            sql="ALTER TABLE user_offices ALTER COLUMN user_id TYPE integer USING user_id::integer;",
-            reverse_sql="ALTER TABLE user_offices ALTER COLUMN user_id TYPE varchar(255);"
+            sql="""
+            -- Ensure user_offices table has proper indexes for VARCHAR user_id
+            CREATE INDEX IF NOT EXISTS user_offices_user_id_varchar_idx ON user_offices(user_id);
+            
+            -- Add a comment to document the column type
+            COMMENT ON COLUMN user_offices.user_id IS 'VARCHAR column storing user IDs as strings for RLS compatibility';
+            """,
+            reverse_sql="""
+            -- Remove the index if we reverse
+            DROP INDEX IF EXISTS user_offices_user_id_varchar_idx;
+            """
         ),
     ]
