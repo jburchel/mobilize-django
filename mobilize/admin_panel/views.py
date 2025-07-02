@@ -43,9 +43,14 @@ class OfficeDetailView(LoginRequiredMixin, DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['users'] = User.objects.filter(
-            useroffice__office=self.object
-        )
+        # Get users for this office by querying UserOffice and then getting User objects
+        user_ids = UserOffice.objects.filter(office=self.object).values_list('user_id', flat=True)
+        # Convert string user_ids to integers and get User objects
+        try:
+            int_user_ids = [int(uid) for uid in user_ids if uid]
+            context['users'] = User.objects.filter(id__in=int_user_ids)
+        except (ValueError, TypeError):
+            context['users'] = User.objects.none()
         return context
 
 
