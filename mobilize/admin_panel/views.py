@@ -87,9 +87,27 @@ class OfficeUserListView(LoginRequiredMixin, ListView):
         if not (self.request.user.role == 'super_admin' or 
                 (self.request.user.role == 'office_admin' and 
                  UserOffice.objects.filter(user_id=str(self.request.user.id), office=self.office).exists())):
-            return UserOffice.objects.none()
+            return []
         
-        return UserOffice.objects.filter(office=self.office)
+        # Get UserOffice objects and manually load User objects
+        user_offices = UserOffice.objects.filter(office=self.office)
+        
+        # Load User objects for each UserOffice
+        office_users_with_users = []
+        for user_office in user_offices:
+            try:
+                # Convert VARCHAR user_id to int to get User object
+                user_id_int = int(user_office.user_id) if user_office.user_id else None
+                if user_id_int:
+                    user = User.objects.get(id=user_id_int)
+                    # Attach user to user_office object for template access
+                    user_office.user = user
+                    office_users_with_users.append(user_office)
+            except (ValueError, User.DoesNotExist):
+                # Skip invalid user_ids or missing users
+                continue
+        
+        return office_users_with_users
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
