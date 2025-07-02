@@ -81,10 +81,10 @@ class OfficeUserListView(LoginRequiredMixin, ListView):
         # Check if user has permission to view this office's users
         if not (self.request.user.role == 'super_admin' or 
                 (self.request.user.role == 'office_admin' and 
-                 UserOffice.objects.filter(user=self.request.user, office=self.office).exists())):
+                 UserOffice.objects.filter(user_id=str(self.request.user.id), office=self.office).exists())):
             return UserOffice.objects.none()
         
-        return UserOffice.objects.filter(office=self.office).select_related('user')
+        return UserOffice.objects.filter(office=self.office)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -99,7 +99,7 @@ class AddUserToOfficeView(LoginRequiredMixin, View):
         # Check if user has permission to add users to this office
         if not (request.user.role == 'super_admin' or 
                 (request.user.role == 'office_admin' and 
-                 UserOffice.objects.filter(user=request.user, office=office).exists())):
+                 UserOffice.objects.filter(user_id=str(request.user.id), office=office).exists())):
             messages.error(request, "You don't have permission to add users to this office.")
             return redirect('admin_panel:office_detail', pk=office_id)
         
@@ -118,7 +118,7 @@ class AddUserToOfficeView(LoginRequiredMixin, View):
         # Check if user has permission to add users to this office
         if not (request.user.role == 'super_admin' or 
                 (request.user.role == 'office_admin' and 
-                 UserOffice.objects.filter(user=request.user, office=office).exists())):
+                 UserOffice.objects.filter(user_id=str(request.user.id), office=office).exists())):
             messages.error(request, "You don't have permission to add users to this office.")
             return redirect('admin_panel:office_detail', pk=office_id)
         
@@ -133,7 +133,7 @@ class AddUserToOfficeView(LoginRequiredMixin, View):
         
         # Create the UserOffice relationship
         UserOffice.objects.create(
-            user=user,
+            user_id=str(user.id),
             office=office,
             is_primary=is_primary,
             assigned_at=timezone.now()
@@ -151,13 +151,13 @@ class RemoveUserFromOfficeView(LoginRequiredMixin, View):
         # Check if user has permission to remove users from this office
         if not (request.user.role == 'super_admin' or 
                 (request.user.role == 'office_admin' and 
-                 UserOffice.objects.filter(user=request.user, office=office).exists() and 
+                 UserOffice.objects.filter(user_id=str(request.user.id), office=office).exists() and 
                  user_id != request.user.id)):  # Can't remove yourself
             messages.error(request, "You don't have permission to remove this user.")
             return redirect('admin_panel:office_users', office_id=office_id)
         
         # Delete the UserOffice relationship
-        user_office = get_object_or_404(UserOffice, user=user, office=office)
+        user_office = get_object_or_404(UserOffice, user_id=str(user_id), office=office)
         user_office.delete()
         
         messages.success(request, f"{user.get_full_name()} has been removed from {office.name}.")
@@ -172,7 +172,7 @@ class UpdateUserOfficePrimaryView(LoginRequiredMixin, View):
         # Check if user has permission to update office assignments
         if not (request.user.role == 'super_admin' or 
                 (request.user.role == 'office_admin' and 
-                 UserOffice.objects.filter(user=request.user, office=office).exists() and 
+                 UserOffice.objects.filter(user_id=str(request.user.id), office=office).exists() and 
                  user_id != request.user.id)):  # Can't change your own primary office
             messages.error(request, "You don't have permission to update this user's office assignment.")
             return redirect('admin_panel:office_users', office_id=office_id)
@@ -180,11 +180,11 @@ class UpdateUserOfficePrimaryView(LoginRequiredMixin, View):
         is_primary = request.POST.get('is_primary') == 'on'
         
         # Update the UserOffice relationship
-        user_office = get_object_or_404(UserOffice, user=user, office=office)
+        user_office = get_object_or_404(UserOffice, user_id=str(user_id), office=office)
         
         if is_primary:
             # Set all other offices for this user as non-primary
-            UserOffice.objects.filter(user=user, is_primary=True).update(is_primary=False)
+            UserOffice.objects.filter(user_id=str(user_id), is_primary=True).update(is_primary=False)
         
         user_office.is_primary = is_primary
         user_office.save()
