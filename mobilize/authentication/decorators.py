@@ -129,8 +129,12 @@ def office_data_filter(queryset, user, office_field='office'):
     if user.role == 'super_admin':
         return queryset
     
-    # Get user's office assignments
-    user_offices = user.useroffice_set.values_list('office_id', flat=True)
+    # Get user's office assignments (cast user_id to string to match database type)
+    from mobilize.admin_panel.models import UserOffice
+    user_offices = UserOffice.objects.extra(
+        where=["user_id = %s"],
+        params=[str(user.id)]
+    ).values_list('office_id', flat=True)
     
     if not user_offices:
         # User not assigned to any office - return empty queryset
@@ -162,8 +166,12 @@ def office_object_permission_required(model_class, lookup_field='office'):
             if request.user.role == 'super_admin':
                 return view_func(request, *args, **kwargs)
             
-            # Get user's office assignments
-            user_offices = request.user.useroffice_set.values_list('office_id', flat=True)
+            # Get user's office assignments (cast user_id to string to match database type)
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = UserOffice.objects.extra(
+                where=["user_id = %s"],
+                params=[str(request.user.id)]
+            ).values_list('office_id', flat=True)
             
             if not user_offices:
                 raise PermissionDenied("User not assigned to any office")
@@ -259,8 +267,12 @@ def ensure_user_office_assignment(view_func):
         if request.user.role == 'super_admin':
             return view_func(request, *args, **kwargs)
         
-        # Check if user has office assignments
-        if not request.user.useroffice_set.exists():
+        # Check if user has office assignments (cast user_id to string to match database type)
+        from mobilize.admin_panel.models import UserOffice
+        if not UserOffice.objects.extra(
+            where=["user_id = %s"],
+            params=[str(request.user.id)]
+        ).exists():
             raise PermissionDenied("Access denied. User not assigned to any office. Please contact an administrator.")
         
         return view_func(request, *args, **kwargs)

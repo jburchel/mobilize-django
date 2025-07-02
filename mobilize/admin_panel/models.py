@@ -86,27 +86,19 @@ class UserOffice(models.Model):
     
     Allows users to be assigned to multiple offices.
     Office permissions are derived from the user's overall role.
-    
-    Note: The user_id field in the database is VARCHAR, not integer,
-    due to a data migration issue. We handle the type conversion 
-    automatically in queries.
     """
-    # Use CharField for user_id to match database type
-    user_id = models.CharField(max_length=128, db_column='user_id')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, db_column='user_id_fk', null=True, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     office = models.ForeignKey(Office, on_delete=models.CASCADE)
     is_primary = models.BooleanField(default=False)
     permissions = models.JSONField(blank=True, null=True)
     assigned_at = models.DateTimeField(default=django_timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     
-    # Use custom manager
-    objects = UserOfficeManager()
-    
     class Meta:
         db_table = 'user_offices'
+        unique_together = ('user', 'office')
         indexes = [
-            models.Index(fields=['user_id']),
+            models.Index(fields=['user']),
             models.Index(fields=['office']),
         ]
     

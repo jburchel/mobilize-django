@@ -161,8 +161,10 @@ class DataAccessManager:
         
         try:
             # Cast user.id to string to match VARCHAR column type in database
-            user_offices = UserOffice.objects.filter(
-                user_id=str(self.user.id)
+            # Use extra() to force database-level string casting
+            user_offices = UserOffice.objects.extra(
+                where=["user_id = %s"],
+                params=[str(self.user.id)]
             ).values_list('office_id', flat=True)
             return list(user_offices)
         except:
