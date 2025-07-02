@@ -78,9 +78,13 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-{% if user_office.role == 'office_admin' %}danger{% elif user_office.role == 'standard_user' %}primary{% else %}secondary{% endif %}">
-                                            {{ user_office.get_role_display }}
+                                        {% if user_office.user %}
+                                        <span class="badge bg-{% if user_office.user.role == 'office_admin' %}danger{% elif user_office.user.role == 'standard_user' %}primary{% else %}secondary{% endif %}">
+                                            {{ user_office.user.get_role_display|default:user_office.user.role|title }}
                                         </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Unknown</span>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         {% if user_office.is_primary %}
@@ -110,7 +114,7 @@
                                             <ul class="dropdown-menu dropdown-menu-end">
                                                 {% if user.role == 'super_admin' or user.role == 'office_admin' and user_office.user != user %}
                                                 <li>
-                                                    <button class="dropdown-item" onclick="updateUserRole({{ user_office.user.pk }}, '{{ user_office.role }}', {{ user_office.is_primary|yesno:'true,false' }})">
+                                                    <button class="dropdown-item" onclick="updateUserRole({{ user_office.user.pk }}, '{{ user_office.user.role|default:'standard_user' }}', {{ user_office.is_primary|yesno:'true,false' }})">
                                                         <i class="fas fa-edit me-2"></i>Update Role
                                                     </button>
                                                 </li>
@@ -118,9 +122,8 @@
                                                 
                                                 {% if not user_office.is_primary and user.role == 'super_admin' or user.role == 'office_admin' and user_office.user != user %}
                                                 <li>
-                                                    <form method="post" action="{% url 'admin_panel:update_user_office_role' office.pk user_office.user.pk %}" style="display: inline;">
+                                                    <form method="post" action="{% url 'admin_panel:update_user_office_primary' office.pk user_office.user.pk %}" style="display: inline;">
                                                         {% csrf_token %}
-                                                        <input type="hidden" name="role" value="{{ user_office.role }}">
                                                         <input type="hidden" name="is_primary" value="on">
                                                         <button type="submit" class="dropdown-item">
                                                             <i class="fas fa-star me-2"></i>Set as Primary
@@ -212,7 +215,7 @@ function updateUserRole(userId, currentRole, isPrimary) {
     const isPrimaryCheck = document.getElementById('isPrimaryCheck');
     
     // Set form action
-    form.action = `{% url 'admin_panel:update_user_office_role' office.pk 0 %}`.replace('0', userId);
+    form.action = `{% url 'admin_panel:update_user_office_primary' office.pk 0 %}`.replace('0', userId);
     
     // Set current values
     roleSelect.value = currentRole;

@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import debug_views
 
 app_name = 'core'
 
@@ -13,4 +14,6 @@ urlpatterns = [
     path('customize-dashboard/', views.customize_dashboard, name='customize_dashboard'),
     path('db-diagnostic/', views.db_diagnostic, name='db_diagnostic'),
     path('permissions-debug/', views.permissions_debug, name='permissions_debug'),
+    path('debug-dashboard-toggle/', debug_views.debug_dashboard_toggle, name='debug_dashboard_toggle'),
+    path('debug-dashboard-minimal/', debug_views.debug_dashboard_minimal, name='debug_dashboard_minimal'),
 ]
