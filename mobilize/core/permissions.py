@@ -42,10 +42,13 @@ class DataAccessManager:
         """
         from mobilize.contacts.models import Person
         
+        # Get user ID safely to handle custom authentication middleware
+        user_id = getattr(self.user, 'id', None)
+        
         if self.user_role == 'super_admin':
             if self.view_mode == 'my_only':
                 # Super admin viewing only their assigned people
-                return Person.objects.filter(contact__user_id=self.user.id)
+                return Person.objects.filter(contact__user_id=user_id)
             elif self.selected_office_id:
                 # Super admin viewing people from a specific office
                 return Person.objects.filter(contact__office_id=self.selected_office_id)
@@ -56,18 +59,18 @@ class DataAccessManager:
         elif self.user_role == 'office_admin':
             if self.view_mode == 'my_only':
                 # Office admin viewing only their assigned people
-                return Person.objects.filter(contact__user_id=self.user.id)
+                return Person.objects.filter(contact__user_id=user_id)
             else:
                 # Office admin viewing all people in their office(s)
                 user_offices = self._get_user_offices()
                 return Person.objects.filter(
                     Q(contact__office_id__in=user_offices) |
-                    Q(contact__user_id=self.user.id)
+                    Q(contact__user_id=user_id)
                 ).distinct()
                 
         else:  # standard_user or limited_user
             # Standard/limited users see only their assigned people
-            return Person.objects.filter(contact__user_id=self.user.id)
+            return Person.objects.filter(contact__user_id=user_id)
     
     def get_churches_queryset(self):
         """
@@ -103,10 +106,13 @@ class DataAccessManager:
         """
         from mobilize.tasks.models import Task
         
+        # Get user ID safely to handle custom authentication middleware
+        user_id = getattr(self.user, 'id', None)
+        
         if self.user_role == 'super_admin':
             if self.view_mode == 'my_only':
                 # Super admin viewing only their own tasks
-                return Task.objects.filter(Q(assigned_to=self.user) | Q(created_by=self.user))
+                return Task.objects.filter(Q(assigned_to_id=user_id) | Q(created_by_id=user_id))
             elif self.selected_office_id:
                 # Super admin viewing tasks related to a specific office
                 return Task.objects.filter(
@@ -120,7 +126,7 @@ class DataAccessManager:
         else:
             # All other users only see their own tasks (assigned to them or created by them)
             return Task.objects.filter(
-                Q(assigned_to=self.user) | Q(created_by=self.user)
+                Q(assigned_to_id=user_id) | Q(created_by_id=user_id)
             )
     
     def get_communications_queryset(self):
@@ -132,10 +138,13 @@ class DataAccessManager:
         """
         from mobilize.communications.models import Communication
         
+        # Get user ID safely to handle custom authentication middleware
+        user_id = getattr(self.user, 'id', None)
+        
         if self.user_role == 'super_admin':
             if self.view_mode == 'my_only':
                 # Super admin viewing only their own communications
-                return Communication.objects.filter(user_id=str(self.user.id))
+                return Communication.objects.filter(user_id=str(user_id))
             elif self.selected_office_id:
                 # Super admin viewing communications related to a specific office
                 return Communication.objects.filter(
@@ -148,7 +157,7 @@ class DataAccessManager:
                 return Communication.objects.all()
         else:
             # All other users only see their own communications
-            return Communication.objects.filter(user_id=str(self.user.id))
+            return Communication.objects.filter(user_id=str(user_id))
     
     def _get_user_offices(self):
         """
@@ -159,12 +168,15 @@ class DataAccessManager:
         """
         from mobilize.admin_panel.models import UserOffice
         
+        # Get user ID safely to handle custom authentication middleware
+        user_id = getattr(self.user, 'id', None)
+        
         try:
             # Cast user.id to string to match VARCHAR column type in database
             # Use extra() to force database-level string casting
             user_offices = UserOffice.objects.extra(
                 where=["user_id = %s"],
-                params=[str(self.user.id)]
+                params=[str(user_id)]
             ).values_list('office_id', flat=True)
             return list(user_offices)
         except:
