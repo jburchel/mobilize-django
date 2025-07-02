@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('admin_panel', '0003_initial_user_office_data'),
+        ('admin_panel', '0003_remove_useroffice_role'),
     ]
 
     operations = [
