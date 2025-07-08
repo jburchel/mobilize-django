@@ -182,3 +182,155 @@ class ContactSyncPreferenceForm(forms.Form):
                 Submit('skip', 'Skip for Now', css_class='btn btn-secondary'),
             )
         )
+
+
+class CreateUserForm(forms.ModelForm):
+    """Form for creating new users manually (admin/office_admin only)"""
+    
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        help_text='Password must be at least 8 characters long'
+    )
+    password_confirm = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        label='Confirm Password',
+        help_text='Enter the same password as above, for verification'
+    )
+    
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email', 'username', 'role']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter first name'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter last name'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Enter email address'}),
+            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter username'}),
+            'role': forms.Select(attrs={'class': 'form-select'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.created_by = kwargs.pop('created_by', None)
+        super().__init__(*args, **kwargs)
+        
+        # Set email validation to require @crossoverglobal.net
+        self.fields['email'].help_text = 'Must be a @crossoverglobal.net email address'
+        
+        # Filter role choices based on who is creating the user
+        if self.created_by and self.created_by.role == 'office_admin':
+            # Office admins can only create standard_user and limited_user
+            self.fields['role'].choices = [
+                ('standard_user', 'Standard User'),
+                ('limited_user', 'Limited User'),
+            ]
+        elif self.created_by and self.created_by.role == 'super_admin':
+            # Super admins can create any role
+            self.fields['role'].choices = [
+                ('standard_user', 'Standard User'),
+                ('office_admin', 'Office Admin'),
+                ('limited_user', 'Limited User'),
+            ]
+        else:
+            # Default to standard user only
+            self.fields['role'].choices = [
+                ('standard_user', 'Standard User'),
+            ]
+        
+        # Set up crispy forms
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.form_class = 'create-user-form'
+        
+        self.helper.layout = Layout(
+            Fieldset(
+                'User Information',
+                Row(
+                    Column('first_name', css_class='col-md-6'),
+                    Column('last_name', css_class='col-md-6'),
+                ),
+                Row(
+                    Column('email', css_class='col-md-6'),
+                    Column('username', css_class='col-md-6'),
+                ),
+                'role',
+            ),
+            Fieldset(
+                'Account Security',
+                Row(
+                    Column('password', css_class='col-md-6'),
+                    Column('password_confirm', css_class='col-md-6'),
+                ),
+                HTML('''
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Password Requirements:</h6>
+                        <ul class="mb-0">
+                            <li>At least 8 characters long</li>
+                            <li>Recommend using a mix of letters, numbers, and symbols</li>
+                            <li>User will be prompted to change password on first login</li>
+                        </ul>
+                    </div>
+                '''),
+            ),
+            FormActions(
+                Submit('create_user', 'Create User', css_class='btn btn-primary'),
+                Submit('create_and_assign', 'Create & Assign to Office', css_class='btn btn-success'),
+                HTML('<button type="button" class="btn btn-secondary" onclick="history.back()">Cancel</button>'),
+            )
+        )
+    
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if email and not email.endswith('@crossoverglobal.net'):
+            raise forms.ValidationError(
+                'Email must be a @crossoverglobal.net address'
+            )
+        
+        # Check if email already exists
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError(
+                'A user with this email already exists'
+            )
+        
+        return email
+    
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if User.objects.filter(username=username).exists():
+            raise forms.ValidationError(
+                'A user with this username already exists'
+            )
+        return username
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get('password')
+        password_confirm = cleaned_data.get('password_confirm')
+        
+        if password and password_confirm:
+            if password != password_confirm:
+                raise forms.ValidationError(
+                    'Passwords do not match'
+                )
+        
+        if password and len(password) < 8:
+            raise forms.ValidationError(
+                'Password must be at least 8 characters long'
+            )
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        
+        # Set password
+        user.set_password(self.cleaned_data['password'])
+        
+        # Set is_active to True
+        user.is_active = True
+        
+        if commit:
+            user.save()
+            
+            # Create or get the Person record for this user
+            user.get_or_create_person()
+        
+        return user

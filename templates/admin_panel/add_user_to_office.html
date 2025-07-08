@@ -1,10 +1,30 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load crispy_forms_tags %}
 
 {% block title %}Add User to {{ office.name }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'core/css/dashboard.css' %}">
+<style>
+    .nav-tabs .nav-link {
+        color: #495057;
+        border: 1px solid transparent;
+        border-top-left-radius: 0.375rem;
+        border-top-right-radius: 0.375rem;
+    }
+    .nav-tabs .nav-link.active {
+        color: #0d6efd;
+        background-color: #fff;
+        border-color: #dee2e6 #dee2e6 #fff;
+    }
+    .tab-content {
+        border: 1px solid #dee2e6;
+        border-top: none;
+        border-radius: 0 0 0.375rem 0.375rem;
+        padding: 1.5rem;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -32,68 +52,83 @@
                     <h5 class="card-title mb-0">User Assignment</h5>
                 </div>
                 <div class="card-body">
-                    {% if available_users %}
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        <div class="mb-4">
-                            <label for="user_id" class="form-label">Select User <span class="text-danger">*</span></label>
-                            <select class="form-select" id="user_id" name="user_id" required>
-                                <option value="">Choose a user...</option>
-                                {% for user in available_users %}
-                                <option value="{{ user.pk }}">
-                                    {{ user.get_full_name|default:user.username }} ({{ user.email }})
-                                </option>
-                                {% endfor %}
-                            </select>
-                            <div class="form-text">Select a user to assign to this office</div>
-                        </div>
+                    <!-- Navigation tabs -->
+                    <ul class="nav nav-tabs" id="userTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="existing-user-tab" data-bs-toggle="tab" data-bs-target="#existing-user" type="button" role="tab" aria-controls="existing-user" aria-selected="true">
+                                <i class="fas fa-user-check me-2"></i>Assign Existing User
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="new-user-tab" data-bs-toggle="tab" data-bs-target="#new-user" type="button" role="tab" aria-controls="new-user" aria-selected="false">
+                                <i class="fas fa-user-plus me-2"></i>Create New User
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <!-- Tab content -->
+                    <div class="tab-content" id="userTabsContent">
+                        <!-- Existing User Tab -->
+                        <div class="tab-pane fade show active" id="existing-user" role="tabpanel" aria-labelledby="existing-user-tab">
+                            {% if available_users %}
+                            <form method="post">
+                                {% csrf_token %}
+                                
+                                <div class="mb-4">
+                                    <label for="user_id" class="form-label">Select User <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="user_id" name="user_id" required>
+                                        <option value="">Choose a user...</option>
+                                        {% for user in available_users %}
+                                        <option value="{{ user.pk }}">
+                                            {{ user.get_full_name|default:user.username }} ({{ user.email }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Select a user to assign to this office</div>
+                                </div>
 
-                        <div class="mb-4">
-                            <label for="role" class="form-label">Role <span class="text-danger">*</span></label>
-                            <select class="form-select" id="role" name="role" required>
-                                <option value="standard_user">Standard User</option>
-                                <option value="office_admin">Office Admin</option>
-                                <option value="limited_user">Limited User</option>
-                            </select>
-                            <div class="form-text">
-                                <strong>Standard User:</strong> Can manage their own contacts and view office data<br>
-                                <strong>Office Admin:</strong> Can manage all office data and users<br>
-                                <strong>Limited User:</strong> Read-only access to their assigned contacts
-                            </div>
-                        </div>
+                                <div class="mb-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="is_primary" name="is_primary">
+                                        <label class="form-check-label" for="is_primary">
+                                            Set as primary office for this user
+                                        </label>
+                                        <div class="form-text">
+                                            If checked, this will become the user's main office and any previous primary office will be updated.
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <div class="mb-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_primary" name="is_primary">
-                                <label class="form-check-label" for="is_primary">
-                                    Set as primary office for this user
-                                </label>
-                                <div class="form-text">
-                                    If checked, this will become the user's main office and any previous primary office will be updated.
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-plus me-2"></i>Add User to Office
+                                    </button>
+                                    <a href="{% url 'admin_panel:office_users' office.pk %}" class="btn btn-secondary">
+                                        <i class="fas fa-times me-2"></i>Cancel
+                                    </a>
+                                </div>
+                            </form>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                <h4 class="text-muted">No Available Users</h4>
+                                <p class="text-muted">All users are already assigned to this office.</p>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-lightbulb me-2"></i>
+                                    <strong>Tip:</strong> You can create a new user using the "Create New User" tab above.
                                 </div>
                             </div>
+                            {% endif %}
                         </div>
-
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-plus me-2"></i>Add User to Office
-                            </button>
-                            <a href="{% url 'admin_panel:office_users' office.pk %}" class="btn btn-secondary">
-                                <i class="fas fa-times me-2"></i>Cancel
-                            </a>
+                        
+                        <!-- New User Tab -->
+                        <div class="tab-pane fade" id="new-user" role="tabpanel" aria-labelledby="new-user-tab">
+                            <form method="post">
+                                {% csrf_token %}
+                                {% crispy create_user_form %}
+                            </form>
                         </div>
-                    </form>
-                    {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                        <h4 class="text-muted">No Available Users</h4>
-                        <p class="text-muted">All users are already assigned to this office.</p>
-                        <a href="{% url 'admin_panel:office_users' office.pk %}" class="btn btn-primary">
-                            <i class="fas fa-arrow-left me-2"></i>Back to Users
-                        </a>
                     </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
@@ -160,16 +195,48 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Add some interactivity to role selection
+    // Handle tab switching
+    const triggerTabList = document.querySelectorAll('#userTabs button[data-bs-toggle="tab"]');
+    triggerTabList.forEach(triggerEl => {
+        const tabTrigger = new bootstrap.Tab(triggerEl);
+        triggerEl.addEventListener('click', event => {
+            event.preventDefault();
+            tabTrigger.show();
+        });
+    });
+    
+    // Handle form errors - if create_user_form has errors, show the new user tab
+    {% if create_user_form.errors %}
+    const newUserTab = new bootstrap.Tab(document.getElementById('new-user-tab'));
+    newUserTab.show();
+    {% endif %}
+    
+    // Auto-generate username from email in create user form
+    const emailField = document.getElementById('id_email');
+    const usernameField = document.getElementById('id_username');
+    
+    if (emailField && usernameField) {
+        emailField.addEventListener('input', function() {
+            const email = this.value;
+            if (email.includes('@')) {
+                const username = email.split('@')[0];
+                usernameField.value = username;
+            }
+        });
+    }
+    
+    // Add interactivity to role selection in existing user form
     const roleSelect = document.getElementById('role');
     const isPrimaryCheck = document.getElementById('is_primary');
     
-    roleSelect.addEventListener('change', function() {
-        // Suggest making office admin the primary office
-        if (this.value === 'office_admin' && !isPrimaryCheck.checked) {
-            isPrimaryCheck.checked = true;
-        }
-    });
+    if (roleSelect && isPrimaryCheck) {
+        roleSelect.addEventListener('change', function() {
+            // Suggest making office admin the primary office
+            if (this.value === 'office_admin' && !isPrimaryCheck.checked) {
+                isPrimaryCheck.checked = true;
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

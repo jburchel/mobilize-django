@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from mobilize.authentication.decorators import super_admin_required, office_admin_required
 from mobilize.authentication.models import User
+from mobilize.authentication.forms import CreateUserForm
 from .models import Office, UserOffice
 from .forms import OfficeForm
 
@@ -59,6 +60,26 @@ class OfficeCreateView(SuperAdminRequiredMixin, CreateView):
     form_class = OfficeForm
     template_name = 'admin_panel/office_form.html'
     success_url = reverse_lazy('admin_panel:office_list')
+    
+    def form_valid(self, form):
+        # Save the office first
+        response = super().form_valid(form)
+        
+        # Automatically assign the super admin who created the office
+        if self.request.user.role == 'super_admin':
+            UserOffice.objects.create(
+                user_id=str(self.request.user.id),
+                office=self.object,
+                is_primary=False,  # Don't automatically make it primary
+                assigned_at=timezone.now()
+            )
+            
+            messages.success(
+                self.request, 
+                f"Office '{self.object.name}' has been created and you have been automatically assigned to it."
+            )
+        
+        return response
 
 
 class OfficeUpdateView(SuperAdminRequiredMixin, UpdateView):
@@ -146,9 +167,13 @@ class AddUserToOfficeView(LoginRequiredMixin, View):
         
         available_users = User.objects.exclude(id__in=valid_existing_user_ids)
         
+        # Create user form for new user creation
+        create_user_form = CreateUserForm(created_by=request.user)
+        
         return render(request, 'admin_panel/add_user_to_office.html', {
             'office': office,
             'available_users': available_users,
+            'create_user_form': create_user_form,
         })
     
     def post(self, request, office_id):
@@ -161,6 +186,11 @@ class AddUserToOfficeView(LoginRequiredMixin, View):
             messages.error(request, "You don't have permission to add users to this office.")
             return redirect('admin_panel:office_detail', pk=office_id)
         
+        # Check if this is a "create new user" request
+        if 'create_user' in request.POST or 'create_and_assign' in request.POST:
+            return self._handle_create_user(request, office)
+        
+        # Handle existing user assignment
         user_id = request.POST.get('user_id')
         is_primary = request.POST.get('is_primary') == 'on'
         
@@ -179,7 +209,58 @@ class AddUserToOfficeView(LoginRequiredMixin, View):
         )
         
         messages.success(request, f"{user.get_full_name()} has been added to {office.name}.")
-        return redirect('admin_panel:office_users', office_id=office_id)
+        return redirect('admin_panel:office_users', office_id=office.id)
+    
+    def _handle_create_user(self, request, office):
+        """Handle creation of new user and optional assignment to office."""
+        create_user_form = CreateUserForm(request.POST, created_by=request.user)
+        
+        if create_user_form.is_valid():
+            # Create the user
+            user = create_user_form.save()
+            
+            # Determine if we should assign to office
+            assign_to_office = 'create_and_assign' in request.POST
+            is_primary = request.POST.get('is_primary') == 'on'
+            
+            if assign_to_office:
+                # Create the UserOffice relationship
+                UserOffice.objects.create(
+                    user_id=str(user.id),
+                    office=office,
+                    is_primary=is_primary,
+                    assigned_at=timezone.now()
+                )
+                
+                messages.success(
+                    request, 
+                    f"User {user.get_full_name()} has been created and assigned to {office.name}."
+                )
+                return redirect('admin_panel:office_users', office_id=office.id)
+            else:
+                messages.success(
+                    request, 
+                    f"User {user.get_full_name()} has been created successfully."
+                )
+                return redirect('admin_panel:office_users', office_id=office.id)
+        else:
+            # Form has errors, re-render with form errors
+            # Get available users for the existing user dropdown
+            existing_users = UserOffice.objects.filter(office=office).values_list('user_id', flat=True)
+            valid_existing_user_ids = []
+            for user_id in existing_users:
+                try:
+                    valid_existing_user_ids.append(int(user_id))
+                except (ValueError, TypeError):
+                    continue
+            
+            available_users = User.objects.exclude(id__in=valid_existing_user_ids)
+            
+            return render(request, 'admin_panel/add_user_to_office.html', {
+                'office': office,
+                'available_users': available_users,
+                'create_user_form': create_user_form,
+            })
 
 
 class RemoveUserFromOfficeView(LoginRequiredMixin, View):
