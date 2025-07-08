@@ -13,6 +13,7 @@ from .models import Church, ChurchMembership
 from .forms import ChurchForm, ImportChurchesForm
 from mobilize.pipeline.models import MAIN_CHURCH_PIPELINE_STAGES
 from mobilize.authentication.decorators import office_data_filter
+from mobilize.core.permissions import get_data_access_manager
 
 # ChurchContact and ChurchInteraction models have been removed as they don't exist in Supabase
 
@@ -21,19 +22,19 @@ from mobilize.authentication.decorators import office_data_filter
 def church_list(request):
     """
     Display a list of churches with filtering and pagination.
+    Uses DataAccessManager for view mode persistence.
     """
+    # Get data access manager for view mode handling
+    access_manager = get_data_access_manager(request)
+    
     # Get query parameters for filtering and sorting
     query = request.GET.get('q', '')
     pipeline_stage = request.GET.get('pipeline_stage', '')
     priority = request.GET.get('priority', '')
     sort_by = request.GET.get('sort', 'name')  # Default sort by name
     
-    # Start with all churches - use select_related to optimize queries
-    churches = Church.objects.select_related('contact', 'contact__office').all()
-    
-    # Apply office-level filtering only for non-super admins
-    if request.user.role != 'super_admin':
-        churches = office_data_filter(churches, request.user, 'contact__office')
+    # Use DataAccessManager for proper filtering
+    churches = access_manager.get_churches_queryset().select_related('contact', 'contact__office')
     
     # Apply filters if provided
     if query:
@@ -121,6 +122,9 @@ def church_list(request):
     # Get offices for bulk assignment dropdown
     offices = Office.objects.all().order_by('name')
     
+    # Get all offices for office selector (super admin only)
+    all_offices = Office.objects.all().order_by('name')
+    
     # Sort options for the template
     sort_options = [
         ('name', 'Name A-Z'),
@@ -149,6 +153,12 @@ def church_list(request):
         'users': users,
         'offices': offices,
         'sort_options': sort_options,
+        # Add view mode context
+        'can_toggle_view': access_manager.can_view_all_data(),
+        'current_view_mode': access_manager.view_mode,
+        'view_mode_display': access_manager.get_view_mode_display(),
+        'user_role': getattr(request.user, 'role', 'standard_user'),
+        'all_offices': all_offices,
     }
     
     return render(request, 'churches/church_list.html', context)

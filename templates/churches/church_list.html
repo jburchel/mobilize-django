@@ -24,6 +24,62 @@
     </div>
 </div>
 
+<!-- View Mode Toggle for Admins -->
+{% if can_toggle_view %}
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body py-2">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-eye me-2 text-muted"></i>
+                        <span class="text-muted me-3">View Mode:</span>
+                        <span class="badge bg-primary">{{ view_mode_display }}</span>
+                    </div>
+                    {% if user_role == 'super_admin' %}
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="btn-group" role="group" aria-label="View mode toggle">
+                            <a href="?view_mode=default{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
+                               class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                <i class="fas fa-globe me-1"></i> All Offices
+                            </a>
+                            <a href="?view_mode=my_only{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
+                               class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                <i class="fas fa-user me-1"></i> My Contacts Only
+                            </a>
+                        </div>
+                        <div class="ms-3">
+                            <select id="office-selector" class="form-select form-select-sm" style="min-width: 200px;">
+                                <option value="default" {% if current_view_mode == "default" %}selected{% endif %}>Show All Offices</option>
+                                <option value="" disabled>-------------------</option>
+                                {% for office in all_offices %}
+                                <option value="office_{{ office.id }}" 
+                                    {% if current_view_mode == 'office_'|add:office.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ office.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="btn-group" role="group" aria-label="View mode toggle">
+                        <a href="?view_mode=default{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
+                           class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-building me-1"></i> My Office
+                        </a>
+                        <a href="?view_mode=my_only{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
+                           class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-user me-1"></i> My Contacts Only
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Filter Form -->
 <div class="card mb-4">
     <div class="card-body">
@@ -617,6 +673,18 @@ document.addEventListener('DOMContentLoaded', function() {
             bulkUpdateStageBtn.innerHTML = 'Update Stage';
         });
     });
+    
+    // Office selector for view mode (super admin only)
+    const officeSelector = document.getElementById('office-selector');
+    if (officeSelector) {
+        officeSelector.addEventListener('change', function() {
+            if (this.value) {
+                const currentParams = new URLSearchParams(window.location.search);
+                currentParams.set('view_mode', this.value);
+                window.location.href = '?' + currentParams.toString();
+            }
+        });
+    }
 });
 
 // Helper function to get CSRF token

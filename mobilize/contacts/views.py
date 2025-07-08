@@ -18,6 +18,7 @@ from mobilize.authentication.decorators import (
     can_create_edit_delete,
     ensure_user_office_assignment
 )
+from mobilize.core.permissions import get_data_access_manager
 
 
 @login_required
@@ -26,8 +27,11 @@ def person_list(request):
     """
     Display a list of people with filtering and pagination.
     Uses lazy loading for better performance.
-    Only shows contacts from user's assigned offices.
+    Uses DataAccessManager for view mode persistence.
     """
+    # Get data access manager for view mode handling
+    access_manager = get_data_access_manager(request)
+    
     # Get query parameters for filtering and sorting
     query = request.GET.get('q', '')
     priority = request.GET.get('priority', '')
@@ -50,6 +54,9 @@ def person_list(request):
         
         # Get offices for bulk assignment dropdown
         offices = Office.objects.all().order_by('name')
+        
+        # Get all offices for office selector (super admin only)
+        all_offices = Office.objects.all().order_by('name')
         
         # Sort options for the template
         sort_options = [
@@ -85,16 +92,18 @@ def person_list(request):
             'users': users,
             'offices': offices,
             'sort_options': sort_options,
+            # Add view mode context
+            'can_toggle_view': access_manager.can_view_all_data(),
+            'current_view_mode': access_manager.view_mode,
+            'view_mode_display': access_manager.get_view_mode_display(),
+            'user_role': getattr(request.user, 'role', 'standard_user'),
+            'all_offices': all_offices,
         }
         return render(request, 'contacts/person_list_lazy.html', context)
     else:
         # Fallback to traditional pagination
-        # Start with all people - use select_related to optimize queries
-        people = Person.objects.select_related('contact', 'contact__office').all()
-        
-        # Apply office-level filtering only for non-super admins
-        if request.user.role != 'super_admin':
-            people = office_data_filter(people, request.user, 'contact__office')
+        # Use DataAccessManager for proper filtering
+        people = access_manager.get_people_queryset().select_related('contact', 'contact__office')
         
         # Apply filters if provided
         if query:
@@ -175,6 +184,10 @@ def person_list(request):
         if main_pipeline:
             pipeline_stages_objects = main_pipeline.stages.all().order_by('order')
         
+        # Get all offices for office selector (super admin only)
+        from mobilize.admin_panel.models import Office
+        all_offices = Office.objects.all().order_by('name')
+        
         context = {
             'page_obj': page_obj,
             'query': query,
@@ -186,6 +199,12 @@ def person_list(request):
             'pipeline_stages_objects': pipeline_stages_objects,
             'sort_options': sort_options,
             'per_page': per_page,
+            # Add view mode context
+            'can_toggle_view': access_manager.can_view_all_data(),
+            'current_view_mode': access_manager.view_mode,
+            'view_mode_display': access_manager.get_view_mode_display(),
+            'user_role': getattr(request.user, 'role', 'standard_user'),
+            'all_offices': all_offices,
         }
         
         return render(request, 'contacts/person_list.html', context)
@@ -357,9 +376,13 @@ def person_delete(request, pk):
 def person_list_api(request):
     """
     JSON API endpoint for lazy loading person list data.
+    Uses DataAccessManager for proper filtering.
     """
     import logging
     logger = logging.getLogger(__name__)
+    
+    # Get data access manager for view mode handling
+    access_manager = get_data_access_manager(request)
     
     # Get query parameters
     query = request.GET.get('q', '')
@@ -370,37 +393,13 @@ def person_list_api(request):
     per_page = int(request.GET.get('per_page', 25))
     
     # Debug logging
-    logger.info(f"🔍 DEBUG: User {request.user.email} (Role: {request.user.role}) accessing person_list_api")
+    logger.info(f"🔍 DEBUG: User {request.user.email} (Role: {request.user.role}) accessing person_list_api with view_mode: {access_manager.view_mode}")
     
-    # Simplified test - just get people with minimal filtering
+    # Use DataAccessManager for proper filtering
     try:
-        logger.info(f"🔍 DEBUG: Starting with basic Person.objects.all()")
-        people = Person.objects.all()
+        people = access_manager.get_people_queryset()
         initial_count = people.count()
-        logger.info(f"🔍 DEBUG: Initial people count: {initial_count}")
-        
-        # Test direct list access
-        try:
-            first_five = list(people[:5])
-            logger.info(f"🔍 DEBUG: Successfully got first 5 people: {len(first_five)}")
-            for person in first_five:
-                logger.info(f"🔍 DEBUG: Person PK={person.pk}, has contact: {hasattr(person, 'contact')}")
-        except Exception as e:
-            logger.error(f"🔍 DEBUG: Failed to get first 5 people: {e}")
-        
-        # Apply office filtering based on user role
-        if request.user.role != 'super_admin':
-            logger.info(f"🔍 DEBUG: User role: {request.user.role} - applying office filter")
-            try:
-                people = office_data_filter(people, request.user, 'contact__office')
-                after_office_count = people.count()
-                logger.info(f"🔍 DEBUG: After office filtering: {after_office_count}")
-            except Exception as e:
-                logger.error(f"🔍 DEBUG: Office filtering failed: {e}")
-                # If office filtering fails, continue with all people for debugging
-                people = Person.objects.all()
-        else:
-            logger.info(f"🔍 DEBUG: User is super_admin - no office filtering")
+        logger.info(f"🔍 DEBUG: Initial people count after access filtering: {initial_count}")
             
     except Exception as e:
         logger.error(f"🔍 DEBUG: Basic queryset setup failed: {e}")
@@ -730,12 +729,9 @@ def export_contacts(request):
     query = request.GET.get('q', '')
     priority = request.GET.get('priority', '')
     
-    # Start with all people - use select_related to optimize queries
-    people = Person.objects.select_related('contact', 'contact__office').all()
-    
-    # Apply office-level filtering only for non-super admins
-    if request.user.role != 'super_admin':
-        people = office_data_filter(people, request.user, 'contact__office')
+    # Use DataAccessManager for proper filtering
+    access_manager = get_data_access_manager(request)
+    people = access_manager.get_people_queryset().select_related('contact', 'contact__office')
     
     # Apply filters if provided
     if query:
