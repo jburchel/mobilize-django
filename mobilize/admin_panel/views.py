@@ -395,55 +395,86 @@ class UserManagementView(SuperAdminRequiredMixin, ListView):
     paginate_by = 25
     
     def get_queryset(self):
-        queryset = User.objects.select_related('person').prefetch_related('useroffice_set__office').order_by('username')
-        
-        # Filter by role if specified
-        role_filter = self.request.GET.get('role')
-        if role_filter:
-            queryset = queryset.filter(role=role_filter)
-        
-        # Filter by active status
-        active_filter = self.request.GET.get('active')
-        if active_filter == 'true':
-            queryset = queryset.filter(is_active=True)
-        elif active_filter == 'false':
-            queryset = queryset.filter(is_active=False)
-        
-        # Search functionality
-        search_query = self.request.GET.get('search')
-        if search_query:
-            queryset = queryset.filter(
-                Q(username__icontains=search_query) |
-                Q(email__icontains=search_query) |
-                Q(first_name__icontains=search_query) |
-                Q(last_name__icontains=search_query)
-            )
-        
-        return queryset
+        try:
+            queryset = User.objects.select_related('person').prefetch_related('useroffice_set__office').order_by('username')
+            
+            # Filter by role if specified
+            role_filter = self.request.GET.get('role')
+            if role_filter:
+                queryset = queryset.filter(role=role_filter)
+            
+            # Filter by active status
+            active_filter = self.request.GET.get('active')
+            if active_filter == 'true':
+                queryset = queryset.filter(is_active=True)
+            elif active_filter == 'false':
+                queryset = queryset.filter(is_active=False)
+            
+            # Search functionality
+            search_query = self.request.GET.get('search')
+            if search_query:
+                queryset = queryset.filter(
+                    Q(username__icontains=search_query) |
+                    Q(email__icontains=search_query) |
+                    Q(first_name__icontains=search_query) |
+                    Q(last_name__icontains=search_query)
+                )
+            
+            return queryset
+        except Exception as e:
+            # Log the error for debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in UserManagementView.get_queryset: {e}", exc_info=True)
+            # Return empty queryset to prevent 500 error
+            return User.objects.none()
     
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        
-        # Add filter options
-        context['role_choices'] = User._meta.get_field('role').choices
-        context['current_role'] = self.request.GET.get('role', '')
-        context['current_active'] = self.request.GET.get('active', '')
-        context['current_search'] = self.request.GET.get('search', '')
-        
-        # Add statistics
-        context['stats'] = {
-            'total_users': User.objects.count(),
-            'active_users': User.objects.filter(is_active=True).count(),
-            'super_admins': User.objects.filter(role='super_admin').count(),
-            'office_admins': User.objects.filter(role='office_admin').count(),
-            'standard_users': User.objects.filter(role='standard_user').count(),
-            'limited_users': User.objects.filter(role='limited_user').count(),
-        }
-        
-        # Get first office for create user link
-        context['first_office'] = Office.objects.first()
-        
-        return context
+        try:
+            context = super().get_context_data(**kwargs)
+            
+            # Add filter options
+            context['role_choices'] = User._meta.get_field('role').choices
+            context['current_role'] = self.request.GET.get('role', '')
+            context['current_active'] = self.request.GET.get('active', '')
+            context['current_search'] = self.request.GET.get('search', '')
+            
+            # Add statistics
+            context['stats'] = {
+                'total_users': User.objects.count(),
+                'active_users': User.objects.filter(is_active=True).count(),
+                'super_admins': User.objects.filter(role='super_admin').count(),
+                'office_admins': User.objects.filter(role='office_admin').count(),
+                'standard_users': User.objects.filter(role='standard_user').count(),
+                'limited_users': User.objects.filter(role='limited_user').count(),
+            }
+            
+            # Get first office for create user link
+            context['first_office'] = Office.objects.first()
+            
+            return context
+        except Exception as e:
+            # Log the error for debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in UserManagementView.get_context_data: {e}", exc_info=True)
+            # Return minimal context to prevent 500 error
+            return {
+                'users': User.objects.none(),
+                'role_choices': [],
+                'current_role': '',
+                'current_active': '',
+                'current_search': '',
+                'stats': {
+                    'total_users': 0,
+                    'active_users': 0,
+                    'super_admins': 0,
+                    'office_admins': 0,
+                    'standard_users': 0,
+                    'limited_users': 0,
+                },
+                'first_office': None,
+            }
 
 
 class UserDetailView(SuperAdminRequiredMixin, DetailView):
