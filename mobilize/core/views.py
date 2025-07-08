@@ -355,60 +355,69 @@ def settings(request):
     """
     from mobilize.authentication.models import UserContactSyncSettings
     from mobilize.authentication.forms import UserContactSyncSettingsForm, UserProfileForm
+    import logging
     
-    # Get or create contact sync settings
-    sync_settings, created = UserContactSyncSettings.objects.get_or_create(
-        user_id=request.user.id,
-        defaults={'sync_preference': 'crm_only'}
-    )
+    logger = logging.getLogger(__name__)
     
-    if request.method == 'POST':
-        if 'sync_settings' in request.POST:
-            sync_form = UserContactSyncSettingsForm(
-                request.POST, 
-                instance=sync_settings,
-                user=request.user
-            )
-            profile_form = UserProfileForm(instance=request.user)
-            
-            if sync_form.is_valid():
-                sync_form.save()
-                messages.success(request, 'Contact sync settings updated successfully.')
-                return redirect('core:settings')
+    try:
+        # Get or create contact sync settings
+        sync_settings, created = UserContactSyncSettings.objects.get_or_create(
+            user_id=request.user.id,
+            defaults={'sync_preference': 'crm_only'}
+        )
         
-        elif 'profile_settings' in request.POST:
-            profile_form = UserProfileForm(request.POST, instance=request.user)
-            sync_form = UserContactSyncSettingsForm(instance=sync_settings, user=request.user)
+        if request.method == 'POST':
+            if 'sync_settings' in request.POST:
+                sync_form = UserContactSyncSettingsForm(
+                    request.POST, 
+                    instance=sync_settings,
+                    user=request.user
+                )
+                profile_form = UserProfileForm(instance=request.user)
+                
+                if sync_form.is_valid():
+                    sync_form.save()
+                    messages.success(request, 'Contact sync settings updated successfully.')
+                    return redirect('core:settings')
             
-            if profile_form.is_valid():
-                profile_form.save()
-                messages.success(request, 'Profile updated successfully.')
-                return redirect('core:settings')
-        
+            elif 'profile_settings' in request.POST:
+                profile_form = UserProfileForm(request.POST, instance=request.user)
+                sync_form = UserContactSyncSettingsForm(instance=sync_settings, user=request.user)
+                
+                if profile_form.is_valid():
+                    profile_form.save()
+                    messages.success(request, 'Profile updated successfully.')
+                    return redirect('core:settings')
+            
+            else:
+                sync_form = UserContactSyncSettingsForm(instance=sync_settings, user=request.user)
+                profile_form = UserProfileForm(instance=request.user)
         else:
             sync_form = UserContactSyncSettingsForm(instance=sync_settings, user=request.user)
             profile_form = UserProfileForm(instance=request.user)
-    else:
-        sync_form = UserContactSyncSettingsForm(instance=sync_settings, user=request.user)
-        profile_form = UserProfileForm(instance=request.user)
-    
-    # Check Gmail connection status
-    gmail_connected = False
-    try:
-        from mobilize.communications.gmail_service import GmailService
-        gmail_service = GmailService(request.user)
-        gmail_connected = gmail_service.is_authenticated()
-    except Exception:
-        pass
-    
-    context = {
-        'sync_form': sync_form,
-        'profile_form': profile_form,
-        'sync_settings': sync_settings,
-        'gmail_connected': gmail_connected,
-    }
-    
-    return render(request, 'core/settings.html', context)
+        
+        # Check Gmail connection status
+        gmail_connected = False
+        try:
+            from mobilize.communications.gmail_service import GmailService
+            gmail_service = GmailService(request.user)
+            gmail_connected = gmail_service.is_authenticated()
+        except Exception:
+            pass
+        
+        context = {
+            'sync_form': sync_form,
+            'profile_form': profile_form,
+            'sync_settings': sync_settings,
+            'gmail_connected': gmail_connected,
+        }
+        
+        return render(request, 'core/settings.html', context)
+        
+    except Exception as e:
+        logger.error(f"Error in settings view for user {request.user.id}: {str(e)}", exc_info=True)
+        messages.error(request, 'An error occurred while loading settings. Please try again.')
+        return redirect('core:dashboard')
 
 
 @login_required

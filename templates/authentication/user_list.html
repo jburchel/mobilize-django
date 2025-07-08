@@ -1,0 +1,304 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}All Users - Mobilize CRM{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/css/dashboard.css' %}">
+<style>
+    .user-card {
+        transition: all 0.3s ease;
+    }
+    .user-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+    .role-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    .office-tag {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        margin: 0.125rem;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+    }
+    .filter-section {
+        background-color: #f8f9fa;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    .stats-card {
+        text-align: center;
+        padding: 1.5rem;
+    }
+    .stats-card i {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    .stats-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">All Users</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h1 class="h3 text-dark mb-0">All Users</h1>
+                <a href="{% url 'admin_panel:office_list' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-building me-2"></i>Manage Offices
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <i class="fas fa-users text-primary"></i>
+                    <div class="stats-number">{{ total_users }}</div>
+                    <div class="text-muted">Total Users</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <i class="fas fa-check-circle text-success"></i>
+                    <div class="stats-number">{{ active_users }}</div>
+                    <div class="text-muted">Active Users</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <i class="fas fa-user-shield text-warning"></i>
+                    <div class="stats-number">{{ admin_users }}</div>
+                    <div class="text-muted">Admin Users</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <i class="fas fa-building text-info"></i>
+                    <div class="stats-number">{{ offices|length }}</div>
+                    <div class="text-muted">Total Offices</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filter-section">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="search" class="form-label">Search</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       placeholder="Name, email, or username" value="{{ current_search }}">
+            </div>
+            <div class="col-md-2">
+                <label for="role" class="form-label">Role</label>
+                <select class="form-select" id="role" name="role">
+                    <option value="">All Roles</option>
+                    {% for role_value, role_display in roles %}
+                        <option value="{{ role_value }}" {% if current_role == role_value %}selected{% endif %}>
+                            {{ role_display }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="office" class="form-label">Office</label>
+                <select class="form-select" id="office" name="office">
+                    <option value="">All Offices</option>
+                    {% for office in offices %}
+                        <option value="{{ office.pk }}" {% if current_office == office.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ office.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">All Status</option>
+                    <option value="active" {% if current_status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if current_status == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="sort" class="form-label">Sort By</label>
+                <select class="form-select" id="sort" name="sort">
+                    <option value="-date_joined" {% if current_sort == '-date_joined' %}selected{% endif %}>Newest First</option>
+                    <option value="date_joined" {% if current_sort == 'date_joined' %}selected{% endif %}>Oldest First</option>
+                    <option value="first_name" {% if current_sort == 'first_name' %}selected{% endif %}>First Name</option>
+                    <option value="last_name" {% if current_sort == 'last_name' %}selected{% endif %}>Last Name</option>
+                    <option value="email" {% if current_sort == 'email' %}selected{% endif %}>Email</option>
+                    <option value="-last_login" {% if current_sort == '-last_login' %}selected{% endif %}>Last Login</option>
+                </select>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Users List -->
+    <div class="row">
+        {% for user in users %}
+        <div class="col-lg-6 mb-3">
+            <div class="card user-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h5 class="card-title mb-1">
+                                {{ user.get_full_name|default:user.username }}
+                                {% if not user.is_active %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </h5>
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-envelope me-1"></i>{{ user.email }}
+                            </p>
+                        </div>
+                        <div>
+                            {% if user.role == 'super_admin' %}
+                                <span class="badge bg-danger role-badge">Super Admin</span>
+                            {% elif user.role == 'office_admin' %}
+                                <span class="badge bg-warning role-badge">Office Admin</span>
+                            {% elif user.role == 'standard_user' %}
+                                <span class="badge bg-primary role-badge">Standard User</span>
+                            {% else %}
+                                <span class="badge bg-secondary role-badge">Limited User</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row text-muted small mb-2">
+                        <div class="col-6">
+                            <i class="fas fa-calendar-plus me-1"></i>Joined: {{ user.date_joined|date:"M d, Y" }}
+                        </div>
+                        <div class="col-6">
+                            <i class="fas fa-sign-in-alt me-1"></i>Last Login: 
+                            {% if user.last_login %}
+                                {{ user.last_login|date:"M d, Y g:i A" }}
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if user.useroffice_set.all %}
+                    <div class="mb-2">
+                        <strong class="small">Offices ({{ user.office_count }}):</strong>
+                        <div>
+                            {% for user_office in user.useroffice_set.all %}
+                                <span class="office-tag">
+                                    <i class="fas fa-building me-1"></i>{{ user_office.office.name }}
+                                    {% if user_office.is_primary %}
+                                        <span class="badge bg-primary ms-1">Primary</span>
+                                    {% endif %}
+                                </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-muted small">
+                        <i class="fas fa-exclamation-circle me-1"></i>No office assignments
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-3">
+                        <a href="{% url 'admin:authentication_user_change' user.pk %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-edit me-1"></i>Edit User
+                        </a>
+                        {% if user.useroffice_set.all %}
+                            <a href="{% url 'admin_panel:office_users' user.useroffice_set.first.office.pk %}" 
+                               class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-building me-1"></i>View Office
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No users found</h4>
+                    <p class="text-muted">Try adjusting your search filters.</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav aria-label="User list pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?{% if current_search %}search={{ current_search }}&{% endif %}{% if current_role %}role={{ current_role }}&{% endif %}{% if current_office %}office={{ current_office }}&{% endif %}{% if current_status %}status={{ current_status }}&{% endif %}{% if current_sort %}sort={{ current_sort }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                    <i class="fas fa-chevron-left"></i> Previous
+                </a>
+            </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+            </li>
+            
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?{% if current_search %}search={{ current_search }}&{% endif %}{% if current_role %}role={{ current_role }}&{% endif %}{% if current_office %}office={{ current_office }}&{% endif %}{% if current_status %}status={{ current_status }}&{% endif %}{% if current_sort %}sort={{ current_sort }}&{% endif %}page={{ page_obj.next_page_number }}">
+                    Next <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit form when select values change
+    const selects = document.querySelectorAll('select');
+    selects.forEach(select => {
+        select.addEventListener('change', function() {
+            this.form.submit();
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,318 +1,314 @@
-import requests
 from django.shortcuts import render, redirect
-from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.conf import settings
-from django.urls import reverse
-from django.utils import timezone
 from django.contrib import messages
-from datetime import timedelta
+from django.db import models
+from django.core.paginator import Paginator
+from django.db.models import Q, Count
+from django.urls import reverse
+from django.views.generic import ListView
+from django.contrib.auth.mixins import LoginRequiredMixin
+import requests
+import json
+import logging
 
-from .models import GoogleToken, UserContactSyncSettings
-from .forms import ContactSyncPreferenceForm
+from .models import User, UserContactSyncSettings
+from mobilize.core.permissions import require_role
 
-
-def login_view(request):
-    """
-    Render the login page with Google OAuth configuration.
-    """
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        
-        user = authenticate(request, username=username, password=password)
-        
-        if user is not None:
-            login(request, user)
-            return redirect('core:dashboard')
-        else:
-            messages.error(request, 'Invalid username or password')
-    
-    return render(request, 'authentication/login.html', {
-        'google_client_id': settings.GOOGLE_CLIENT_ID,
-    })
-
-
-@login_required
-def logout_view(request):
-    """
-    Log out the user and redirect to login page.
-    """
-    logout(request)
-    return redirect('authentication:login')
-
-
-def google_auth(request):
-    """
-    Initiate Google OAuth2 flow for authentication and API access.
-    """
-    # Google OAuth2 authorization URL
-    auth_url = "https://accounts.google.com/o/oauth2/auth"
-    
-    # Parameters for Google OAuth2
-    params = {
-        'client_id': settings.GOOGLE_CLIENT_ID,
-        'redirect_uri': request.build_absolute_uri(reverse('authentication:google_auth_callback')),
-        'response_type': 'code',
-        'scope': ' '.join([
-            'https://www.googleapis.com/auth/userinfo.email',
-            'https://www.googleapis.com/auth/userinfo.profile',
-            'https://www.googleapis.com/auth/gmail.readonly',
-            'https://www.googleapis.com/auth/gmail.send',
-            'https://www.googleapis.com/auth/calendar',
-            'https://www.googleapis.com/auth/contacts.readonly'
-        ]),
-        'access_type': 'offline',
-        'prompt': 'consent',
-        'include_granted_scopes': 'true',
-    }
-    
-    # Build the authorization URL
-    auth_url = f"{auth_url}?{'&'.join([f'{k}={v}' for k, v in params.items()])}"
-    
-    return redirect(auth_url)
+logger = logging.getLogger(__name__)
 
 
 def google_auth_callback(request):
     """
-    Handle Google OAuth2 callback and store tokens.
-    Also creates or authenticates the user based on Google account info.
+    Handle the OAuth2 callback from Google.
+    Create or update user account based on Google profile.
     """
+    # Get authorization code from request
     code = request.GET.get('code')
     error = request.GET.get('error')
     
     if error:
-        return render(request, 'authentication/google_auth_error.html', {'error': error})
+        messages.error(request, f"Authentication error: {error}")
+        return redirect('authentication:login')
     
     if not code:
-        return render(request, 'authentication/google_auth_error.html', 
-                     {'error': 'No authorization code received'})
+        messages.error(request, "No authorization code received from Google")
+        return redirect('authentication:login')
     
-    # Exchange code for tokens
-    token_url = "https://oauth2.googleapis.com/token"
-    data = {
-        'code': code,
-        'client_id': settings.GOOGLE_CLIENT_ID,
-        'client_secret': settings.GOOGLE_CLIENT_SECRET,
-        'redirect_uri': request.build_absolute_uri(reverse('authentication:google_auth_callback')),
-        'grant_type': 'authorization_code',
-    }
-    
-    response = requests.post(token_url, data=data)
-    
-    if response.status_code != 200:
-        return render(request, 'authentication/google_auth_error.html', 
-                     {'error': f'Token exchange failed: {response.text}'})
-    
-    tokens = response.json()
-    
-    # Get user info from Google
-    user_info_response = requests.get(
-        'https://www.googleapis.com/oauth2/v3/userinfo',
-        headers={'Authorization': f"Bearer {tokens.get('access_token')}"}
-    )
-    
-    if user_info_response.status_code != 200:
-        return render(request, 'authentication/google_auth_error.html',
-                     {'error': f'Failed to get user info: {user_info_response.text}'})
-    
-    user_info = user_info_response.json()
-    email = user_info.get('email')
-    
-    if not email:
-        return render(request, 'authentication/google_auth_error.html',
-                     {'error': 'Email not provided by Google'})
-    
-    # Restrict access to @crossoverglobal.net email addresses only
-    if not email.endswith('@crossoverglobal.net'):
-        return render(request, 'authentication/google_auth_error.html',
-                     {'error': 'Access restricted to @crossoverglobal.net email addresses only. Please use your Crossover Global email account.'})
-    
-    # Get or create user based on email
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-    
-    # Check if user exists using raw SQL to avoid schema issues
-    from django.db import connection
-    user = None
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT id, email FROM users WHERE email = %s", [email])
-        row = cursor.fetchone()
+    try:
+        # Exchange authorization code for access token
+        from django.conf import settings
+        token_url = 'https://oauth2.googleapis.com/token'
+        client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
+        client_secret = getattr(settings, 'GOOGLE_CLIENT_SECRET', '')
+        redirect_uri = request.build_absolute_uri('/auth/google/callback/')
         
-    if not row:
-        # Create new user
-        username = email.split('@')[0]
-        # Ensure username is unique
-        base_username = username
-        counter = 1
-        with connection.cursor() as cursor:
-            while True:
-                cursor.execute("SELECT id FROM users WHERE username = %s", [username])
-                if not cursor.fetchone():
-                    break
+        token_data = {
+            'code': code,
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'redirect_uri': redirect_uri,
+            'grant_type': 'authorization_code'
+        }
+        
+        token_response = requests.post(token_url, data=token_data)
+        
+        if token_response.status_code != 200:
+            logger.error(f"Token exchange failed: {token_response.status_code} - {token_response.text}")
+            messages.error(request, "Failed to authenticate with Google. Please try again.")
+            return redirect('authentication:login')
+        
+        tokens = token_response.json()
+        access_token = tokens.get('access_token')
+        refresh_token = tokens.get('refresh_token', '')
+        
+        # Get user info from Google
+        user_info_url = 'https://www.googleapis.com/oauth2/v2/userinfo'
+        headers = {'Authorization': f'Bearer {access_token}'}
+        user_info_response = requests.get(user_info_url, headers=headers)
+        
+        if user_info_response.status_code != 200:
+            logger.error(f"Failed to get user info: {user_info_response.status_code}")
+            messages.error(request, "Failed to retrieve user information from Google.")
+            return redirect('authentication:login')
+        
+        google_user = user_info_response.json()
+        
+        # Extract user information
+        email = google_user.get('email', '').lower()
+        first_name = google_user.get('given_name', '')
+        last_name = google_user.get('family_name', '')
+        google_id = google_user.get('id', '')
+        
+        if not email:
+            messages.error(request, "No email address received from Google")
+            return redirect('authentication:login')
+        
+        # Check if user exists by email
+        try:
+            user = User.objects.get(email=email)
+            # Update existing user's Google tokens
+            user.google_access_token = access_token
+            user.google_refresh_token = refresh_token or user.google_refresh_token
+            if not user.first_name and first_name:
+                user.first_name = first_name
+            if not user.last_name and last_name:
+                user.last_name = last_name
+            user.save()
+            created = False
+        except User.DoesNotExist:
+            # Create new user
+            username = email.split('@')[0]
+            # Make username unique if needed
+            base_username = username
+            counter = 1
+            while User.objects.filter(username=username).exists():
                 username = f"{base_username}{counter}"
                 counter += 1
-        
-        # Create new user using raw SQL
-        user_name = user_info.get('name', '')
-        name_parts = user_name.split(' ', 1) if user_name else ['', '']
-        first_name = name_parts[0]
-        last_name = name_parts[1] if len(name_parts) > 1 else ''
-        
-        with connection.cursor() as cursor:
-            cursor.execute("""
-                INSERT INTO users (username, email)
-                VALUES (%s, %s) RETURNING id
-            """, [username, email])
-            user_id = cursor.fetchone()[0]
-        
-        new_user = True
-    else:
-        # Existing user
-        user_id = row[0]
-        new_user = False
-        
-        # Skip profile picture update - column doesn't exist in legacy schema
-    
-    # Create a minimal user object for login
-    class MinimalUser:
-        def __init__(self, user_id, email):
-            self.id = user_id
-            self.pk = user_id
-            self.email = email
-            self.is_authenticated = True
-            self.is_active = True
-            self.is_anonymous = False
             
-        def get_username(self):
-            return self.email
-            
-        def __str__(self):
-            return self.email
-    
-    user = MinimalUser(user_id, email)
-    
-    # Skip Django login for now - just set session manually
-    request.session['user_id'] = user_id
-    request.session['user_email'] = email
-    request.session['authenticated'] = True
-    
-    # Calculate token expiration
-    expires_in = tokens.get('expires_in', 3600)
-    expires_at = timezone.now() + timedelta(seconds=expires_in)
-    
-    # Store Google OAuth tokens for Gmail/Calendar/Contacts API access
-    try:
-        # Store tokens using raw SQL to match the user creation approach
-        scopes_string = ' '.join([
-            'https://www.googleapis.com/auth/userinfo.email',
-            'https://www.googleapis.com/auth/userinfo.profile',
-            'https://www.googleapis.com/auth/gmail.readonly',
-            'https://www.googleapis.com/auth/gmail.send',
-            'https://www.googleapis.com/auth/calendar',
-            'https://www.googleapis.com/auth/contacts.readonly'
-        ])
-        
-        with connection.cursor() as cursor:
-            # Check if token already exists
-            cursor.execute(
-                "SELECT id FROM google_tokens WHERE user_id = %s", 
-                [str(user_id)]
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                google_access_token=access_token,
+                google_refresh_token=refresh_token
             )
-            existing_token = cursor.fetchone()
-            
-            if existing_token:
-                # Update existing token
-                cursor.execute("""
-                    UPDATE google_tokens 
-                    SET access_token = %s, refresh_token = %s, expires_at = %s, scopes = %s, updated_at = NOW()
-                    WHERE user_id = %s
-                """, [
-                    tokens.get('access_token'),
-                    tokens.get('refresh_token'), 
-                    expires_at,
-                    scopes_string,
-                    str(user_id)
-                ])
-                print(f"Updated Google tokens for user ID {user_id}")
-            else:
-                # Create new token
-                cursor.execute("""
-                    INSERT INTO google_tokens (user_id, access_token, refresh_token, expires_at, scopes, token_type, created_at, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
-                """, [
-                    str(user_id),
-                    tokens.get('access_token'),
-                    tokens.get('refresh_token'),
-                    expires_at,
-                    scopes_string,
-                    'Bearer'  # Standard OAuth2 token type
-                ])
-                print(f"Created Google tokens for user ID {user_id}")
+            user.set_unusable_password()  # Google auth users don't need passwords
+            user.save()
+            created = True
+        
+        # Log the user in
+        user.backend = 'django.contrib.auth.backends.ModelBackend'
+        login(request, user)
+        
+        if created:
+            messages.success(request, "Welcome! Your account has been created successfully.")
+        else:
+            messages.success(request, "Welcome back!")
+        
+        # Check if user needs to set up contact sync preferences
+        try:
+            sync_settings = UserContactSyncSettings.objects.get(user_id=user.id)
+        except UserContactSyncSettings.DoesNotExist:
+            # Redirect to contact sync setup for first-time users
+            return redirect('authentication:contact_sync_setup')
+        
+        # Redirect to dashboard
+        return redirect('core:dashboard')
         
     except Exception as e:
-        print(f"Error storing Google tokens: {e}")
-        import traceback
-        traceback.print_exc()
-        # Don't fail the login process if token storage fails
+        logger.exception(f"Unexpected error during Google auth callback: {str(e)}")
+        messages.error(request, "An unexpected error occurred during authentication. Please try again.")
+        return redirect('authentication:login')
+
+
+def login_view(request):
+    """
+    Handle user login with Google OAuth2.
+    """
+    if request.user.is_authenticated:
+        return redirect('core:dashboard')
     
-    # Store OAuth info in session for contact sync setup
-    request.session['oauth_completed'] = True
-    request.session['new_user'] = new_user
+    # Generate Google OAuth URL
+    from django.conf import settings
+    client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
+    redirect_uri = request.build_absolute_uri('/auth/google/callback/')
+    scope = ' '.join([
+        'openid',
+        'email',
+        'profile',
+        'https://www.googleapis.com/auth/gmail.compose',
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/contacts',
+        'https://www.googleapis.com/auth/calendar'
+    ])
     
-    # For new users, redirect to contact sync preference setup
-    if new_user:
-        return redirect('authentication:contact_sync_setup')
+    google_auth_url = (
+        f"https://accounts.google.com/o/oauth2/v2/auth?"
+        f"client_id={client_id}&"
+        f"redirect_uri={redirect_uri}&"
+        f"response_type=code&"
+        f"scope={scope}&"
+        f"access_type=offline&"
+        f"prompt=consent"
+    )
     
-    return redirect('core:dashboard')
+    context = {
+        'google_auth_url': google_auth_url,
+    }
+    
+    return render(request, 'authentication/login.html', context)
+
+
+@login_required
+def logout_view(request):
+    """Handle user logout."""
+    logout(request)
+    messages.info(request, "You have been logged out successfully.")
+    return redirect('authentication:login')
 
 
 @login_required
 def contact_sync_setup(request):
-    """
-    Setup contact sync preferences for new users after Google OAuth.
-    """
-    # Check if user just completed OAuth
-    if not request.session.get('oauth_completed'):
-        return redirect('core:dashboard')
-    
-    # Check if user already has sync settings (shouldn't happen for new users)
-    if UserContactSyncSettings.objects.filter(user=request.user).exists():
-        return redirect('core:dashboard')
+    """Handle contact sync preference setup for new users."""
+    from .forms import ContactSyncPreferenceForm
     
     if request.method == 'POST':
         form = ContactSyncPreferenceForm(request.POST)
-        
         if form.is_valid():
             sync_preference = form.cleaned_data['sync_preference']
             
-            # Create user's contact sync settings
-            UserContactSyncSettings.objects.create(
-                user=request.user,
-                sync_preference=sync_preference,
-                auto_sync_enabled=True if sync_preference != 'disabled' else False,
-                sync_frequency_hours=24
+            # Create or update user's sync settings
+            UserContactSyncSettings.objects.update_or_create(
+                user_id=request.user.id,
+                defaults={'sync_preference': sync_preference}
             )
             
-            # Clear session flags
-            request.session.pop('oauth_completed', None)
-            request.session.pop('new_user', None)
-            
-            # Show success message based on choice
-            if sync_preference == 'disabled':
-                messages.info(request, 'Contact sync has been disabled. You can enable it later in Settings.')
-            elif sync_preference == 'crm_only':
-                messages.success(request, 'Contact sync configured to update existing CRM contacts only.')
-            elif sync_preference == 'all_contacts':
-                messages.success(request, 'Contact sync configured to import all your Google contacts.')
-            
+            messages.success(request, "Contact sync preferences saved successfully!")
             return redirect('core:dashboard')
     else:
         form = ContactSyncPreferenceForm()
     
     context = {
         'form': form,
-        'user_name': request.user.get_full_name() or request.user.username,
     }
-    
     return render(request, 'authentication/contact_sync_setup.html', context)
+
+
+def google_auth_error(request):
+    """Handle Google OAuth errors."""
+    error = request.GET.get('error', 'Unknown error')
+    error_description = request.GET.get('error_description', 'An error occurred during authentication')
+    
+    context = {
+        'error': error,
+        'error_description': error_description,
+    }
+    return render(request, 'authentication/google_auth_error.html', context)
+
+
+class UserListView(LoginRequiredMixin, ListView):
+    """
+    List all users in the system - for super admins only.
+    """
+    model = User
+    template_name = 'authentication/user_list.html'
+    context_object_name = 'users'
+    paginate_by = 25
+    
+    def dispatch(self, request, *args, **kwargs):
+        """Check if user has super_admin role."""
+        if not hasattr(request.user, 'role') or request.user.role != 'super_admin':
+            from django.http import HttpResponseForbidden
+            return HttpResponseForbidden("Access denied: Super admin privileges required")
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        queryset = User.objects.all().select_related().prefetch_related(
+            'useroffice_set__office'
+        ).annotate(
+            office_count=Count('useroffice', distinct=True)
+        )
+        
+        # Search functionality
+        search = self.request.GET.get('search', '')
+        if search:
+            queryset = queryset.filter(
+                Q(email__icontains=search) |
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(username__icontains=search)
+            )
+        
+        # Role filter
+        role_filter = self.request.GET.get('role', '')
+        if role_filter:
+            queryset = queryset.filter(role=role_filter)
+        
+        # Office filter
+        office_filter = self.request.GET.get('office', '')
+        if office_filter:
+            queryset = queryset.filter(useroffice__office_id=office_filter).distinct()
+        
+        # Active status filter
+        status_filter = self.request.GET.get('status', '')
+        if status_filter == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status_filter == 'inactive':
+            queryset = queryset.filter(is_active=False)
+        
+        # Sorting
+        sort_by = self.request.GET.get('sort', '-date_joined')
+        if sort_by in ['email', '-email', 'first_name', '-first_name', 'last_name', '-last_name', 
+                        'role', '-role', 'date_joined', '-date_joined', 'last_login', '-last_login']:
+            queryset = queryset.order_by(sort_by)
+        else:
+            queryset = queryset.order_by('-date_joined')
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Add filter options
+        from mobilize.admin_panel.models import Office
+        context['offices'] = Office.objects.all().order_by('name')
+        context['roles'] = User.ROLE_CHOICES
+        
+        # Add current filters
+        context['current_search'] = self.request.GET.get('search', '')
+        context['current_role'] = self.request.GET.get('role', '')
+        context['current_office'] = self.request.GET.get('office', '')
+        context['current_status'] = self.request.GET.get('status', '')
+        context['current_sort'] = self.request.GET.get('sort', '-date_joined')
+        
+        # Add statistics
+        context['total_users'] = User.objects.count()
+        context['active_users'] = User.objects.filter(is_active=True).count()
+        context['admin_users'] = User.objects.filter(
+            models.Q(role='super_admin') | models.Q(role='office_admin')
+        ).count()
+        
+        return context

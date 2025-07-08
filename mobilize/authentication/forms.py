@@ -92,14 +92,21 @@ class UserProfileForm(forms.ModelForm):
             'first_name', 
             'last_name', 
             'email',
-            'email_signature',
         ]
-        widgets = {
-            'email_signature': forms.Textarea(attrs={'rows': 4}),
-        }
+        
+    email_signature = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 4}),
+        label='Email Signature',
+        help_text='Your default email signature for communications'
+    )
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        # Try to get email_signature value from instance if it exists
+        if self.instance and hasattr(self.instance, 'email_signature'):
+            self.fields['email_signature'].initial = self.instance.email_signature
         
         # Set up crispy forms
         self.helper = FormHelper()
@@ -123,6 +130,18 @@ class UserProfileForm(forms.ModelForm):
                 HTML('<a href="{% url \'core:profile\' %}" class="btn btn-secondary">Cancel</a>'),
             )
         )
+    
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        
+        # Save email_signature if the field exists on the model
+        if hasattr(user, 'email_signature'):
+            user.email_signature = self.cleaned_data.get('email_signature', '')
+        
+        if commit:
+            user.save()
+        
+        return user
 
 
 class ContactSyncPreferenceForm(forms.Form):
