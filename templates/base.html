@@ -546,8 +546,8 @@
                         {% endif %}
                         {% if user.role == 'super_admin' %}
                         <li>
-                            <a href="{% url 'authentication:user_list' %}" class="nav-link {% if request.resolver_match.url_name == 'user_list' %}active{% endif %}">
-                                <i class="fas fa-users"></i> <span class="sidebar-text">All Users</span>
+                            <a href="{% url 'admin_panel:user_management' %}" class="nav-link {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}">
+                                <i class="fas fa-users"></i> <span class="sidebar-text">User Management</span>
                             </a>
                         </li>
                         {% endif %}

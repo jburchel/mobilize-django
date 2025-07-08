@@ -19,4 +19,12 @@ urlpatterns = [
     path('offices/<int:office_id>/users/add/', views.AddUserToOfficeView.as_view(), name='add_user_to_office'),
     path('offices/<int:office_id>/users/<int:user_id>/remove/', views.RemoveUserFromOfficeView.as_view(), name='remove_user_from_office'),
     path('offices/<int:office_id>/users/<int:user_id>/update-primary/', views.UpdateUserOfficePrimaryView.as_view(), name='update_user_office_primary'),
+    
+    # User management views
+    path('users/', views.UserManagementView.as_view(), name='user_management'),
+    path('users/<int:pk>/', views.UserDetailView.as_view(), name='user_detail'),
+    path('users/<int:pk>/update/', views.UserUpdateView.as_view(), name='user_update'),
+    path('users/<int:pk>/toggle-active/', views.UserToggleActiveView.as_view(), name='user_toggle_active'),
+    path('users/<int:user_id>/assign-office/', views.AssignUserToOfficeView.as_view(), name='assign_user_to_office'),
+    path('users/<int:user_id>/remove-office/<int:office_id>/', views.RemoveUserFromOfficeView.as_view(), name='remove_user_from_office_direct'),
 ]

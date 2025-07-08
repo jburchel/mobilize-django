@@ -129,7 +129,7 @@ def google_auth_callback(request):
         
         # Check if user needs to set up contact sync preferences
         try:
-            sync_settings = UserContactSyncSettings.objects.get(user_id=user.id)
+            sync_settings = UserContactSyncSettings.objects.get(user=user)
         except UserContactSyncSettings.DoesNotExist:
             # Redirect to contact sync setup for first-time users
             return redirect('authentication:contact_sync_setup')
@@ -202,7 +202,7 @@ def contact_sync_setup(request):
             
             # Create or update user's sync settings
             UserContactSyncSettings.objects.update_or_create(
-                user_id=request.user.id,
+                user=request.user,
                 defaults={'sync_preference': sync_preference}
             )
             

@@ -5,6 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.contrib import messages
 from django.utils import timezone
+from django.db.models import Q
 
 from mobilize.authentication.decorators import super_admin_required, office_admin_required
 from mobilize.authentication.models import User
@@ -380,3 +381,175 @@ class CrossOfficeReportView(LoginRequiredMixin, View):
             'office_data': office_data,
             'total_stats': total_stats,
         })
+
+
+class UserManagementView(SuperAdminRequiredMixin, ListView):
+    """
+    Comprehensive user management view for super admins.
+    
+    Provides centralized management of all users across all offices.
+    """
+    model = User
+    template_name = 'admin_panel/user_management.html'
+    context_object_name = 'users'
+    paginate_by = 25
+    
+    def get_queryset(self):
+        queryset = User.objects.select_related('person').prefetch_related('useroffice_set__office').order_by('username')
+        
+        # Filter by role if specified
+        role_filter = self.request.GET.get('role')
+        if role_filter:
+            queryset = queryset.filter(role=role_filter)
+        
+        # Filter by active status
+        active_filter = self.request.GET.get('active')
+        if active_filter == 'true':
+            queryset = queryset.filter(is_active=True)
+        elif active_filter == 'false':
+            queryset = queryset.filter(is_active=False)
+        
+        # Search functionality
+        search_query = self.request.GET.get('search')
+        if search_query:
+            queryset = queryset.filter(
+                Q(username__icontains=search_query) |
+                Q(email__icontains=search_query) |
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query)
+            )
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Add filter options
+        context['role_choices'] = User._meta.get_field('role').choices
+        context['current_role'] = self.request.GET.get('role', '')
+        context['current_active'] = self.request.GET.get('active', '')
+        context['current_search'] = self.request.GET.get('search', '')
+        
+        # Add statistics
+        context['stats'] = {
+            'total_users': User.objects.count(),
+            'active_users': User.objects.filter(is_active=True).count(),
+            'super_admins': User.objects.filter(role='super_admin').count(),
+            'office_admins': User.objects.filter(role='office_admin').count(),
+            'standard_users': User.objects.filter(role='standard_user').count(),
+            'limited_users': User.objects.filter(role='limited_user').count(),
+        }
+        
+        # Get first office for create user link
+        context['first_office'] = Office.objects.first()
+        
+        return context
+
+
+class UserDetailView(SuperAdminRequiredMixin, DetailView):
+    """
+    Detailed view of a specific user for super admins.
+    
+    Shows user information, office assignments, and management options.
+    """
+    model = User
+    template_name = 'admin_panel/user_detail.html'
+    context_object_name = 'user_detail'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get user's office assignments
+        user_offices = UserOffice.objects.filter(user_id=str(self.object.id)).select_related('office')
+        context['user_offices'] = user_offices
+        
+        # Get offices not assigned to this user
+        assigned_office_ids = user_offices.values_list('office_id', flat=True)
+        context['available_offices'] = Office.objects.filter(is_active=True).exclude(id__in=assigned_office_ids)
+        
+        return context
+
+
+class UserUpdateView(SuperAdminRequiredMixin, UpdateView):
+    """
+    Update user information for super admins.
+    """
+    model = User
+    template_name = 'admin_panel/user_form.html'
+    fields = ['username', 'email', 'first_name', 'last_name', 'role', 'is_active']
+    
+    def get_success_url(self):
+        return reverse('admin_panel:user_detail', kwargs={'pk': self.object.pk})
+    
+    def form_valid(self, form):
+        messages.success(self.request, f"User {form.instance.username} has been updated successfully.")
+        return super().form_valid(form)
+
+
+class UserToggleActiveView(SuperAdminRequiredMixin, View):
+    """
+    Toggle user active status.
+    """
+    def post(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        
+        # Don't allow disabling yourself
+        if user == request.user:
+            messages.error(request, "You cannot disable your own account.")
+            return redirect('admin_panel:user_detail', pk=pk)
+        
+        user.is_active = not user.is_active
+        user.save()
+        
+        status_text = "activated" if user.is_active else "deactivated"
+        messages.success(request, f"User {user.username} has been {status_text}.")
+        
+        return redirect('admin_panel:user_detail', pk=pk)
+
+
+class AssignUserToOfficeView(SuperAdminRequiredMixin, View):
+    """
+    Assign a user to an office from the user management page.
+    """
+    def post(self, request, user_id):
+        user = get_object_or_404(User, pk=user_id)
+        office_id = request.POST.get('office_id')
+        is_primary = request.POST.get('is_primary') == 'on'
+        
+        if not office_id:
+            messages.error(request, "Please select an office.")
+            return redirect('admin_panel:user_detail', pk=user_id)
+        
+        office = get_object_or_404(Office, pk=office_id)
+        
+        # Check if user is already assigned to this office
+        if UserOffice.objects.filter(user_id=str(user.id), office=office).exists():
+            messages.error(request, f"User {user.username} is already assigned to {office.name}.")
+            return redirect('admin_panel:user_detail', pk=user_id)
+        
+        # Create the UserOffice relationship
+        UserOffice.objects.create(
+            user_id=str(user.id),
+            office=office,
+            is_primary=is_primary,
+            assigned_at=timezone.now()
+        )
+        
+        messages.success(request, f"User {user.username} has been assigned to {office.name}.")
+        return redirect('admin_panel:user_detail', pk=user_id)
+
+
+class RemoveUserFromOfficeView(SuperAdminRequiredMixin, View):
+    """
+    Remove a user from an office from the user management page.
+    """
+    def post(self, request, user_id, office_id):
+        user = get_object_or_404(User, pk=user_id)
+        office = get_object_or_404(Office, pk=office_id)
+        
+        # Delete the UserOffice relationship
+        user_office = get_object_or_404(UserOffice, user_id=str(user_id), office=office)
+        user_office.delete()
+        
+        messages.success(request, f"User {user.username} has been removed from {office.name}.")
+        return redirect('admin_panel:user_detail', pk=user_id)

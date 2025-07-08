@@ -362,7 +362,7 @@ def settings(request):
     try:
         # Get or create contact sync settings
         sync_settings, created = UserContactSyncSettings.objects.get_or_create(
-            user_id=request.user.id,
+            user=request.user,
             defaults={'sync_preference': 'crm_only'}
         )
         

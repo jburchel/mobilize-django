@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Edit User - {{ object.username }}{% else %}Create User{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'admin_panel:office_list' %}">Admin Panel</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'admin_panel:user_management' %}">User Management</a></li>
+                    {% if object %}
+                        <li class="breadcrumb-item"><a href="{% url 'admin_panel:user_detail' object.pk %}">{{ object.username }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+                    {% else %}
+                        <li class="breadcrumb-item active" aria-current="page">Create User</li>
+                    {% endif %}
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 text-dark mb-1">
+                        {% if object %}Edit User - {{ object.username }}{% else %}Create New User{% endif %}
+                    </h1>
+                    <p class="text-muted mb-0">
+                        {% if object %}Update user information and permissions{% else %}Create a new user account{% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">User Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+                                {{ form.username }}
+                                {% if form.username.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.username.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.email.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name</label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.first_name.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name</label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.last_name.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.role.id_for_label }}" class="form-label">Role</label>
+                                {{ form.role }}
+                                {% if form.role.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.role.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    <small>
+                                        <strong>Super Admin:</strong> Full system access<br>
+                                        <strong>Office Admin:</strong> Manage assigned offices<br>
+                                        <strong>Standard User:</strong> Full CRM access<br>
+                                        <strong>Limited User:</strong> View-only access
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Status</label>
+                                <div class="form-check">
+                                    {{ form.is_active }}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                        Active (user can log in)
+                                    </label>
+                                </div>
+                                {% if form.is_active.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.is_active.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>
+                                {% if object %}Update User{% else %}Create User{% endif %}
+                            </button>
+                            {% if object %}
+                                <a href="{% url 'admin_panel:user_detail' object.pk %}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </a>
+                            {% else %}
+                                <a href="{% url 'admin_panel:user_management' %}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">User Roles Guide</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6><span class="badge bg-warning">Super Admin</span></h6>
+                        <p class="small text-muted">
+                            Full system access including user management, office management, and all CRM features.
+                        </p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><span class="badge bg-info">Office Admin</span></h6>
+                        <p class="small text-muted">
+                            Can manage users within their assigned offices and have full CRM access.
+                        </p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><span class="badge bg-secondary">Standard User</span></h6>
+                        <p class="small text-muted">
+                            Full CRM access for contacts, churches, tasks, and communications.
+                        </p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><span class="badge bg-dark">Limited User</span></h6>
+                        <p class="small text-muted">
+                            View-only access to CRM features. Cannot create, edit, or delete records.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add Bootstrap classes to form fields
+document.addEventListener('DOMContentLoaded', function() {
+    const formFields = document.querySelectorAll('input[type="text"], input[type="email"], select, textarea');
+    formFields.forEach(field => {
+        field.classList.add('form-control');
+    });
+    
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.classList.add('form-check-input');
+    });
+});
+</script>
+{% endblock %}
