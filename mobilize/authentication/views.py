@@ -200,12 +200,9 @@ def contact_sync_setup(request):
         if form.is_valid():
             sync_preference = form.cleaned_data['sync_preference']
             
-            # Get the actual User instance (middleware gives us a wrapper)
-            actual_user = User.objects.get(id=request.user.id)
-            
             # Create or update user's sync settings
             UserContactSyncSettings.objects.update_or_create(
-                user=actual_user,
+                user=request.user,
                 defaults={'sync_preference': sync_preference}
             )
             
