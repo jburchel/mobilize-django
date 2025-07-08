@@ -100,9 +100,16 @@ class OfficeUserListView(LoginRequiredMixin, ListView):
                 user_id_int = int(user_office.user_id) if user_office.user_id else None
                 if user_id_int:
                     user = User.objects.get(id=user_id_int)
-                    # Attach user to user_office object for template access
-                    user_office.user = user
-                    office_users_with_users.append(user_office)
+                    # Create a custom object with both user_office and user data
+                    office_user = type('OfficeUser', (), {
+                        'user_office': user_office,
+                        'user': user,
+                        'office': self.office,
+                        'is_primary': user_office.is_primary,
+                        'assigned_at': user_office.assigned_at,
+                        'permissions': user_office.permissions,
+                    })()
+                    office_users_with_users.append(office_user)
             except (ValueError, User.DoesNotExist):
                 # Skip invalid user_ids or missing users
                 continue
@@ -128,7 +135,16 @@ class AddUserToOfficeView(LoginRequiredMixin, View):
         
         # Get users not already in this office
         existing_users = UserOffice.objects.filter(office=office).values_list('user_id', flat=True)
-        available_users = User.objects.exclude(id__in=existing_users)
+        # Convert existing user_ids to integers, filtering out invalid ones
+        valid_existing_user_ids = []
+        for user_id in existing_users:
+            try:
+                valid_existing_user_ids.append(int(user_id))
+            except (ValueError, TypeError):
+                # Skip invalid user_ids (like Firebase UIDs)
+                continue
+        
+        available_users = User.objects.exclude(id__in=valid_existing_user_ids)
         
         return render(request, 'admin_panel/add_user_to_office.html', {
             'office': office,
