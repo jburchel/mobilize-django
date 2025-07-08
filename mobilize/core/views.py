@@ -361,9 +361,13 @@ def settings(request):
         from mobilize.authentication.models import UserContactSyncSettings
         from mobilize.authentication.forms import UserContactSyncSettingsForm, UserProfileForm
         
-        # Step 2: Get or create contact sync settings
+        # Step 2: Get the actual User instance (middleware gives us a wrapper)
+        from mobilize.authentication.models import User
+        actual_user = User.objects.get(id=request.user.id)
+        
+        # Get or create contact sync settings
         sync_settings, created = UserContactSyncSettings.objects.get_or_create(
-            user=request.user,
+            user=actual_user,
             defaults={'sync_preference': 'crm_only'}
         )
         
@@ -372,9 +376,9 @@ def settings(request):
                 sync_form = UserContactSyncSettingsForm(
                     request.POST, 
                     instance=sync_settings,
-                    user=request.user
+                    user=actual_user
                 )
-                profile_form = UserProfileForm(instance=request.user)
+                profile_form = UserProfileForm(instance=actual_user)
                 
                 if sync_form.is_valid():
                     sync_form.save()
@@ -382,8 +386,8 @@ def settings(request):
                     return redirect('core:settings')
             
             elif 'profile_settings' in request.POST:
-                profile_form = UserProfileForm(request.POST, instance=request.user)
-                sync_form = UserContactSyncSettingsForm(instance=sync_settings, user=request.user)
+                profile_form = UserProfileForm(request.POST, instance=actual_user)
+                sync_form = UserContactSyncSettingsForm(instance=sync_settings, user=actual_user)
                 
                 if profile_form.is_valid():
                     profile_form.save()
@@ -391,17 +395,17 @@ def settings(request):
                     return redirect('core:settings')
             
             else:
-                sync_form = UserContactSyncSettingsForm(instance=sync_settings, user=request.user)
-                profile_form = UserProfileForm(instance=request.user)
+                sync_form = UserContactSyncSettingsForm(instance=sync_settings, user=actual_user)
+                profile_form = UserProfileForm(instance=actual_user)
         else:
-            sync_form = UserContactSyncSettingsForm(instance=sync_settings, user=request.user)
-            profile_form = UserProfileForm(instance=request.user)
+            sync_form = UserContactSyncSettingsForm(instance=sync_settings, user=actual_user)
+            profile_form = UserProfileForm(instance=actual_user)
         
         # Check Gmail connection status
         gmail_connected = False
         try:
             from mobilize.communications.gmail_service import GmailService
-            gmail_service = GmailService(request.user)
+            gmail_service = GmailService(actual_user)
             gmail_connected = gmail_service.is_authenticated()
         except Exception:
             pass
@@ -442,25 +446,30 @@ def settings_debug(request):
         from mobilize.authentication.models import UserContactSyncSettings
         from mobilize.authentication.forms import UserContactSyncSettingsForm, UserProfileForm
         
-        # Step 2: Get or create contact sync settings
-        debug_info["step"] = "sync_settings_query"
+        # Step 2: Get the actual User instance (middleware gives us a wrapper)
+        debug_info["step"] = "get_actual_user"
+        from mobilize.authentication.models import User
+        actual_user = User.objects.get(id=request.user.id)
+        
+        # Get or create contact sync settings
+        debug_info["step"] = "sync_settings_query" 
         sync_settings, created = UserContactSyncSettings.objects.get_or_create(
-            user=request.user,
+            user=actual_user,
             defaults={'sync_preference': 'crm_only'}
         )
         debug_info["sync_settings_created"] = created
         
         # Step 3: Initialize forms
         debug_info["step"] = "form_initialization"
-        sync_form = UserContactSyncSettingsForm(instance=sync_settings, user=request.user)
-        profile_form = UserProfileForm(instance=request.user)
+        sync_form = UserContactSyncSettingsForm(instance=sync_settings, user=actual_user)
+        profile_form = UserProfileForm(instance=actual_user)
         
         # Step 4: Check Gmail connection
         debug_info["step"] = "gmail_check"
         gmail_connected = False
         try:
             from mobilize.communications.gmail_service import GmailService
-            gmail_service = GmailService(request.user)
+            gmail_service = GmailService(actual_user)
             gmail_connected = gmail_service.is_authenticated()
         except Exception as gmail_error:
             debug_info["gmail_error"] = str(gmail_error)

@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Claude's Working Guidelines
+
+- Do not commit or push any changes without my permission
+
 # Mobilize CRM - Django Project Architecture Guide
 
 ## Project Overview
@@ -50,5 +54,3 @@ mobilize/
 - **Email Processing**: `mobilize.communications.tasks.*` (queue: email)
 - **Notifications**: `mobilize.tasks.tasks.*` (queue: notifications) 
 - **Data Sync**: `mobilize.utils.tasks.*` (queue: sync)
-
-[Rest of the existing content remains unchanged...]
