@@ -207,13 +207,23 @@
             <div class="text-muted">
                 <span id="showing-text">Showing <span id="current-count">0</span> of <span id="total-count">0</span> people</span>
             </div>
-            <div>
-                <button type="button" class="btn btn-primary" id="load-more-btn" style="display: none;">
-                    Load More <span id="per-page-count">25</span>
-                </button>
-                <span class="text-muted" id="end-reached" style="display: none;">
-                    <i class="fas fa-check-circle text-success"></i> All people loaded
-                </span>
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <label for="per-page-select" class="form-label mb-0 text-muted">Show:</label>
+                    <select id="per-page-select" class="form-select form-select-sm" style="width: auto;">
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary" id="load-more-btn" style="display: none;">
+                        Load More <span id="per-page-count">25</span>
+                    </button>
+                    <span class="text-muted" id="end-reached" style="display: none;">
+                        <i class="fas fa-check-circle text-success"></i> All people loaded
+                    </span>
+                </div>
             </div>
         </div>
     </div>
@@ -265,14 +275,13 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     };
     
-    // Load initial data
-    personLoader.loadMore();
-    
-    // Set up pagination controls
+    // Set up pagination controls FIRST
     const loadMoreBtn = document.getElementById('load-more-btn');
     const currentCountSpan = document.getElementById('current-count');
     const totalCountSpan = document.getElementById('total-count');
     const endReachedSpan = document.getElementById('end-reached');
+    const perPageSelect = document.getElementById('per-page-select');
+    const perPageCount = document.getElementById('per-page-count');
     
     // Load more button click handler (only if infinite scroll is disabled)
     if (!personLoader.enableInfiniteScroll) {
@@ -280,6 +289,17 @@ document.addEventListener('DOMContentLoaded', function() {
             personLoader.loadMore();
         });
     }
+    
+    // Per-page selector change handler
+    perPageSelect.addEventListener('change', (e) => {
+        const newPerPage = parseInt(e.target.value);
+        personLoader.perPage = newPerPage;
+        perPageCount.textContent = newPerPage;
+        personLoader.resetAndLoad();
+    });
+    
+    // Load initial data AFTER pagination controls are set up
+    personLoader.loadMore();
     
     // Listen for loader updates to get accurate total count
     window.addEventListener('lazyLoaderUpdate', (event) => {

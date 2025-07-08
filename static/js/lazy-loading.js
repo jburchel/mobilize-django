@@ -22,6 +22,9 @@ class LazyLoader {
         // Initialize intersection observer for infinite scroll (only if enabled)
         if (this.enableInfiniteScroll) {
             this.initIntersectionObserver();
+        } else {
+            // Create sentinel even for manual pagination to ensure consistent DOM structure
+            this.createSentinel();
         }
         
         // Initialize search/filter handlers
@@ -66,6 +69,15 @@ class LazyLoader {
         }, observerOptions);
         
         this.observer.observe(sentinel);
+    }
+    
+    createSentinel() {
+        // Create sentinel element at the bottom of the table for manual pagination
+        const sentinel = document.createElement('tr');
+        sentinel.id = 'load-more-sentinel';
+        sentinel.style.height = '1px';
+        sentinel.style.display = 'none'; // Hide it for manual pagination
+        this.tableBody.appendChild(sentinel);
     }
     
     initSearchHandlers() {
@@ -148,7 +160,9 @@ class LazyLoader {
             this.currentPage++;
             this.hasMore = data.has_next;
             this.totalCount = data.total || 0;
-            this.currentCount = this.tableBody.querySelectorAll('tr:not(#load-more-sentinel):not(#loading-indicator)').length;
+            
+            // Calculate current count more reliably
+            this.updateCurrentCount();
             
             // Update pagination display
             this.updatePaginationDisplay();
@@ -330,6 +344,20 @@ class LazyLoader {
         
         // Reset pagination and reload data with new filters
         this.resetAndLoad();
+    }
+    
+    updateCurrentCount() {
+        // Count all table rows except system rows (sentinel and loading indicator)
+        const allRows = this.tableBody.querySelectorAll('tr');
+        let dataRows = 0;
+        
+        allRows.forEach(row => {
+            if (row.id !== 'load-more-sentinel' && row.id !== 'loading-indicator') {
+                dataRows++;
+            }
+        });
+        
+        this.currentCount = dataRows;
     }
     
     updatePaginationDisplay() {
