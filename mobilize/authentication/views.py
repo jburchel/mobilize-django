@@ -8,6 +8,7 @@ from django.db.models import Q, Count
 from django.urls import reverse
 from django.views.generic import ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import JsonResponse
 import requests
 import json
 import logging
@@ -174,7 +175,8 @@ def login_view(request):
         f"response_type=code&"
         f"scope={scope}&"
         f"access_type=offline&"
-        f"prompt=consent"
+        f"prompt=consent&"
+        f"hd=crossoverglobal.net"  # Restrict to crossoverglobal.net domain
     )
     
     context = {
@@ -314,3 +316,29 @@ class UserListView(LoginRequiredMixin, ListView):
         ).count()
         
         return context
+
+def debug_oauth_config(request):
+    """Debug OAuth configuration"""
+    from django.conf import settings
+    
+    client_id = getattr(settings, "GOOGLE_CLIENT_ID", "")
+    redirect_uri = "https://mobilize-crm-new.onrender.com/auth/google/callback/"
+    
+    return JsonResponse({
+        "client_id": client_id,
+        "redirect_uri_configured": redirect_uri,
+        "oauth_consent_screen_info": {
+            "user_type": "Internal (crossoverglobal.net only)",
+            "publishing_status": "Check in Google Cloud Console",
+            "test_users": "Not needed for Internal apps"
+        },
+        "troubleshooting": {
+            "1": "Verify redirect URI in Google Cloud Console matches exactly",
+            "2": "Check OAuth consent screen is configured",
+            "3": "For Internal apps, ensure user is part of the Google Workspace",
+            "4": "Try clearing browser cache/cookies",
+            "5": "Check if other crossoverglobal.net users can login"
+        },
+        "test_oauth_url": f"https://accounts.google.com/o/oauth2/v2/auth?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code&scope=openid%20email%20profile&access_type=offline&prompt=consent&hd=crossoverglobal.net"
+    }, json_dumps_params={"indent": 2})
+
