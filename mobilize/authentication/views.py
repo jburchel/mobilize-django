@@ -157,13 +157,12 @@ def login_view(request):
     scope = ' '.join([
         'openid',
         'email',
-        'profile'
-        # Temporarily removed sensitive scopes to test authentication
-        # 'https://www.googleapis.com/auth/gmail.compose',
-        # 'https://www.googleapis.com/auth/gmail.send',
-        # 'https://www.googleapis.com/auth/gmail.readonly',
-        # 'https://www.googleapis.com/auth/contacts',
-        # 'https://www.googleapis.com/auth/calendar'
+        'profile',
+        'https://www.googleapis.com/auth/gmail.compose',
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/contacts',
+        'https://www.googleapis.com/auth/calendar'
     ])
     
     google_auth_url = (
