@@ -188,7 +188,7 @@
             googleSignInButton.disabled = true;
             
             // Redirect to Google OAuth URL
-            window.location.href = "{% url 'authentication:google_auth' %}";
+            window.location.href = "{{ google_auth_url }}";
         });
         
         // Handle Forgot Password
