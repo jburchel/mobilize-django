@@ -157,31 +157,31 @@ def login_view(request):
     client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
     # Hardcode the redirect URI to ensure it matches Google Cloud Console exactly
     redirect_uri = 'https://mobilize-crm-new.onrender.com/auth/google/callback/'
-    # TEMPORARY TEST: Testing with ONLY basic scopes (no sensitive scopes)
+    # Restore full scopes - the issue was URL encoding, not scopes
     scope = ' '.join([
         'openid',
         'email',
-        'profile'
-        # ALL sensitive scopes commented out for testing:
-        # 'https://www.googleapis.com/auth/gmail.readonly'
-        # 'https://www.googleapis.com/auth/gmail.compose',
-        # 'https://www.googleapis.com/auth/gmail.send',
-        # 'https://www.googleapis.com/auth/contacts',
-        # 'https://www.googleapis.com/auth/calendar'
+        'profile',
+        'https://www.googleapis.com/auth/gmail.compose',
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/contacts',
+        'https://www.googleapis.com/auth/calendar'
     ])
     
-    # Properly encode the OAuth URL parameters
+    # Fix URL encoding to prevent line breaks in HTML
     import urllib.parse
     params = {
-        'client_id': client_id,
-        'redirect_uri': redirect_uri,
+        'client_id': client_id.strip(),  # Remove any whitespace
+        'redirect_uri': redirect_uri.strip(),
         'response_type': 'code',
         'scope': scope,
         'access_type': 'offline',
         'prompt': 'consent',
-        'hd': 'crossoverglobal.net'  # Restrict to crossoverglobal.net domain
+        'hd': 'crossoverglobal.net'
     }
-    google_auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(params)}"
+    # Build URL more carefully to avoid line break issues
+    google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
     
     context = {
         'google_auth_url': google_auth_url,
