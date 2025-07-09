@@ -42,7 +42,7 @@ def google_auth_callback(request):
         client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
         client_secret = getattr(settings, 'GOOGLE_CLIENT_SECRET', '')
         # Hardcode the redirect URI to ensure it matches Google Cloud Console exactly
-    redirect_uri = 'https://mobilize-crm-new.onrender.com/auth/google/callback/'
+        redirect_uri = 'https://mobilize-crm-new.onrender.com/auth/google/callback/'
         
         token_data = {
             'code': code,
