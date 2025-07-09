@@ -187,8 +187,8 @@
             googleSignInButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Signing in...';
             googleSignInButton.disabled = true;
             
-            // Redirect to Google OAuth URL
-            window.location.href = "{{ google_auth_url }}";
+            // Redirect to Google OAuth URL - properly escape for JavaScript
+            window.location.href = "{{ google_auth_url|escapejs }}";
         });
         
         // Handle Forgot Password
