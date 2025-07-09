@@ -157,13 +157,13 @@ def login_view(request):
     client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
     # Hardcode the redirect URI to ensure it matches Google Cloud Console exactly
     redirect_uri = 'https://mobilize-crm-new.onrender.com/auth/google/callback/'
-    # TEMPORARY TEST: Testing with just gmail.readonly to isolate the issue
+    # TEMPORARY TEST: Testing with ONLY basic scopes (no sensitive scopes)
     scope = ' '.join([
         'openid',
         'email',
-        'profile',
-        'https://www.googleapis.com/auth/gmail.readonly'
-        # Temporarily commented out other sensitive scopes:
+        'profile'
+        # ALL sensitive scopes commented out for testing:
+        # 'https://www.googleapis.com/auth/gmail.readonly'
         # 'https://www.googleapis.com/auth/gmail.compose',
         # 'https://www.googleapis.com/auth/gmail.send',
         # 'https://www.googleapis.com/auth/contacts',
