@@ -490,6 +490,55 @@ def settings_debug(request):
         return JsonResponse(debug_info)
 
 
+def debug_oauth_uri(request):
+    """Debug endpoint to show what OAuth redirect URI is being generated"""
+    from django.http import JsonResponse
+    
+    # Generate the redirect URI the same way the views do
+    redirect_uri = request.build_absolute_uri('/auth/google/callback/')
+    
+    # Get OAuth URL
+    from django.conf import settings
+    client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
+    
+    scope = ' '.join([
+        'openid',
+        'email',
+        'profile',
+        'https://www.googleapis.com/auth/gmail.compose',
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/contacts',
+        'https://www.googleapis.com/auth/calendar'
+    ])
+    
+    google_auth_url = (
+        f"https://accounts.google.com/o/oauth2/v2/auth?"
+        f"client_id={client_id}&"
+        f"redirect_uri={redirect_uri}&"
+        f"response_type=code&"
+        f"scope={scope}&"
+        f"access_type=offline&"
+        f"prompt=consent"
+    )
+    
+    debug_info = {
+        'redirect_uri': redirect_uri,
+        'client_id': client_id,
+        'full_oauth_url': google_auth_url,
+        'host': request.get_host(),
+        'scheme': request.scheme,
+        'is_secure': request.is_secure(),
+        'meta_headers': {
+            'HTTP_HOST': request.META.get('HTTP_HOST'),
+            'HTTP_X_FORWARDED_PROTO': request.META.get('HTTP_X_FORWARDED_PROTO'),
+            'HTTP_X_FORWARDED_HOST': request.META.get('HTTP_X_FORWARDED_HOST'),
+        }
+    }
+    
+    return JsonResponse(debug_info, json_dumps_params={'indent': 2})
+
+
 @login_required
 def reports(request):
     """

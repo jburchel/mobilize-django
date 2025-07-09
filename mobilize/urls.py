@@ -15,6 +15,7 @@ def health_check(request):
 
 urlpatterns = [
     path('health/', health_check, name='health_check'),
+    path('favicon.ico', RedirectView.as_view(url='/static/favicon.png', permanent=True)),
     path('admin/', admin.site.urls),
     path('', include('mobilize.core.urls')),
     path('contacts/', include('mobilize.contacts.urls')),
