@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Claude's Working Guidelines
 
 - Do not commit or push any changes without my permission
+- Remember we can use gcloud commands to get information on any gcp information we need
 
 # Mobilize CRM - Django Project Architecture Guide
 
@@ -54,3 +55,4 @@ mobilize/
 - **Email Processing**: `mobilize.communications.tasks.*` (queue: email)
 - **Notifications**: `mobilize.tasks.tasks.*` (queue: notifications) 
 - **Data Sync**: `mobilize.utils.tasks.*` (queue: sync)
+```
