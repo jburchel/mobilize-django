@@ -56,6 +56,59 @@
                 <p class="card-text">{{ task.description }}</p>
                 {% endif %}
                 
+                {# Prominent person/church/contact display #}
+                {% if task.person or task.church or task.contact %}
+                <div class="alert alert-info border-0 mb-3">
+                    <h6 class="alert-heading mb-2"><i class="fas fa-link"></i> Related Contact</h6>
+                    {% if task.person %}
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user text-primary me-2"></i>
+                            <div>
+                                <strong>Person:</strong> 
+                                <a href="{% url 'contacts:person_detail' task.person.pk %}" class="text-decoration-none">
+                                    {{ task.person.contact.first_name }} {{ task.person.contact.last_name }}
+                                </a>
+                                {% if task.person.contact.email %}
+                                    <br><small class="text-muted">{{ task.person.contact.email }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% elif task.church %}
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-church text-primary me-2"></i>
+                            <div>
+                                <strong>Church:</strong> 
+                                <a href="{% url 'churches:church_detail' task.church.pk %}" class="text-decoration-none">
+                                    {{ task.church.name }}
+                                </a>
+                                {% if task.church.contact.email %}
+                                    <br><small class="text-muted">{{ task.church.contact.email }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% elif task.contact %}
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-{% if task.contact.type == 'person' %}user{% else %}church{% endif %} text-primary me-2"></i>
+                            <div>
+                                <strong>Contact:</strong> 
+                                {% if task.contact.type == 'person' %}
+                                    <a href="{% url 'contacts:person_detail' task.contact.person.pk %}" class="text-decoration-none">
+                                        {{ task.contact.first_name }} {{ task.contact.last_name }}
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'churches:church_detail' task.contact.church.pk %}" class="text-decoration-none">
+                                        {{ task.contact.church_name }}
+                                    </a>
+                                {% endif %}
+                                {% if task.contact.email %}
+                                    <br><small class="text-muted">{{ task.contact.email }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
                 <div class="row">
                     <div class="col-md-6">
                         <h6 class="text-muted">Due Date</h6>

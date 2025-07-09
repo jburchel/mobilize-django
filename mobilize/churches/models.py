@@ -11,11 +11,13 @@ class Church(models.Model):
     Matches the 'churches' table in the Supabase database.
     It extends the Contact model via a OneToOneField.
     """
+    # Note: Using separate id field to match existing database schema
+    # The database has both 'id' (primary key) and 'contact_id' (foreign key)
     contact = models.OneToOneField(
         Contact,
         on_delete=models.CASCADE,
-        primary_key=True,
-        related_name='church_details'
+        related_name='church_details',
+        db_column='contact_id'
     )
 
     # Church-specific fields

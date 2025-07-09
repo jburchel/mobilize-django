@@ -249,11 +249,13 @@ class Person(models.Model):
     This model links to a Contact record via a OneToOneField.
     Fields here are specific to individuals.
     """
+    # Note: Using separate id field to match existing database schema
+    # The database has both 'id' (primary key) and 'contact_id' (foreign key)
     contact = models.OneToOneField(
         Contact,
         on_delete=models.CASCADE,
-        primary_key=True,
-        related_name='person_details'
+        related_name='person_details',
+        db_column='contact_id'
     )
 
     # Personal details

@@ -38,25 +38,22 @@ class TaskListView(LoginRequiredMixin, ListView):
                     user_offices = list(self.request.user.useroffice_set.values_list('office_id', flat=True))
                     
                     if user_offices:
-                        # Filter tasks based on user access
+                        # Filter tasks based on user access - only show assigned tasks
                         queryset = queryset.filter(
                             models.Q(assigned_to=self.request.user) |
-                            models.Q(created_by=self.request.user) |
                             models.Q(person__contact__office__in=user_offices) |
                             models.Q(church__contact__office__in=user_offices) |
                             models.Q(office__in=user_offices)
                         ).distinct()
                     else:
-                        # If user has no office assignments, show their assigned/created tasks
+                        # If user has no office assignments, show only their assigned tasks
                         queryset = queryset.filter(
-                            models.Q(assigned_to=self.request.user) |
-                            models.Q(created_by=self.request.user)
+                            models.Q(assigned_to=self.request.user)
                         ).distinct()
                 except Exception:
-                    # If office filtering fails, fall back to user's assigned/created tasks
+                    # If office filtering fails, fall back to user's assigned tasks only
                     queryset = queryset.filter(
-                        models.Q(assigned_to=self.request.user) |
-                        models.Q(created_by=self.request.user)
+                        models.Q(assigned_to=self.request.user)
                     ).distinct()
             
             # Apply filters from GET parameters
@@ -146,7 +143,6 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
             
             queryset = queryset.filter(
                 models.Q(assigned_to=self.request.user) |
-                models.Q(created_by=self.request.user) |
                 models.Q(person__contact__office__in=user_offices) |
                 models.Q(church__contact__office__in=user_offices) |
                 models.Q(office__in=user_offices)
@@ -329,7 +325,6 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
             
             queryset = queryset.filter(
                 models.Q(assigned_to=self.request.user) |
-                models.Q(created_by=self.request.user) |
                 models.Q(person__contact__office__in=user_offices) |
                 models.Q(church__contact__office__in=user_offices) |
                 models.Q(office__in=user_offices)
@@ -443,7 +438,6 @@ class TaskDeleteView(LoginRequiredMixin, DeleteView):
             
             queryset = queryset.filter(
                 models.Q(assigned_to=self.request.user) |
-                models.Q(created_by=self.request.user) |
                 models.Q(person__contact__office__in=user_offices) |
                 models.Q(church__contact__office__in=user_offices) |
                 models.Q(office__in=user_offices)

@@ -102,6 +102,42 @@
                         </div>
                     </div>
                     <p class="mb-1 mt-1">{{ task.description|truncatewords:20|default:"" }}</p>
+                    
+                    {# Display person/church/contact prominently #}
+                    {% if task.person %}
+                        <div class="mb-1">
+                            <small class="text-info"><i class="fas fa-user"></i> <strong>Person:</strong> 
+                                <a href="{% url 'contacts:person_detail' task.person.pk %}" class="text-info">
+                                    {{ task.person.contact.first_name }} {{ task.person.contact.last_name }}
+                                </a>
+                            </small>
+                        </div>
+                    {% elif task.church %}
+                        <div class="mb-1">
+                            <small class="text-info"><i class="fas fa-church"></i> <strong>Church:</strong> 
+                                <a href="{% url 'churches:church_detail' task.church.pk %}" class="text-info">
+                                    {{ task.church.name }}
+                                </a>
+                            </small>
+                        </div>
+                    {% elif task.contact %}
+                        <div class="mb-1">
+                            <small class="text-info">
+                                <i class="fas fa-{% if task.contact.type == 'person' %}user{% else %}church{% endif %}"></i> 
+                                <strong>Contact:</strong> 
+                                {% if task.contact.type == 'person' %}
+                                    <a href="{% url 'contacts:person_detail' task.contact.person.pk %}" class="text-info">
+                                        {{ task.contact.first_name }} {{ task.contact.last_name }}
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'churches:church_detail' task.contact.church.pk %}" class="text-info">
+                                        {{ task.contact.church_name }}
+                                    </a>
+                                {% endif %}
+                            </small>
+                        </div>
+                    {% endif %}
+                    
                     {% if task.assigned_to %}<small class="d-block text-muted">Assigned to: {{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</small>{% endif %}
                 </div>
             {% endfor %}
