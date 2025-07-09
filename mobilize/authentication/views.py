@@ -41,7 +41,8 @@ def google_auth_callback(request):
         token_url = 'https://oauth2.googleapis.com/token'
         client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
         client_secret = getattr(settings, 'GOOGLE_CLIENT_SECRET', '')
-        redirect_uri = request.build_absolute_uri('/auth/google/callback/')
+        # Hardcode the redirect URI to ensure it matches Google Cloud Console exactly
+    redirect_uri = 'https://mobilize-crm-new.onrender.com/auth/google/callback/'
         
         token_data = {
             'code': code,
@@ -153,7 +154,8 @@ def login_view(request):
     # Generate Google OAuth URL
     from django.conf import settings
     client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
-    redirect_uri = request.build_absolute_uri('/auth/google/callback/')
+    # Hardcode the redirect URI to ensure it matches Google Cloud Console exactly
+    redirect_uri = 'https://mobilize-crm-new.onrender.com/auth/google/callback/'
     scope = ' '.join([
         'openid',
         'email',
