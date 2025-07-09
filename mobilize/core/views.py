@@ -501,7 +501,8 @@ def debug_oauth_uri(request):
     from django.conf import settings
     client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
     
-    scope = ' '.join([
+    # Full scope list
+    full_scope = ' '.join([
         'openid',
         'email',
         'profile',
@@ -512,7 +513,60 @@ def debug_oauth_uri(request):
         'https://www.googleapis.com/auth/calendar'
     ])
     
-    google_auth_url = (
+    # Minimal scope for testing
+    minimal_scope = 'openid email profile'
+    
+    full_oauth_url = (
+        f"https://accounts.google.com/o/oauth2/v2/auth?"
+        f"client_id={client_id}&"
+        f"redirect_uri={redirect_uri}&"
+        f"response_type=code&"
+        f"scope={full_scope}&"
+        f"access_type=offline&"
+        f"prompt=consent"
+    )
+    
+    minimal_oauth_url = (
+        f"https://accounts.google.com/o/oauth2/v2/auth?"
+        f"client_id={client_id}&"
+        f"redirect_uri={redirect_uri}&"
+        f"response_type=code&"
+        f"scope={minimal_scope}&"
+        f"access_type=offline&"
+        f"prompt=consent"
+    )
+    
+    debug_info = {
+        'redirect_uri': redirect_uri,
+        'client_id': client_id,
+        'full_oauth_url': full_oauth_url,
+        'minimal_oauth_url': minimal_oauth_url,
+        'host': request.get_host(),
+        'scheme': request.scheme,
+        'is_secure': request.is_secure(),
+        'meta_headers': {
+            'HTTP_HOST': request.META.get('HTTP_HOST'),
+            'HTTP_X_FORWARDED_PROTO': request.META.get('HTTP_X_FORWARDED_PROTO'),
+            'HTTP_X_FORWARDED_HOST': request.META.get('HTTP_X_FORWARDED_HOST'),
+        },
+        'test_urls': {
+            'minimal_test': f"https://mobilize-crm-new.onrender.com/test-oauth-minimal/",
+            'full_test': f"https://mobilize-crm-new.onrender.com/test-oauth-full/"
+        }
+    }
+    
+    return JsonResponse(debug_info, json_dumps_params={'indent': 2})
+
+
+def test_oauth_minimal(request):
+    """Test OAuth with minimal scopes"""
+    from django.conf import settings
+    
+    client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
+    redirect_uri = request.build_absolute_uri('/auth/google/callback/')
+    scope = 'openid email profile'
+    
+    oauth_url = (
         f"https://accounts.google.com/o/oauth2/v2/auth?"
         f"client_id={client_id}&"
         f"redirect_uri={redirect_uri}&"
@@ -522,21 +576,37 @@ def debug_oauth_uri(request):
         f"prompt=consent"
     )
     
-    debug_info = {
-        'redirect_uri': redirect_uri,
-        'client_id': client_id,
-        'full_oauth_url': google_auth_url,
-        'host': request.get_host(),
-        'scheme': request.scheme,
-        'is_secure': request.is_secure(),
-        'meta_headers': {
-            'HTTP_HOST': request.META.get('HTTP_HOST'),
-            'HTTP_X_FORWARDED_PROTO': request.META.get('HTTP_X_FORWARDED_PROTO'),
-            'HTTP_X_FORWARDED_HOST': request.META.get('HTTP_X_FORWARDED_HOST'),
-        }
-    }
+    return redirect(oauth_url)
+
+
+def test_oauth_full(request):
+    """Test OAuth with full scopes"""
+    from django.conf import settings
     
-    return JsonResponse(debug_info, json_dumps_params={'indent': 2})
+    client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
+    redirect_uri = request.build_absolute_uri('/auth/google/callback/')
+    scope = ' '.join([
+        'openid',
+        'email', 
+        'profile',
+        'https://www.googleapis.com/auth/gmail.compose',
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/contacts',
+        'https://www.googleapis.com/auth/calendar'
+    ])
+    
+    oauth_url = (
+        f"https://accounts.google.com/o/oauth2/v2/auth?"
+        f"client_id={client_id}&"
+        f"redirect_uri={redirect_uri}&"
+        f"response_type=code&"
+        f"scope={scope}&"
+        f"access_type=offline&"
+        f"prompt=consent"
+    )
+    
+    return redirect(oauth_url)
 
 
 @login_required

@@ -16,6 +16,8 @@ urlpatterns = [
     path('db-diagnostic/', views.db_diagnostic, name='db_diagnostic'),
     path('permissions-debug/', views.permissions_debug, name='permissions_debug'),
     path('debug-oauth-uri/', views.debug_oauth_uri, name='debug_oauth_uri'),
+    path('test-oauth-minimal/', views.test_oauth_minimal, name='test_oauth_minimal'),
+    path('test-oauth-full/', views.test_oauth_full, name='test_oauth_full'),
     path('debug-dashboard-toggle/', debug_views.debug_dashboard_toggle, name='debug_dashboard_toggle'),
     path('debug-dashboard-minimal/', debug_views.debug_dashboard_minimal, name='debug_dashboard_minimal'),
 ]
