@@ -9,6 +9,12 @@ class CustomAuthMiddleware(MiddlewareMixin):
     """
     
     def process_request(self, request):
+        # First check if user is already authenticated via Django's standard auth system
+        # (This handles OAuth callback logins)
+        if hasattr(request, 'user') and request.user.is_authenticated:
+            # User is already authenticated via Django's auth system, don't override
+            return None
+        
         # Check if user is authenticated via our manual session
         if request.session.get('authenticated') and request.session.get('user_id'):
             # Create a minimal user object that Django's auth system will accept
