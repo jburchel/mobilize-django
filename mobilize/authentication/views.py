@@ -168,16 +168,18 @@ def login_view(request):
         'https://www.googleapis.com/auth/calendar'
     ])
     
-    google_auth_url = (
-        f"https://accounts.google.com/o/oauth2/v2/auth?"
-        f"client_id={client_id}&"
-        f"redirect_uri={redirect_uri}&"
-        f"response_type=code&"
-        f"scope={scope}&"
-        f"access_type=offline&"
-        f"prompt=consent&"
-        f"hd=crossoverglobal.net"  # Restrict to crossoverglobal.net domain
-    )
+    # Properly encode the OAuth URL parameters
+    import urllib.parse
+    params = {
+        'client_id': client_id,
+        'redirect_uri': redirect_uri,
+        'response_type': 'code',
+        'scope': scope,
+        'access_type': 'offline',
+        'prompt': 'consent',
+        'hd': 'crossoverglobal.net'  # Restrict to crossoverglobal.net domain
+    }
+    google_auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(params)}"
     
     context = {
         'google_auth_url': google_auth_url,
