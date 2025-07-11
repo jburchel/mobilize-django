@@ -101,7 +101,7 @@ class Church(models.Model):
     def get_absolute_url(self):
         """Return the URL to access a detail record for this church."""
         from django.urls import reverse
-        return reverse('churches:church_detail', args=[str(self.contact_id)])
+        return reverse('churches:church_detail', args=[str(self.pk)])
     
     def get_primary_contact(self):
         """Get the primary contact person for this church."""
