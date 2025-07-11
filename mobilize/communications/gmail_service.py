@@ -387,11 +387,25 @@ class GmailService:
                 print(f"Error getting known emails: {e}")
                 known_emails = set()
         
-        # Query for recent emails
+        # Query for recent emails - include both inbox and sent
         since_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y/%m/%d')
-        query = f'after:{since_date}'
         
-        messages = self.get_messages(query=query, max_results=500)  # Increased limit
+        # Get both inbox and sent emails
+        inbox_query = f'in:inbox after:{since_date}'
+        sent_query = f'in:sent after:{since_date}'
+        
+        # Combine both queries
+        inbox_messages = self.get_messages(query=inbox_query, max_results=250)
+        sent_messages = self.get_messages(query=sent_query, max_results=250)
+        
+        # Combine and deduplicate messages
+        all_message_ids = set()
+        messages = []
+        for msg_list in [inbox_messages, sent_messages]:
+            for msg in msg_list:
+                if msg['id'] not in all_message_ids:
+                    all_message_ids.add(msg['id'])
+                    messages.append(msg)
         synced_count = 0
         skipped_count = 0
         
@@ -399,45 +413,82 @@ class GmailService:
             # Check if communication already exists
             if Communication.objects.filter(gmail_message_id=message['id']).exists():
                 continue
+            
+            # Extract sender email for matching
+            sender_full = message.get('sender', '')
+            # Parse email from "Name <email>" format
+            import re
+            sender_match = re.search(r'<([^>]+)>', sender_full)
+            if sender_match:
+                sender_email = sender_match.group(1).lower().strip()
+            else:
+                sender_email = sender_full.lower().strip()
+            
+            # Check if this is a sent email (sender is current user)
+            is_sent_email = sender_email == self.user.email.lower().strip()
+            
+            # For received emails: check if from known contact
+            # For sent emails: check if to known contact (via recipients)
+            relevant_contact = None
+            person = None
+            church = None
+            direction = 'inbound'
+            
+            if is_sent_email:
+                # This is a sent email - check recipients for known contacts
+                to_field = message.get('to', '')
+                # Parse multiple recipients (comma-separated)
+                recipients = [email.strip() for email in to_field.split(',') if email.strip()]
+                for recipient_email in recipients:
+                    # Extract email from "Name <email>" format
+                    import re
+                    email_match = re.search(r'<([^>]+)>', recipient_email)
+                    if email_match:
+                        recipient_email = email_match.group(1)
+                    recipient_email = recipient_email.lower().strip()
+                    
+                    if contacts_only and recipient_email in known_emails:
+                        person = self._find_person_by_email(recipient_email)
+                        church = self._find_church_by_email(recipient_email)
+                        if person or church:
+                            relevant_contact = recipient_email
+                            direction = 'outbound'
+                            break
                 
-            # If contacts_only is True, skip emails not from known contacts
-            if contacts_only and message.get('sender'):
-                sender_email = message['sender'].lower().strip()
-                if sender_email not in known_emails:
+                if contacts_only and not relevant_contact:
                     skipped_count += 1
                     continue
-            
-            # Try to match to contacts by email
-            person = self._find_person_by_email(message['sender'])
-            church = self._find_church_by_email(message['sender'])
-            
-            # Only create if we found a matching contact (when contacts_only=True)
-            if contacts_only and not person and not church:
-                skipped_count += 1
-                continue
+                    
+            else:
+                # This is a received email - check sender for known contact
+                if contacts_only and sender_email not in known_emails:
+                    skipped_count += 1
+                    continue
+                
+                person = self._find_person_by_email(sender_email)
+                church = self._find_church_by_email(sender_email)
+                
+                if contacts_only and not person and not church:
+                    skipped_count += 1
+                    continue
             
             # Handle the person ID mapping correctly
             person_id = None
             if person:
-                # Get the actual person.id from the database (not contact_id)
-                from django.db import connection
-                with connection.cursor() as cursor:
-                    cursor.execute('SELECT id FROM people WHERE contact_id = %s', [person.pk])
-                    result = cursor.fetchone()
-                    if result:
-                        person_id = result[0]
+                # Use the person.id directly (person.pk is already the person ID)
+                person_id = person.pk
             
             Communication.objects.create(
                 type='email',
                 subject=message['subject'],
                 message=message['body'][:250],  # Truncate for database field
-                direction='inbound',
+                direction=direction,
                 date=timezone.now().date(),
                 person_id=person_id,  # Use person_id instead of person object
                 church=church,
                 gmail_message_id=message['id'],
                 gmail_thread_id=message['thread_id'],
-                email_status='received',
+                email_status='sent' if is_sent_email else 'received',
                 sender=message['sender'],
                 user=self.user
             )

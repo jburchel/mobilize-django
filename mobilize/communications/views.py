@@ -223,6 +223,14 @@ class CommunicationListView(LoginRequiredMixin, ListView):
                     Q(message__icontains=search_query)
                 )
             
+            # Filter by contact_id if provided (for "View All" button functionality)
+            contact_id = self.request.GET.get('contact_id')
+            if contact_id:
+                from django.db.models import Q
+                queryset = queryset.filter(
+                    Q(person__contact_id=contact_id) | Q(church__contact_id=contact_id)
+                )
+            
             return queryset.order_by('-date')
             
         except Exception as e:
