@@ -299,7 +299,8 @@ def person_create(request):
         form = PersonForm(request.POST)
         if form.is_valid():
             # Get the user's office assignment
-            user_office = request.user.useroffice_set.first()
+            from mobilize.admin_panel.models import UserOffice
+            user_office = UserOffice.objects.filter(user_id=str(request.user.id)).first()
             office = user_office.office if user_office else None
             
             person = form.save(commit=True, user=request.user, office=office)
