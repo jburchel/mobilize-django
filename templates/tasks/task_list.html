@@ -7,7 +7,15 @@
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Task List</h2>
+        <div class="d-flex align-items-center">
+            <h2 class="me-3">Task List</h2>
+            <div class="form-check">
+                <input type="checkbox" id="select-all" class="form-check-input">
+                <label class="form-check-label" for="select-all">
+                    Select All
+                </label>
+            </div>
+        </div>
         <div>
             <a href="{% url 'tasks:task_create' %}" class="btn btn-primary">
                 <i class="fas fa-plus"></i> Create New Task
@@ -69,11 +77,94 @@
         </div>
     </div>
 
+    <!-- Bulk Operations Bar -->
+    <div class="card mb-3" id="bulk-operations" style="display: none;">
+        <div class="card-body py-2">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <span class="text-muted"><span id="selected-count">0</span> selected</span>
+                
+                <!-- Bulk Delete -->
+                <form method="post" action="{% url 'tasks:bulk_delete' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected tasks?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="task_ids" id="bulk-delete-ids">
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="fas fa-trash"></i> Delete Selected
+                    </button>
+                </form>
+                
+                <!-- Bulk Status Update -->
+                <form method="post" action="{% url 'tasks:bulk_update_status' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="task_ids" id="bulk-status-ids">
+                    <select name="status" class="form-select form-select-sm" style="width: auto; display: inline;">
+                        <option value="">Change Status...</option>
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>
+                </form>
+                
+                <!-- Bulk Priority Update -->
+                <form method="post" action="{% url 'tasks:bulk_update_priority' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="task_ids" id="bulk-priority-ids">
+                    <select name="priority" class="form-select form-select-sm" style="width: auto; display: inline;">
+                        <option value="">Change Priority...</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>
+                </form>
+                
+                <!-- Bulk User Assignment -->
+                <form method="post" action="{% url 'tasks:bulk_assign_user' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="task_ids" id="bulk-user-ids">
+                    <select name="user_id" class="form-select form-select-sm" style="width: auto; display: inline;">
+                        <option value="">Assign to User...</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Assign</button>
+                </form>
+                
+                <!-- Bulk Office Assignment -->
+                <form method="post" action="{% url 'tasks:bulk_assign_office' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="task_ids" id="bulk-office-ids">
+                    <select name="office_id" class="form-select form-select-sm" style="width: auto; display: inline;">
+                        <option value="">Assign to Office...</option>
+                        {% for office in offices %}
+                        <option value="{{ office.id }}">{{ office.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Assign</button>
+                </form>
+                
+                <!-- Bulk Complete -->
+                <form method="post" action="{% url 'tasks:bulk_complete' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="task_ids" id="bulk-complete-ids">
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="fas fa-check"></i> Complete Selected
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     {% if tasks %}
         <div class="list-group">
             {% for task in page_obj %} {# Use page_obj for paginated tasks #}
                 <div id="task-item-{{ task.pk }}" class="list-group-item list-group-item-action flex-column align-items-start {% if task.status == 'completed' %}task-completed{% endif %}">
-                    <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div class="d-flex align-items-start">
+                        <!-- Checkbox for bulk operations -->
+                        <input type="checkbox" name="task_ids" value="{{ task.pk }}" class="form-check-input task-checkbox me-3 mt-1">
+                        <div class="flex-grow-1">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
                         <div>
                             <a href="{{ task.get_absolute_url }}" class="text-decoration-none">
                                 <h5 class="mb-1 {% if task.status == 'completed' %}text-decoration-line-through{% endif %}">{{ task.title }}</h5>
@@ -141,6 +232,8 @@
                     {% endif %}
                     
                     {% if task.assigned_to %}<small class="d-block text-muted">Assigned to: {{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</small>{% endif %}
+                        </div>
+                    </div>
                 </div>
             {% endfor %}
         </div>
@@ -255,6 +348,70 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
+});
+
+// Bulk operations functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('select-all');
+    const taskCheckboxes = document.querySelectorAll('.task-checkbox');
+    const bulkOperationsBar = document.getElementById('bulk-operations');
+    const selectedCountSpan = document.getElementById('selected-count');
+    
+    // Handle select all functionality
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            taskCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            updateBulkOperations();
+        });
+    }
+    
+    // Handle individual checkbox changes
+    taskCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateBulkOperations();
+            updateSelectAllState();
+        });
+    });
+    
+    function updateBulkOperations() {
+        const checkedBoxes = document.querySelectorAll('.task-checkbox:checked');
+        const count = checkedBoxes.length;
+        
+        if (count > 0) {
+            bulkOperationsBar.style.display = 'block';
+            selectedCountSpan.textContent = count;
+            
+            // Update all hidden task_ids inputs
+            const taskIds = Array.from(checkedBoxes).map(cb => cb.value).join(',');
+            document.getElementById('bulk-delete-ids').value = taskIds;
+            document.getElementById('bulk-status-ids').value = taskIds;
+            document.getElementById('bulk-priority-ids').value = taskIds;
+            document.getElementById('bulk-user-ids').value = taskIds;
+            document.getElementById('bulk-office-ids').value = taskIds;
+            document.getElementById('bulk-complete-ids').value = taskIds;
+        } else {
+            bulkOperationsBar.style.display = 'none';
+        }
+    }
+    
+    function updateSelectAllState() {
+        const checkedCount = document.querySelectorAll('.task-checkbox:checked').length;
+        const totalCount = taskCheckboxes.length;
+        
+        if (checkedCount === 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        } else if (checkedCount === totalCount) {
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+        } else {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
 });
 </script>
 {% endblock %}

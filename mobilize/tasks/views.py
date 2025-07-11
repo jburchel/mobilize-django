@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View
 from django.urls import reverse_lazy, reverse
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.utils import timezone
 from django.db import models
@@ -130,6 +132,15 @@ class TaskListView(LoginRequiredMixin, ListView):
         context['current_assigned'] = self.request.GET.get('assigned_to', '')
         context['current_due'] = self.request.GET.get('due', '')
         context['search_query'] = self.request.GET.get('search', '')
+        
+        # Add users and offices for bulk operations
+        from django.contrib.auth import get_user_model
+        from mobilize.admin_panel.models import Office
+        User = get_user_model()
+        
+        context['users'] = User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'email')
+        context['offices'] = Office.objects.filter(is_active=True).order_by('name')
+        
         return context
 
 
@@ -558,3 +569,286 @@ class TaskCategoryDeleteView(LoginRequiredMixin, DeleteView):
     def get_queryset(self):
         # This will be implemented with actual TaskCategory model
         return []
+
+
+# Bulk Operations Views
+@login_required
+@require_POST
+def bulk_delete_tasks(request):
+    """Delete selected tasks"""
+    task_ids = request.POST.get('task_ids', '').split(',')
+    task_ids = [id.strip() for id in task_ids if id.strip()]
+    
+    if not task_ids:
+        messages.error(request, 'No tasks selected for deletion.')
+        return redirect('tasks:task_list')
+    
+    try:
+        # Get tasks that user has permission to delete
+        if request.user.role == 'super_admin':
+            tasks = Task.objects.filter(id__in=task_ids)
+        else:
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = UserOffice.objects.filter(
+                user_id=str(request.user.id)
+            ).values_list('office_id', flat=True)
+            
+            tasks = Task.objects.filter(
+                id__in=task_ids
+            ).filter(
+                models.Q(assigned_to=request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            ).distinct()
+        
+        count = tasks.count()
+        tasks.delete()
+        messages.success(request, f'Successfully deleted {count} tasks.')
+        
+    except Exception as e:
+        messages.error(request, f'Error deleting tasks: {str(e)}')
+    
+    return redirect('tasks:task_list')
+
+
+@login_required
+@require_POST  
+def bulk_update_task_status(request):
+    """Update status for selected tasks"""
+    task_ids = request.POST.get('task_ids', '').split(',')
+    task_ids = [id.strip() for id in task_ids if id.strip()]
+    status = request.POST.get('status', '').strip()
+    
+    if not task_ids:
+        messages.error(request, 'No tasks selected.')
+        return redirect('tasks:task_list')
+        
+    if not status:
+        messages.error(request, 'No status selected.')
+        return redirect('tasks:task_list')
+    
+    try:
+        # Get tasks that user has permission to update
+        if request.user.role == 'super_admin':
+            tasks = Task.objects.filter(id__in=task_ids)
+        else:
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = UserOffice.objects.filter(
+                user_id=str(request.user.id)
+            ).values_list('office_id', flat=True)
+            
+            tasks = Task.objects.filter(
+                id__in=task_ids
+            ).filter(
+                models.Q(assigned_to=request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            ).distinct()
+        
+        count = tasks.count()
+        
+        # Update status and handle completion timestamp
+        for task in tasks:
+            task.status = status
+            if status == 'completed':
+                task.completed_at = timezone.now()
+            elif task.status == 'completed' and status != 'completed':
+                task.completed_at = None
+            task.save()
+        
+        status_display = dict(Task.STATUS_CHOICES).get(status, status)
+        messages.success(request, f'Successfully updated {count} tasks to {status_display}.')
+        
+    except Exception as e:
+        messages.error(request, f'Error updating task status: {str(e)}')
+    
+    return redirect('tasks:task_list')
+
+
+@login_required
+@require_POST
+def bulk_update_task_priority(request):
+    """Update priority for selected tasks"""
+    task_ids = request.POST.get('task_ids', '').split(',')
+    task_ids = [id.strip() for id in task_ids if id.strip()]
+    priority = request.POST.get('priority', '').strip()
+    
+    if not task_ids:
+        messages.error(request, 'No tasks selected.')
+        return redirect('tasks:task_list')
+        
+    if not priority:
+        messages.error(request, 'No priority selected.')
+        return redirect('tasks:task_list')
+    
+    try:
+        # Get tasks that user has permission to update
+        if request.user.role == 'super_admin':
+            tasks = Task.objects.filter(id__in=task_ids)
+        else:
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = UserOffice.objects.filter(
+                user_id=str(request.user.id)
+            ).values_list('office_id', flat=True)
+            
+            tasks = Task.objects.filter(
+                id__in=task_ids
+            ).filter(
+                models.Q(assigned_to=request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            ).distinct()
+        
+        count = tasks.update(priority=priority)
+        priority_display = dict(Task.PRIORITY_CHOICES).get(priority, priority)
+        messages.success(request, f'Successfully updated {count} tasks to {priority_display} priority.')
+        
+    except Exception as e:
+        messages.error(request, f'Error updating task priority: {str(e)}')
+    
+    return redirect('tasks:task_list')
+
+
+@login_required
+@require_POST
+def bulk_assign_task_user(request):
+    """Assign selected tasks to a user"""
+    task_ids = request.POST.get('task_ids', '').split(',')
+    task_ids = [id.strip() for id in task_ids if id.strip()]
+    user_id = request.POST.get('user_id', '').strip()
+    
+    if not task_ids:
+        messages.error(request, 'No tasks selected.')
+        return redirect('tasks:task_list')
+        
+    if not user_id:
+        messages.error(request, 'No user selected.')
+        return redirect('tasks:task_list')
+    
+    try:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        assigned_user = get_object_or_404(User, id=user_id)
+        
+        # Get tasks that user has permission to update
+        if request.user.role == 'super_admin':
+            tasks = Task.objects.filter(id__in=task_ids)
+        else:
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = UserOffice.objects.filter(
+                user_id=str(request.user.id)
+            ).values_list('office_id', flat=True)
+            
+            tasks = Task.objects.filter(
+                id__in=task_ids
+            ).filter(
+                models.Q(assigned_to=request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            ).distinct()
+        
+        count = tasks.update(assigned_to=assigned_user)
+        user_name = assigned_user.get_full_name() or assigned_user.email
+        messages.success(request, f'Successfully assigned {count} tasks to {user_name}.')
+        
+    except Exception as e:
+        messages.error(request, f'Error assigning tasks: {str(e)}')
+    
+    return redirect('tasks:task_list')
+
+
+@login_required
+@require_POST
+def bulk_assign_task_office(request):
+    """Assign selected tasks to an office"""
+    task_ids = request.POST.get('task_ids', '').split(',')
+    task_ids = [id.strip() for id in task_ids if id.strip()]
+    office_id = request.POST.get('office_id', '').strip()
+    
+    if not task_ids:
+        messages.error(request, 'No tasks selected.')
+        return redirect('tasks:task_list')
+        
+    if not office_id:
+        messages.error(request, 'No office selected.')
+        return redirect('tasks:task_list')
+    
+    try:
+        from mobilize.admin_panel.models import Office
+        office = get_object_or_404(Office, id=office_id)
+        
+        # Get tasks that user has permission to update
+        if request.user.role == 'super_admin':
+            tasks = Task.objects.filter(id__in=task_ids)
+        else:
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = UserOffice.objects.filter(
+                user_id=str(request.user.id)
+            ).values_list('office_id', flat=True)
+            
+            tasks = Task.objects.filter(
+                id__in=task_ids
+            ).filter(
+                models.Q(assigned_to=request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            ).distinct()
+        
+        count = tasks.update(office=office)
+        messages.success(request, f'Successfully assigned {count} tasks to {office.name}.')
+        
+    except Exception as e:
+        messages.error(request, f'Error assigning tasks to office: {str(e)}')
+    
+    return redirect('tasks:task_list')
+
+
+@login_required
+@require_POST
+def bulk_complete_tasks(request):
+    """Mark selected tasks as completed"""
+    task_ids = request.POST.get('task_ids', '').split(',')
+    task_ids = [id.strip() for id in task_ids if id.strip()]
+    
+    if not task_ids:
+        messages.error(request, 'No tasks selected.')
+        return redirect('tasks:task_list')
+    
+    try:
+        # Get tasks that user has permission to update
+        if request.user.role == 'super_admin':
+            tasks = Task.objects.filter(id__in=task_ids)
+        else:
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = UserOffice.objects.filter(
+                user_id=str(request.user.id)
+            ).values_list('office_id', flat=True)
+            
+            tasks = Task.objects.filter(
+                id__in=task_ids
+            ).filter(
+                models.Q(assigned_to=request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            ).distinct()
+        
+        count = 0
+        for task in tasks:
+            if task.status != 'completed':
+                task.status = 'completed'
+                task.completed_at = timezone.now()
+                task.save()
+                count += 1
+        
+        messages.success(request, f'Successfully completed {count} tasks.')
+        
+    except Exception as e:
+        messages.error(request, f'Error completing tasks: {str(e)}')
+    
+    return redirect('tasks:task_list')

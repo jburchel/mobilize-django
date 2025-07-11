@@ -12,6 +12,14 @@ urlpatterns = [
     path('<int:pk>/delete/', views.TaskDeleteView.as_view(), name='task_delete'),
     path('<int:pk>/complete/', views.TaskCompleteView.as_view(), name='task_complete'),
     
+    # Bulk operations
+    path('bulk/delete/', views.bulk_delete_tasks, name='bulk_delete'),
+    path('bulk/update-status/', views.bulk_update_task_status, name='bulk_update_status'),
+    path('bulk/update-priority/', views.bulk_update_task_priority, name='bulk_update_priority'),
+    path('bulk/assign-user/', views.bulk_assign_task_user, name='bulk_assign_user'),
+    path('bulk/assign-office/', views.bulk_assign_task_office, name='bulk_assign_office'),
+    path('bulk/complete/', views.bulk_complete_tasks, name='bulk_complete'),
+    
     # Task category views
     path('categories/', views.TaskCategoryListView.as_view(), name='category_list'),
     path('categories/create/', views.TaskCategoryCreateView.as_view(), name='category_create'),
