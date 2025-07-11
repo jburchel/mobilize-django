@@ -78,9 +78,13 @@
                             <i class="fas fa-church text-primary me-2"></i>
                             <div>
                                 <strong>Church:</strong> 
+                                {% if task.church.pk %}
                                 <a href="{% url 'churches:church_detail' task.church.pk %}" class="text-decoration-none">
                                     {{ task.church.name }}
                                 </a>
+                                {% else %}
+                                {{ task.church.name }}
+                                {% endif %}
                                 {% if task.church.contact.email %}
                                     <br><small class="text-muted">{{ task.church.contact.email }}</small>
                                 {% endif %}
@@ -95,10 +99,12 @@
                                     <a href="{% url 'contacts:person_detail' task.contact.person.pk %}" class="text-decoration-none">
                                         {{ task.contact.first_name }} {{ task.contact.last_name }}
                                     </a>
-                                {% else %}
+                                {% elif task.contact.church and task.contact.church.pk %}
                                     <a href="{% url 'churches:church_detail' task.contact.church.pk %}" class="text-decoration-none">
                                         {{ task.contact.church_name }}
                                     </a>
+                                {% else %}
+                                    {{ task.contact.church_name }}
                                 {% endif %}
                                 {% if task.contact.email %}
                                     <br><small class="text-muted">{{ task.contact.email }}</small>
@@ -165,9 +171,13 @@
                     <div class="col-md-6">
                         <h6 class="text-muted">Related Church</h6>
                         <p>
+                            {% if task.church.pk %}
                             <a href="{% url 'churches:church_detail' task.church.pk %}">
                                 {{ task.church.name }}
                             </a>
+                            {% else %}
+                            {{ task.church.name }}
+                            {% endif %}
                         </p>
                     </div>
                     {% endif %}
