@@ -34,28 +34,19 @@ class TaskListView(LoginRequiredMixin, ListView):
                 'created_by', 'assigned_to', 'person', 'church', 'office'
             )
             
-            # Apply simplified office-level filtering with error handling
-            if self.request.user.role != 'super_admin':
-                try:
-                    # Import UserOffice here to avoid circular imports
-                    from mobilize.admin_panel.models import UserOffice
-                    
-                    # Get user offices using the correct approach
-                    user_offices = list(UserOffice.objects.filter(
-                        user_id=str(self.request.user.id)
-                    ).values_list('office_id', flat=True))
-                    
-                    # Only show tasks assigned to or created by the current user
-                    queryset = queryset.filter(
-                        models.Q(assigned_to=self.request.user) |
-                        models.Q(created_by=self.request.user)
-                    ).distinct()
-                except Exception as e:
-                    # If office filtering fails, fall back to user's assigned tasks only
-                    queryset = queryset.filter(
-                        models.Q(assigned_to=self.request.user) |
-                        models.Q(created_by=self.request.user)
-                    ).distinct()
+            # Apply personal task filtering to ALL users (including super_admin)
+            try:
+                # Only show tasks assigned to or created by the current user
+                queryset = queryset.filter(
+                    models.Q(assigned_to=self.request.user) |
+                    models.Q(created_by=self.request.user)
+                ).distinct()
+            except Exception as e:
+                # If filtering fails, fall back to user's assigned tasks only
+                queryset = queryset.filter(
+                    models.Q(assigned_to=self.request.user) |
+                    models.Q(created_by=self.request.user)
+                ).distinct()
             
             # Apply filters from GET parameters
             status_filter = self.request.GET.get('status')
