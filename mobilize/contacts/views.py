@@ -39,7 +39,7 @@ def person_list(request):
     sort_by = request.GET.get('sort', 'name')  # Default sort by name
     
     # Check if lazy loading is disabled (for backwards compatibility)
-    use_lazy_loading = request.GET.get('lazy', 'true').lower() == 'true'
+    use_lazy_loading = request.GET.get('lazy', 'false').lower() == 'true'
     
     # Get pipeline stages for the dropdown
     from mobilize.pipeline.models import MAIN_PEOPLE_PIPELINE_STAGES, Pipeline
