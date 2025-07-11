@@ -79,18 +79,17 @@
 <!-- Bulk Operations Bar -->
 <div class="card mb-3" id="bulk-operations" style="display: none;">
     <div class="card-body py-2">
-        <div class="d-flex align-items-center gap-3">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
             <span class="text-muted"><span id="selected-count">0</span> selected</span>
             
             <!-- Bulk Delete -->
-            <form method="post" action="{% url 'contacts:bulk_delete' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected contacts?');">
+            <form method="post" action="{% url 'contacts:bulk_delete' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected people?');">
                 {% csrf_token %}
                 <input type="hidden" name="contact_ids" id="bulk-delete-ids">
                 <button type="submit" class="btn btn-danger btn-sm">
                     <i class="fas fa-trash"></i> Delete Selected
                 </button>
             </form>
-            
             
             <!-- Bulk Priority Update -->
             <form method="post" action="{% url 'contacts:bulk_update_priority' %}" style="display: inline;">
@@ -103,6 +102,45 @@
                     {% endfor %}
                 </select>
                 <button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>
+            </form>
+            
+            <!-- Bulk Pipeline Stage Update -->
+            <div style="display: inline;">
+                <select id="bulk-stage-select" class="form-select form-select-sm" style="width: auto; display: inline;">
+                    <option value="">Change Stage...</option>
+                    {% for stage in pipeline_stages_objects %}
+                    <option value="{{ stage.id }}">{{ stage.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" id="bulk-update-stage" class="btn btn-outline-primary btn-sm" disabled>
+                    Update Stage
+                </button>
+            </div>
+            
+            <!-- Bulk User Assignment -->
+            <form method="post" action="{% url 'contacts:bulk_assign_user' %}" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="contact_ids" id="bulk-user-ids">
+                <select name="user_id" class="form-select form-select-sm" style="width: auto; display: inline;">
+                    <option value="">Assign to User...</option>
+                    {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Assign</button>
+            </form>
+            
+            <!-- Bulk Office Assignment -->
+            <form method="post" action="{% url 'contacts:bulk_assign_office' %}" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="contact_ids" id="bulk-office-ids">
+                <select name="office_id" class="form-select form-select-sm" style="width: auto; display: inline;">
+                    <option value="">Assign to Office...</option>
+                    {% for office in offices %}
+                    <option value="{{ office.id }}">{{ office.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Assign</button>
             </form>
         </div>
     </div>
@@ -158,6 +196,7 @@
                         <th>Phone</th>
                         <th>Priority</th>
                         <th>Pipeline Stage</th>
+                        <th>Assigned To</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -215,6 +254,13 @@
                             {% endwith %}
                         </td>
                         <td>
+                            {% if person.contact.user %}
+                                {{ person.contact.user.get_full_name|default:person.contact.user.email }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
                             <div class="btn-group btn-group-sm">
                                 <a href="{% url 'contacts:person_detail' person.pk %}" class="btn btn-outline-primary btn-sm">
                                     <i class="fas fa-eye"></i>
@@ -230,7 +276,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
+                        <td colspan="8" class="text-center text-muted py-4">
                             No people found. <a href="{% url 'contacts:person_create' %}">Add the first person</a>.
                         </td>
                     </tr>
@@ -239,34 +285,6 @@
             </table>
         </div>
 
-        <!-- Bulk Actions -->
-        <div id="bulk-actions" class="d-none mb-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-6">
-                            <span id="selected-count" class="text-muted">0 people selected</span>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="d-flex gap-2 justify-content-end">
-                                <select id="bulk-stage-select" class="form-select" style="width: auto;">
-                                    <option value="">Choose Pipeline Stage...</option>
-                                    {% for stage in pipeline_stages_objects %}
-                                    <option value="{{ stage.id }}">{{ stage.name }}</option>
-                                    {% endfor %}
-                                </select>
-                                <button type="button" id="bulk-update-stage" class="btn btn-primary" disabled>
-                                    Update Stage
-                                </button>
-                                <button type="button" id="clear-selection" class="btn btn-outline-secondary">
-                                    Clear Selection
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Pagination -->
         {% include 'partials/_pagination.html' with page_obj=page_obj per_page=per_page %}
@@ -277,26 +295,50 @@
 document.addEventListener('DOMContentLoaded', function() {
     const selectAll = document.getElementById('select-all');
     const checkboxes = document.querySelectorAll('.contact-checkbox');
-    const bulkActionsBar = document.getElementById('bulk-actions');
-    const selectedCount = document.getElementById('selected-count');
+    const bulkOpsBar = document.getElementById('bulk-operations');
+    const selectedCount = document.querySelector('#bulk-operations #selected-count');
     const bulkStageSelect = document.getElementById('bulk-stage-select');
     const bulkUpdateStageBtn = document.getElementById('bulk-update-stage');
-    const clearSelectionBtn = document.getElementById('clear-selection');
     
     // Update bulk operations visibility and selected count
     function updateBulkOperations() {
         const selected = document.querySelectorAll('.contact-checkbox:checked');
         const count = selected.length;
         
-        selectedCount.textContent = `${count} people selected`;
-        
-        if (count > 0) {
-            bulkActionsBar.classList.remove('d-none');
-        } else {
-            bulkActionsBar.classList.add('d-none');
-            bulkStageSelect.value = '';
-            bulkUpdateStageBtn.disabled = true;
+        // Update selected count
+        if (selectedCount) {
+            selectedCount.textContent = count;
         }
+        
+        // Show/hide bulk operations bar
+        if (bulkOpsBar) {
+            bulkOpsBar.style.display = count > 0 ? 'block' : 'none';
+        }
+        
+        // Reset stage selection when no items selected
+        if (count === 0) {
+            if (bulkStageSelect) bulkStageSelect.value = '';
+            if (bulkUpdateStageBtn) bulkUpdateStageBtn.disabled = true;
+        }
+        
+        // Update hidden inputs for bulk operations
+        const ids = Array.from(selected).map(cb => cb.value).join(',');
+        const deleteIds = document.getElementById('bulk-delete-ids');
+        const priorityIds = document.getElementById('bulk-priority-ids');
+        const userIds = document.getElementById('bulk-user-ids');
+        const officeIds = document.getElementById('bulk-office-ids');
+        
+        if (deleteIds) deleteIds.value = ids;
+        if (priorityIds) priorityIds.value = ids;
+        if (userIds) userIds.value = ids;
+        if (officeIds) officeIds.value = ids;
+        
+        // Update select all checkbox state
+        const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+        const noneChecked = Array.from(checkboxes).every(cb => !cb.checked);
+        
+        selectAll.checked = allChecked;
+        selectAll.indeterminate = !allChecked && !noneChecked;
     }
     
     // Select all functionality
@@ -306,16 +348,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Individual checkbox functionality
-    checkboxes.forEach(cb => {
-        cb.addEventListener('change', function() {
-            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-            const noneChecked = Array.from(checkboxes).every(cb => !cb.checked);
-            
-            selectAll.checked = allChecked;
-            selectAll.indeterminate = !allChecked && !noneChecked;
-            
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('contact-checkbox')) {
             updateBulkOperations();
-        });
+        }
     });
     
     // Enable/disable bulk update button when stage is selected
@@ -382,16 +418,25 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Handle clear selection
-    clearSelectionBtn.addEventListener('click', function() {
-        checkboxes.forEach(cb => cb.checked = false);
-        selectAll.checked = false;
-        selectAll.indeterminate = false;
-        updateBulkOperations();
+    
+    // Handle bulk operation form submissions
+    document.querySelectorAll('form select[name="priority"]').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.closest('form').submit();
+            }
+        });
     });
     
-    // Handle bulk operation form submissions (legacy)
-    document.querySelectorAll('form select[name="priority"]').forEach(select => {
+    document.querySelectorAll('form select[name="user_id"]').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.closest('form').submit();
+            }
+        });
+    });
+    
+    document.querySelectorAll('form select[name="office_id"]').forEach(select => {
         select.addEventListener('change', function() {
             if (this.value) {
                 this.closest('form').submit();

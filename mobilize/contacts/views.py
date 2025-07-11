@@ -184,8 +184,17 @@ def person_list(request):
         if main_pipeline:
             pipeline_stages_objects = main_pipeline.stages.all().order_by('order')
         
-        # Get all offices for office selector (super admin only)
+        # Get data for bulk operation dropdowns
+        from mobilize.authentication.models import User
         from mobilize.admin_panel.models import Office
+        
+        # Get users for bulk assignment dropdown
+        users = User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'email')
+        
+        # Get offices for bulk assignment dropdown
+        offices = Office.objects.all().order_by('name')
+        
+        # Get all offices for office selector (super admin only)
         all_offices = Office.objects.all().order_by('name')
         
         context = {
@@ -197,6 +206,8 @@ def person_list(request):
             'priorities': priorities,
             'pipeline_stages': MAIN_PEOPLE_PIPELINE_STAGES,
             'pipeline_stages_objects': pipeline_stages_objects,
+            'users': users,
+            'offices': offices,
             'sort_options': sort_options,
             'per_page': per_page,
             # Add view mode context
