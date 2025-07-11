@@ -125,7 +125,7 @@
                             <small class="text-info">
                                 <i class="fas fa-{% if task.contact.type == 'person' %}user{% else %}church{% endif %}"></i> 
                                 <strong>Contact:</strong> 
-                                {% if task.contact.type == 'person' and task.contact.person.pk %}
+                                {% if task.contact.type == 'person' and task.contact.person and task.contact.person.pk %}
                                     <a href="{% url 'contacts:person_detail' task.contact.person.pk %}" class="text-info">
                                         {{ task.contact.first_name }} {{ task.contact.last_name }}
                                     </a>
@@ -134,7 +134,7 @@
                                         {{ task.contact.church_name }}
                                     </a>
                                 {% else %}
-                                    {{ task.contact.first_name }} {{ task.contact.last_name }}{{ task.contact.church_name }}
+                                    {{ task.contact.first_name|default:"" }} {{ task.contact.last_name|default:"" }}{{ task.contact.church_name|default:"" }}
                                 {% endif %}
                             </small>
                         </div>

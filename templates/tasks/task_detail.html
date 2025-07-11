@@ -95,16 +95,16 @@
                             <i class="fas fa-{% if task.contact.type == 'person' %}user{% else %}church{% endif %} text-primary me-2"></i>
                             <div>
                                 <strong>Contact:</strong> 
-                                {% if task.contact.type == 'person' %}
+                                {% if task.contact.type == 'person' and task.contact.person and task.contact.person.pk %}
                                     <a href="{% url 'contacts:person_detail' task.contact.person.pk %}" class="text-decoration-none">
                                         {{ task.contact.first_name }} {{ task.contact.last_name }}
                                     </a>
-                                {% elif task.contact.church and task.contact.church.pk %}
+                                {% elif task.contact.type == 'church' and task.contact.church and task.contact.church.pk %}
                                     <a href="{% url 'churches:church_detail' task.contact.church.pk %}" class="text-decoration-none">
                                         {{ task.contact.church_name }}
                                     </a>
                                 {% else %}
-                                    {{ task.contact.church_name }}
+                                    {{ task.contact.first_name|default:"" }} {{ task.contact.last_name|default:"" }}{{ task.contact.church_name|default:"" }}
                                 {% endif %}
                                 {% if task.contact.email %}
                                     <br><small class="text-muted">{{ task.contact.email }}</small>
