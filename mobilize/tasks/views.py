@@ -35,7 +35,13 @@ class TaskListView(LoginRequiredMixin, ListView):
             # Apply simplified office-level filtering with error handling
             if self.request.user.role != 'super_admin':
                 try:
-                    user_offices = list(self.request.user.useroffice_set.values_list('office_id', flat=True))
+                    # Import UserOffice here to avoid circular imports
+                    from mobilize.admin_panel.models import UserOffice
+                    
+                    # Get user offices using the correct approach
+                    user_offices = list(UserOffice.objects.filter(
+                        user_id=str(self.request.user.id)
+                    ).values_list('office_id', flat=True))
                     
                     if user_offices:
                         # Filter tasks based on user access - only show assigned tasks
@@ -50,7 +56,7 @@ class TaskListView(LoginRequiredMixin, ListView):
                         queryset = queryset.filter(
                             models.Q(assigned_to=self.request.user)
                         ).distinct()
-                except Exception:
+                except Exception as e:
                     # If office filtering fails, fall back to user's assigned tasks only
                     queryset = queryset.filter(
                         models.Q(assigned_to=self.request.user)
@@ -139,7 +145,10 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
         
         # Apply office-level filtering
         if self.request.user.role != 'super_admin':
-            user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = UserOffice.objects.filter(
+                user_id=str(self.request.user.id)
+            ).values_list('office_id', flat=True)
             
             queryset = queryset.filter(
                 models.Q(assigned_to=self.request.user) |
@@ -203,8 +212,10 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
             raise PermissionDenied("Limited users cannot create tasks")
         
         # Check office assignment
-        if request.user.role != 'super_admin' and not request.user.useroffice_set.exists():
-            raise PermissionDenied("Access denied. User not assigned to any office.")
+        if request.user.role != 'super_admin':
+            from mobilize.admin_panel.models import UserOffice
+            if not UserOffice.objects.filter(user_id=str(request.user.id)).exists():
+                raise PermissionDenied("Access denied. User not assigned to any office.")
         
         return super().dispatch(request, *args, **kwargs)
     model = Task
@@ -308,8 +319,10 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
             raise PermissionDenied("Limited users cannot edit tasks")
         
         # Check office assignment
-        if request.user.role != 'super_admin' and not request.user.useroffice_set.exists():
-            raise PermissionDenied("Access denied. User not assigned to any office.")
+        if request.user.role != 'super_admin':
+            from mobilize.admin_panel.models import UserOffice
+            if not UserOffice.objects.filter(user_id=str(request.user.id)).exists():
+                raise PermissionDenied("Access denied. User not assigned to any office.")
         
         return super().dispatch(request, *args, **kwargs)
     
@@ -321,7 +334,10 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
         
         # Apply office-level filtering
         if self.request.user.role != 'super_admin':
-            user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = UserOffice.objects.filter(
+                user_id=str(self.request.user.id)
+            ).values_list('office_id', flat=True)
             
             queryset = queryset.filter(
                 models.Q(assigned_to=self.request.user) |
@@ -421,8 +437,10 @@ class TaskDeleteView(LoginRequiredMixin, DeleteView):
             raise PermissionDenied("Limited users cannot delete tasks")
         
         # Check office assignment
-        if request.user.role != 'super_admin' and not request.user.useroffice_set.exists():
-            raise PermissionDenied("Access denied. User not assigned to any office.")
+        if request.user.role != 'super_admin':
+            from mobilize.admin_panel.models import UserOffice
+            if not UserOffice.objects.filter(user_id=str(request.user.id)).exists():
+                raise PermissionDenied("Access denied. User not assigned to any office.")
         
         return super().dispatch(request, *args, **kwargs)
     
@@ -434,7 +452,10 @@ class TaskDeleteView(LoginRequiredMixin, DeleteView):
         
         # Apply office-level filtering
         if self.request.user.role != 'super_admin':
-            user_offices = self.request.user.useroffice_set.values_list('office_id', flat=True)
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = UserOffice.objects.filter(
+                user_id=str(self.request.user.id)
+            ).values_list('office_id', flat=True)
             
             queryset = queryset.filter(
                 models.Q(assigned_to=self.request.user) |
