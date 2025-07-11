@@ -48,6 +48,11 @@
                             <select id="office-selector" class="form-select form-select-sm" style="min-width: 200px;">
                                 <option value="default" {% if current_view_mode == "default" %}selected{% endif %}>Show All Offices</option>
                                 <option value="" disabled>-------------------</option>
+                                <option value="office_unassigned" 
+                                    {% if current_view_mode == 'office_unassigned' %}selected{% endif %}>
+                                    Unassigned (No Office)
+                                </option>
+                                <option value="" disabled>-------------------</option>
                                 {% for office in all_offices %}
                                 <option value="office_{{ office.id }}" 
                                     {% if current_view_mode == 'office_'|add:office.id|stringformat:"s" %}selected{% endif %}>

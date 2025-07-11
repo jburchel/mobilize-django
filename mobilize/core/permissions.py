@@ -27,11 +27,16 @@ class DataAccessManager:
         
         # Parse office-specific view mode for super admins
         self.selected_office_id = None
+        self.is_unassigned_filter = False
         if view_mode.startswith('office_'):
-            try:
-                self.selected_office_id = int(view_mode.split('_')[1])
-            except (ValueError, IndexError):
-                self.selected_office_id = None
+            office_part = view_mode.split('_', 1)[1]
+            if office_part == 'unassigned':
+                self.is_unassigned_filter = True
+            else:
+                try:
+                    self.selected_office_id = int(office_part)
+                except (ValueError, IndexError):
+                    self.selected_office_id = None
         
     def get_people_queryset(self):
         """
@@ -49,6 +54,9 @@ class DataAccessManager:
             if self.view_mode == 'my_only':
                 # Super admin viewing only their assigned people
                 return Person.objects.filter(contact__user_id=user_id)
+            elif self.is_unassigned_filter:
+                # Super admin viewing people without office assignment
+                return Person.objects.filter(contact__office__isnull=True)
             elif self.selected_office_id:
                 # Super admin viewing people from a specific office
                 return Person.objects.filter(contact__office_id=self.selected_office_id)
@@ -82,7 +90,10 @@ class DataAccessManager:
         from mobilize.churches.models import Church
         
         if self.user_role == 'super_admin':
-            if self.selected_office_id:
+            if self.is_unassigned_filter:
+                # Super admin viewing churches without office assignment
+                return Church.objects.filter(contact__office__isnull=True)
+            elif self.selected_office_id:
                 # Super admin viewing churches from a specific office
                 return Church.objects.filter(contact__office_id=self.selected_office_id)
             else:
@@ -206,6 +217,8 @@ class DataAccessManager:
             
         if self.view_mode == 'my_only':
             return "My Contacts Only"
+        elif self.is_unassigned_filter:
+            return "Unassigned (No Office)"
         elif self.selected_office_id:
             # Get office name for display
             try:
