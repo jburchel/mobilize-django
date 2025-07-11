@@ -29,24 +29,10 @@ class TaskListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         try:
-            # Start with basic queryset
-            queryset = Task.objects.select_related(
-                'created_by', 'assigned_to', 'person', 'church', 'office'
-            )
-            
-            # Apply personal task filtering to ALL users (including super_admin)
-            try:
-                # Only show tasks assigned to or created by the current user
-                queryset = queryset.filter(
-                    models.Q(assigned_to=self.request.user) |
-                    models.Q(created_by=self.request.user)
-                ).distinct()
-            except Exception as e:
-                # If filtering fails, fall back to user's assigned tasks only
-                queryset = queryset.filter(
-                    models.Q(assigned_to=self.request.user) |
-                    models.Q(created_by=self.request.user)
-                ).distinct()
+            # Use DataAccessManager for proper role-based task filtering
+            from mobilize.core.permissions import get_data_access_manager
+            access_manager = get_data_access_manager(self.request)
+            queryset = access_manager.get_tasks_queryset()
             
             # Apply filters from GET parameters
             status_filter = self.request.GET.get('status')
