@@ -45,23 +45,16 @@ class TaskListView(LoginRequiredMixin, ListView):
                         user_id=str(self.request.user.id)
                     ).values_list('office_id', flat=True))
                     
-                    if user_offices:
-                        # Filter tasks based on user access - only show assigned tasks
-                        queryset = queryset.filter(
-                            models.Q(assigned_to=self.request.user) |
-                            models.Q(person__contact__office__in=user_offices) |
-                            models.Q(church__contact__office__in=user_offices) |
-                            models.Q(office__in=user_offices)
-                        ).distinct()
-                    else:
-                        # If user has no office assignments, show only their assigned tasks
-                        queryset = queryset.filter(
-                            models.Q(assigned_to=self.request.user)
-                        ).distinct()
+                    # Only show tasks assigned to or created by the current user
+                    queryset = queryset.filter(
+                        models.Q(assigned_to=self.request.user) |
+                        models.Q(created_by=self.request.user)
+                    ).distinct()
                 except Exception as e:
                     # If office filtering fails, fall back to user's assigned tasks only
                     queryset = queryset.filter(
-                        models.Q(assigned_to=self.request.user)
+                        models.Q(assigned_to=self.request.user) |
+                        models.Q(created_by=self.request.user)
                     ).distinct()
             
             # Apply filters from GET parameters
