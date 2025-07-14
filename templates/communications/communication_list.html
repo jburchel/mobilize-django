@@ -486,18 +486,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Auto-submit search form on input with delay
-    const searchInput = document.getElementById('search');
-    let searchTimeout;
-    
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                this.closest('form').submit();
-            }, 500);
-        });
-    }
+    // Auto-submit search form on input with delay (removed duplicate - handled below)
     
     // Load contacts for dropdowns
     loadContactsForDropdowns();
@@ -685,30 +674,34 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add dynamic search functionality
     const searchInput = document.getElementById('search');
-    const searchForm = searchInput.closest('form');
-    let searchTimer;
-    
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(function() {
-            searchForm.submit();
-        }, 300); // 300ms delay
-    });
-    
-    // Auto-submit form when filters change
-    const filterSelects = searchForm.querySelectorAll('select');
-    filterSelects.forEach(select => {
-        select.addEventListener('change', function() {
-            searchForm.submit();
+    if (searchInput) {
+        const searchForm = searchInput.closest('form');
+        let searchTimer;
+        
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(function() {
+                searchForm.submit();
+            }, 750); // Increased delay for better UX
         });
-    });
+    }
     
-    // Auto-submit when date changes
-    const dateInput = document.getElementById('date_from');
-    if (dateInput) {
-        dateInput.addEventListener('change', function() {
-            searchForm.submit();
+    // Auto-submit form when filters change (moved into searchInput check)
+    if (searchInput) {
+        const filterSelects = searchForm.querySelectorAll('select');
+        filterSelects.forEach(select => {
+            select.addEventListener('change', function() {
+                searchForm.submit();
+            });
         });
+        
+        // Auto-submit when date changes
+        const dateInput = document.getElementById('date_from');
+        if (dateInput) {
+            dateInput.addEventListener('change', function() {
+                searchForm.submit();
+            });
+        }
     }
 });
 
