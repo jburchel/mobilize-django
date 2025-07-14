@@ -52,6 +52,13 @@ urlpatterns = [
     path('calendar/status/', views.calendar_status, name='calendar_status'),
     path('calendar/disconnect/', views.calendar_disconnect, name='calendar_disconnect'),
     
+    # Bulk operations
+    path('bulk/delete/', views.bulk_delete_communications, name='bulk_delete'),
+    path('bulk/archive/', views.bulk_archive_communications, name='bulk_archive'),
+    path('bulk/update-status/', views.bulk_update_communication_status, name='bulk_update_status'),
+    path('bulk/update-type/', views.bulk_update_communication_type, name='bulk_update_type'),
+    path('bulk/assign-user/', views.bulk_assign_communication_user, name='bulk_assign_user'),
+    
     # API endpoints
     path('api/contacts/', views.get_contacts_json, name='get_contacts_json'),
     path('api/create-meet/', views.create_meet_link, name='create_meet_link'),

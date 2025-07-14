@@ -1,5 +1,11 @@
+import logging
+from datetime import datetime, timedelta
 from django.utils.deprecation import MiddlewareMixin
 from django.contrib.auth.models import AnonymousUser
+from django.core.cache import cache
+from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 
 class CustomAuthMiddleware(MiddlewareMixin):
@@ -71,3 +77,78 @@ class CustomAuthMiddleware(MiddlewareMixin):
         else:
             # User is not authenticated
             request.user = AnonymousUser()
+
+
+class UserActivityTrackingMiddleware(MiddlewareMixin):
+    """
+    Middleware to track user activity and trigger Gmail sync when users
+    become active after periods of inactivity.
+    """
+    
+    # Consider a user inactive after 2 hours of no activity
+    INACTIVITY_THRESHOLD = timedelta(hours=2)
+    
+    def process_request(self, request):
+        """
+        Track user activity and trigger email sync if user was inactive.
+        """
+        # Only track authenticated users
+        if not hasattr(request, 'user') or not request.user.is_authenticated:
+            return None
+            
+        # Skip AJAX requests and static file requests to avoid excessive tracking
+        if (request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+            request.path.startswith('/static/') or
+            request.path.startswith('/media/')):
+            return None
+            
+        try:
+            user = request.user
+            now = timezone.now()
+            
+            # Cache keys for tracking activity
+            last_activity_key = f"user_last_activity_{user.id}"
+            inactive_sync_key = f"user_inactive_sync_{user.id}"
+            
+            # Get user's last activity time
+            last_activity_str = cache.get(last_activity_key)
+            last_activity = None
+            
+            if last_activity_str:
+                try:
+                    last_activity = datetime.fromisoformat(last_activity_str.replace('Z', '+00:00'))
+                    if last_activity.tzinfo is None:
+                        last_activity = timezone.make_aware(last_activity)
+                except (ValueError, AttributeError):
+                    # Invalid datetime format, treat as no previous activity
+                    last_activity = None
+            
+            # Check if user was inactive and is now active
+            was_inactive = False
+            if last_activity:
+                time_since_activity = now - last_activity
+                was_inactive = time_since_activity > self.INACTIVITY_THRESHOLD
+            else:
+                # No previous activity recorded, consider as returning from inactivity
+                was_inactive = True
+            
+            # Update last activity time
+            cache.set(last_activity_key, now.isoformat(), timeout=86400 * 7)  # Keep for 7 days
+            
+            # If user was inactive and we haven't already triggered sync recently
+            if was_inactive:
+                recent_inactive_sync = cache.get(inactive_sync_key)
+                if not recent_inactive_sync:
+                    # Trigger Gmail sync after inactivity
+                    from mobilize.communications.signals import trigger_gmail_sync_after_inactivity
+                    trigger_gmail_sync_after_inactivity(user)
+                    
+                    # Mark that we've triggered sync for this inactive period
+                    cache.set(inactive_sync_key, True, timeout=7200)  # Don't sync again for 2 hours
+                    
+                    logger.info(f"User {user.username} detected as active after inactivity")
+                    
+        except Exception as e:
+            logger.error(f"Error in UserActivityTrackingMiddleware: {str(e)}")
+        
+        return None

@@ -95,6 +95,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'mobilize.authentication.middleware.CustomAuthMiddleware',
+    'mobilize.authentication.middleware.UserActivityTrackingMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -394,7 +395,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'sync-gmail-auto': {
         'task': 'mobilize.communications.tasks.sync_all_users_gmail',
-        'schedule': 900.0,  # Every 15 minutes
+        'schedule': 3600.0,  # Every hour
         'options': {'queue': 'email'},
         'kwargs': {'days_back': 1},  # Only sync last 1 day for frequent checks
     },

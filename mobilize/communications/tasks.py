@@ -151,11 +151,11 @@ def send_email_communication(self, communication_id: int):
 @shared_task(bind=True, max_retries=3, default_retry_delay=300)
 def sync_gmail_emails(self, user_id: int, days_back: int = 7):
     """
-    Sync emails from Gmail for a specific user.
+    Sync emails from Gmail for a specific user using their preferences.
     
     Args:
         user_id: ID of the user to sync emails for
-        days_back: Number of days back to sync emails
+        days_back: Number of days back to sync emails (can be overridden by user settings)
     """
     try:
         user = User.objects.get(id=user_id)
@@ -165,8 +165,21 @@ def sync_gmail_emails(self, user_id: int, days_back: int = 7):
             logger.warning(f"User {user_id} Gmail not authenticated, skipping sync")
             return {'status': 'skipped', 'reason': 'not_authenticated'}
         
-        # Use the actual Gmail service sync method
-        result = gmail_service.sync_emails_to_communications(days_back, contacts_only=True)
+        # Get user sync preferences
+        from .models import GmailSyncSettings
+        try:
+            sync_settings = GmailSyncSettings.objects.get(user=user)
+            contacts_only = sync_settings.contacts_only
+            # Use user's preferred days_back if available
+            if sync_settings.days_back_on_sync:
+                days_back = sync_settings.days_back_on_sync
+        except GmailSyncSettings.DoesNotExist:
+            # Create default settings
+            sync_settings = GmailSyncSettings.objects.create(user=user)
+            contacts_only = True
+        
+        # Use the actual Gmail service sync method with user preferences
+        result = gmail_service.sync_emails_to_communications(days_back, contacts_only=contacts_only)
         
         if result['success']:
             logger.info(f"Synced {result['synced_count']} emails for user {user_id}")
@@ -193,13 +206,15 @@ def sync_gmail_emails(self, user_id: int, days_back: int = 7):
 def sync_all_users_gmail(self, days_back: int = 1):
     """
     Sync Gmail emails for all authenticated users and send notifications for new emails.
+    Respects individual user sync preferences and prevents duplicates.
     
     Args:
         days_back: Number of days back to sync emails (default: 1 for frequent syncing)
     """
     try:
-        # Get all users who have Gmail tokens
+        # Get all users who have Gmail tokens and auto-sync enabled
         from mobilize.authentication.models import GoogleToken
+        from .models import GmailSyncSettings
         
         authenticated_users = User.objects.filter(
             id__in=GoogleToken.objects.filter(
@@ -208,18 +223,36 @@ def sync_all_users_gmail(self, days_back: int = 1):
             is_active=True
         )
         
+        # Filter by users who have auto-sync enabled (default True for users without settings)
+        users_to_sync = []
+        for user in authenticated_users:
+            try:
+                sync_settings = GmailSyncSettings.objects.get(user=user)
+                if sync_settings.auto_sync_enabled:
+                    users_to_sync.append((user, sync_settings))
+            except GmailSyncSettings.DoesNotExist:
+                # Create default settings for user and include them
+                sync_settings = GmailSyncSettings.objects.create(user=user)
+                users_to_sync.append((user, sync_settings))
+        
         total_synced = 0
         users_processed = 0
         users_with_new_emails = []
         
-        for user in authenticated_users:
+        for user, sync_settings in users_to_sync:
             try:
-                result = sync_gmail_emails.delay(user.id, days_back).get()
+                # Use user's preferred days_back setting or passed parameter
+                user_days_back = sync_settings.days_back_on_sync or days_back
+                
+                result = sync_gmail_emails.delay(user.id, user_days_back).get()
                 
                 if result.get('status') == 'success':
                     synced_count = result.get('synced_count', 0)
                     total_synced += synced_count
                     users_processed += 1
+                    
+                    # Update sync settings
+                    sync_settings.update_last_sync(synced_count=synced_count)
                     
                     # If user has new emails, add to notification list
                     if synced_count > 0:
@@ -231,11 +264,16 @@ def sync_all_users_gmail(self, days_back: int = 1):
                         
                 elif result.get('status') == 'skipped':
                     logger.info(f"Skipped user {user.username} - {result.get('reason')}")
+                    sync_settings.update_last_sync(error_message=f"Skipped: {result.get('reason')}")
                 else:
-                    logger.warning(f"Gmail sync failed for user {user.username}: {result.get('reason')}")
+                    error_msg = result.get('reason', 'Unknown error')
+                    logger.warning(f"Gmail sync failed for user {user.username}: {error_msg}")
+                    sync_settings.update_last_sync(error_message=error_msg)
                     
             except Exception as e:
-                logger.error(f"Error syncing Gmail for user {user.username}: {str(e)}")
+                error_msg = str(e)
+                logger.error(f"Error syncing Gmail for user {user.username}: {error_msg}")
+                sync_settings.update_last_sync(error_message=error_msg)
         
         # Send notifications for users with new emails
         if users_with_new_emails:

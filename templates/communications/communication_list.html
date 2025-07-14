@@ -54,9 +54,17 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 text-dark mb-1">Communications</h1>
-                    <p class="text-muted mb-0">Manage all your email communications and history</p>
+                <div class="d-flex align-items-center">
+                    <div>
+                        <h1 class="h3 text-dark mb-1">Communications</h1>
+                        <p class="text-muted mb-0">Manage all your email communications and history</p>
+                    </div>
+                    <div class="form-check ms-4">
+                        <input type="checkbox" id="select-all" class="form-check-input">
+                        <label class="form-check-label" for="select-all">
+                            Select All
+                        </label>
+                    </div>
                 </div>
                 <div>
                     <a href="{% url 'communications:gmail_compose' %}" class="btn btn-primary me-2">
@@ -100,6 +108,84 @@
                                 <i class="fas fa-info-circle me-2"></i>Gmail Status
                             </a></li>
                         </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Operations Bar -->
+    <div class="row mb-3" id="bulk-operations" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body py-2">
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <span class="text-muted"><span id="selected-count">0</span> selected</span>
+                        
+                        <!-- Bulk Delete -->
+                        <form method="post" action="{% url 'communications:bulk_delete' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected communications?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="communication_ids" id="bulk-delete-ids">
+                            <button type="submit" class="btn btn-danger btn-sm">
+                                <i class="fas fa-trash"></i> Delete Selected
+                            </button>
+                        </form>
+                        
+                        <!-- Bulk Archive -->
+                        <div class="btn-group" role="group">
+                            <form method="post" action="{% url 'communications:bulk_archive' %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="communication_ids" id="bulk-archive-ids">
+                                <input type="hidden" name="archive_action" value="archive">
+                                <button type="submit" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-archive"></i> Archive
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'communications:bulk_archive' %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="communication_ids" id="bulk-unarchive-ids">
+                                <input type="hidden" name="archive_action" value="unarchive">
+                                <button type="submit" class="btn btn-outline-warning btn-sm">
+                                    <i class="fas fa-box-open"></i> Unarchive
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <!-- Bulk Status Update -->
+                        <form method="post" action="{% url 'communications:bulk_update_status' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="communication_ids" id="bulk-status-ids">
+                            <select name="status" class="form-select form-select-sm" style="width: auto; display: inline;" onchange="this.form.submit()">
+                                <option value="">Change Status...</option>
+                                {% for status_value, status_label in status_choices %}
+                                <option value="{{ status_value }}">{{ status_label }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                        
+                        <!-- Bulk Type Update -->
+                        <form method="post" action="{% url 'communications:bulk_update_type' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="communication_ids" id="bulk-type-ids">
+                            <select name="type" class="form-select form-select-sm" style="width: auto; display: inline;" onchange="this.form.submit()">
+                                <option value="">Change Type...</option>
+                                {% for type_value, type_label in type_choices %}
+                                <option value="{{ type_value }}">{{ type_label }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                        
+                        <!-- Bulk User Assignment -->
+                        <form method="post" action="{% url 'communications:bulk_assign_user' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="communication_ids" id="bulk-user-ids">
+                            <select name="user_id" class="form-select form-select-sm" style="width: auto; display: inline;" onchange="this.form.submit()">
+                                <option value="">Assign to User...</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -158,6 +244,8 @@
                     <div class="card communication-card {{ communication.type }} h-100">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center">
+                                <!-- Checkbox for bulk operations -->
+                                <input type="checkbox" name="communication_ids" value="{{ communication.pk }}" class="form-check-input communication-checkbox me-3">
                                 {% if communication.type == 'Email' or communication.type == 'email' %}
                                     <i class="fas fa-envelope text-primary me-2"></i>
                                 {% elif communication.type == 'Phone Call' or communication.type == 'phone' %}
@@ -473,6 +561,68 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize toast
     const statusToast = new bootstrap.Toast(document.getElementById('statusToast'));
     
+    // Bulk operations management
+    const selectAllCheckbox = document.getElementById('select-all');
+    const communicationCheckboxes = document.querySelectorAll('.communication-checkbox');
+    const bulkOperationsBar = document.getElementById('bulk-operations');
+    const selectedCountSpan = document.getElementById('selected-count');
+    
+    // Handle select all functionality
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            communicationCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            updateBulkOperations();
+        });
+    }
+    
+    // Handle individual checkbox changes
+    communicationCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateBulkOperations();
+            updateSelectAllState();
+        });
+    });
+    
+    function updateBulkOperations() {
+        const checkedBoxes = document.querySelectorAll('.communication-checkbox:checked');
+        const count = checkedBoxes.length;
+        
+        if (count > 0) {
+            bulkOperationsBar.style.display = 'block';
+            selectedCountSpan.textContent = count;
+            
+            // Update all hidden communication_ids inputs
+            const communicationIds = Array.from(checkedBoxes).map(cb => cb.value).join(',');
+            document.getElementById('bulk-delete-ids').value = communicationIds;
+            document.getElementById('bulk-archive-ids').value = communicationIds;
+            document.getElementById('bulk-unarchive-ids').value = communicationIds;
+            document.getElementById('bulk-status-ids').value = communicationIds;
+            document.getElementById('bulk-type-ids').value = communicationIds;
+            document.getElementById('bulk-user-ids').value = communicationIds;
+        } else {
+            bulkOperationsBar.style.display = 'none';
+        }
+    }
+    
+    function updateSelectAllState() {
+        const checkedCount = document.querySelectorAll('.communication-checkbox:checked').length;
+        const totalCount = communicationCheckboxes.length;
+        
+        if (checkedCount === 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        } else if (checkedCount === totalCount) {
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+        } else {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
+
     // Auto-submit form when filter dropdowns change
     const typeSelect = document.getElementById('type');
     const directionSelect = document.getElementById('direction');

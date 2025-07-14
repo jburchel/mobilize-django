@@ -4,6 +4,7 @@ from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.core.mail import EmailMultiAlternatives
 from django.utils.html import strip_tags
 from django.conf import settings
@@ -266,6 +267,38 @@ class CommunicationListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['type_choices'] = Communication.TYPE_CHOICES
         context['direction_choices'] = Communication.DIRECTION_CHOICES
+        
+        # Add context for bulk operations
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        # Get users for bulk assignment
+        if self.request.user.role == 'super_admin':
+            context['users'] = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+        else:
+            # Get users from same offices
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = UserOffice.objects.filter(
+                user_id=str(self.request.user.id)
+            ).values_list('office_id', flat=True)
+            
+            office_user_ids = UserOffice.objects.filter(
+                office_id__in=user_offices
+            ).values_list('user_id', flat=True)
+            
+            context['users'] = User.objects.filter(
+                id__in=office_user_ids, is_active=True
+            ).order_by('first_name', 'last_name')
+        
+        # Status choices for bulk operations
+        context['status_choices'] = [
+            ('pending', 'Pending'),
+            ('processing', 'Processing'),
+            ('sent', 'Sent'),
+            ('delivered', 'Delivered'),
+            ('failed', 'Failed'),
+        ]
+        
         return context
 
 
@@ -1294,3 +1327,227 @@ def create_meet_link(request):
         'success': False,
         'error': 'Invalid request method'
     })
+
+
+# Bulk Operations for Communications
+@login_required
+@require_POST
+def bulk_delete_communications(request):
+    """Delete selected communications"""
+    communication_ids = request.POST.get('communication_ids', '').split(',')
+    communication_ids = [id.strip() for id in communication_ids if id.strip()]
+    
+    if not communication_ids:
+        messages.error(request, 'No communications selected for deletion.')
+        return redirect('communications:communication_list')
+    
+    try:
+        # Get communications that user has permission to delete
+        if request.user.role == 'super_admin':
+            communications = Communication.objects.filter(id__in=communication_ids)
+        else:
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = UserOffice.objects.filter(
+                user_id=str(request.user.id)
+            ).values_list('office_id', flat=True)
+            
+            communications = Communication.objects.filter(
+                id__in=communication_ids
+            ).filter(
+                models.Q(user=request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            )
+        
+        deleted_count = communications.count()
+        communications.delete()
+        
+        messages.success(request, f'Successfully deleted {deleted_count} communication(s).')
+        
+    except Exception as e:
+        messages.error(request, f'Error deleting communications: {str(e)}')
+    
+    return redirect('communications:communication_list')
+
+
+@login_required
+@require_POST
+def bulk_archive_communications(request):
+    """Archive/unarchive selected communications"""
+    communication_ids = request.POST.get('communication_ids', '').split(',')
+    communication_ids = [id.strip() for id in communication_ids if id.strip()]
+    archive_action = request.POST.get('archive_action', 'archive')  # 'archive' or 'unarchive'
+    
+    if not communication_ids:
+        messages.error(request, 'No communications selected.')
+        return redirect('communications:communication_list')
+    
+    try:
+        # Get communications that user has permission to modify
+        if request.user.role == 'super_admin':
+            communications = Communication.objects.filter(id__in=communication_ids)
+        else:
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = UserOffice.objects.filter(
+                user_id=str(request.user.id)
+            ).values_list('office_id', flat=True)
+            
+            communications = Communication.objects.filter(
+                id__in=communication_ids
+            ).filter(
+                models.Q(user=request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            )
+        
+        archived_value = archive_action == 'archive'
+        updated_count = communications.update(archived=archived_value)
+        
+        action_word = 'archived' if archived_value else 'unarchived'
+        messages.success(request, f'Successfully {action_word} {updated_count} communication(s).')
+        
+    except Exception as e:
+        messages.error(request, f'Error updating communications: {str(e)}')
+    
+    return redirect('communications:communication_list')
+
+
+@login_required
+@require_POST
+def bulk_update_communication_status(request):
+    """Update status for selected communications"""
+    communication_ids = request.POST.get('communication_ids', '').split(',')
+    communication_ids = [id.strip() for id in communication_ids if id.strip()]
+    status = request.POST.get('status', '').strip()
+    
+    if not communication_ids:
+        messages.error(request, 'No communications selected.')
+        return redirect('communications:communication_list')
+        
+    if not status:
+        messages.error(request, 'No status selected.')
+        return redirect('communications:communication_list')
+    
+    try:
+        # Get communications that user has permission to modify
+        if request.user.role == 'super_admin':
+            communications = Communication.objects.filter(id__in=communication_ids)
+        else:
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = UserOffice.objects.filter(
+                user_id=str(request.user.id)
+            ).values_list('office_id', flat=True)
+            
+            communications = Communication.objects.filter(
+                id__in=communication_ids
+            ).filter(
+                models.Q(user=request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            )
+        
+        updated_count = communications.update(status=status)
+        
+        messages.success(request, f'Successfully updated status for {updated_count} communication(s).')
+        
+    except Exception as e:
+        messages.error(request, f'Error updating communication status: {str(e)}')
+    
+    return redirect('communications:communication_list')
+
+
+@login_required
+@require_POST
+def bulk_update_communication_type(request):
+    """Update type for selected communications"""
+    communication_ids = request.POST.get('communication_ids', '').split(',')
+    communication_ids = [id.strip() for id in communication_ids if id.strip()]
+    comm_type = request.POST.get('type', '').strip()
+    
+    if not communication_ids:
+        messages.error(request, 'No communications selected.')
+        return redirect('communications:communication_list')
+        
+    if not comm_type:
+        messages.error(request, 'No type selected.')
+        return redirect('communications:communication_list')
+    
+    try:
+        # Get communications that user has permission to modify
+        if request.user.role == 'super_admin':
+            communications = Communication.objects.filter(id__in=communication_ids)
+        else:
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = UserOffice.objects.filter(
+                user_id=str(request.user.id)
+            ).values_list('office_id', flat=True)
+            
+            communications = Communication.objects.filter(
+                id__in=communication_ids
+            ).filter(
+                models.Q(user=request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            )
+        
+        updated_count = communications.update(type=comm_type)
+        
+        messages.success(request, f'Successfully updated type for {updated_count} communication(s).')
+        
+    except Exception as e:
+        messages.error(request, f'Error updating communication type: {str(e)}')
+    
+    return redirect('communications:communication_list')
+
+
+@login_required
+@require_POST
+def bulk_assign_communication_user(request):
+    """Assign selected communications to a user"""
+    communication_ids = request.POST.get('communication_ids', '').split(',')
+    communication_ids = [id.strip() for id in communication_ids if id.strip()]
+    user_id = request.POST.get('user_id', '').strip()
+    
+    if not communication_ids:
+        messages.error(request, 'No communications selected.')
+        return redirect('communications:communication_list')
+        
+    if not user_id:
+        messages.error(request, 'No user selected.')
+        return redirect('communications:communication_list')
+    
+    try:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        assigned_user = get_object_or_404(User, id=user_id)
+        
+        # Get communications that user has permission to modify
+        if request.user.role == 'super_admin':
+            communications = Communication.objects.filter(id__in=communication_ids)
+        else:
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = UserOffice.objects.filter(
+                user_id=str(request.user.id)
+            ).values_list('office_id', flat=True)
+            
+            communications = Communication.objects.filter(
+                id__in=communication_ids
+            ).filter(
+                models.Q(user=request.user) |
+                models.Q(person__contact__office__in=user_offices) |
+                models.Q(church__contact__office__in=user_offices) |
+                models.Q(office__in=user_offices)
+            )
+        
+        updated_count = communications.update(user=assigned_user)
+        
+        messages.success(request, f'Successfully assigned {updated_count} communication(s) to {assigned_user.get_full_name()}.')
+        
+    except Exception as e:
+        messages.error(request, f'Error assigning communications: {str(e)}')
+    
+    return redirect('communications:communication_list')

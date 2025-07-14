@@ -204,3 +204,64 @@ class Communication(models.Model):
 #     
 #     def __str__(self):
 #         return self.filename
+
+
+class GmailSyncSettings(models.Model):
+    """Model for storing user-specific Gmail sync preferences"""
+    
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='gmail_sync_settings'
+    )
+    auto_sync_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable automatic Gmail syncing for this user"
+    )
+    sync_frequency_hours = models.IntegerField(
+        default=1,
+        help_text="How often to sync Gmail in hours"
+    )
+    contacts_only = models.BooleanField(
+        default=True,
+        help_text="Only sync emails from/to known contacts"
+    )
+    days_back_on_sync = models.IntegerField(
+        default=7,
+        help_text="Number of days back to check on each sync"
+    )
+    last_sync_at = models.DateTimeField(
+        null=True, 
+        blank=True,
+        help_text="Timestamp of last successful sync"
+    )
+    sync_errors = models.TextField(
+        blank=True, 
+        null=True,
+        help_text="Last sync error message, if any"
+    )
+    total_emails_synced = models.IntegerField(
+        default=0,
+        help_text="Total number of emails synced for this user"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'gmail_sync_settings'
+        verbose_name = 'Gmail Sync Settings'
+        verbose_name_plural = 'Gmail Sync Settings'
+    
+    def __str__(self):
+        return f"Gmail sync settings for {self.user.get_full_name() or self.user.email}"
+    
+    def update_last_sync(self, synced_count=0, error_message=None):
+        """Update sync statistics after a sync operation"""
+        self.last_sync_at = timezone.now()
+        if synced_count > 0:
+            self.total_emails_synced += synced_count
+        if error_message:
+            self.sync_errors = error_message
+        else:
+            self.sync_errors = None
+        self.save()
