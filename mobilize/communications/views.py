@@ -217,17 +217,26 @@ class CommunicationListView(LoginRequiredMixin, ListView):
             search_query = self.request.GET.get('search')
             if search_query:
                 from django.db.models import Q
-                queryset = queryset.filter(
+                # Build search query for communications with proper field lookups
+                search_conditions = Q(
+                    # Search in basic communication fields
                     Q(subject__icontains=search_query) |
                     Q(sender__icontains=search_query) |
                     Q(message__icontains=search_query) |
+                    Q(content__icontains=search_query) |
+                    
+                    # Search in person contact fields
                     Q(person__contact__first_name__icontains=search_query) |
                     Q(person__contact__last_name__icontains=search_query) |
                     Q(person__contact__email__icontains=search_query) |
-                    Q(church__contact__name__icontains=search_query) |
+                    
+                    # Search in church contact fields  
                     Q(church__contact__church_name__icontains=search_query) |
-                    Q(church__contact__email__icontains=search_query)
+                    Q(church__contact__email__icontains=search_query) |
+                    Q(church__name__icontains=search_query)  # Church's own name field
                 )
+                
+                queryset = queryset.filter(search_conditions)
             
             # Filter by contact_id if provided (for "View All" button functionality)
             contact_id = self.request.GET.get('contact_id')
