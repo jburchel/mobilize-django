@@ -154,8 +154,8 @@ class Communication(models.Model):
     last_synced_at = models.DateTimeField(blank=True, null=True)
     
     # Timestamps
-    created_at = models.DateField(blank=True, null=True, default=timezone.now)
-    updated_at = models.DateField(blank=True, null=True, auto_now=True)
+    created_at = models.DateTimeField(blank=True, null=True, default=timezone.now)
+    updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
     
     class Meta:
         db_table = 'communications'

@@ -478,12 +478,29 @@ class GmailService:
                 # Use the person.id directly (person.pk is already the person ID)
                 person_id = person.pk
             
+            # Parse the email date from the message
+            email_date = None
+            email_datetime = None
+            if message.get('date'):
+                try:
+                    from email.utils import parsedate_to_datetime
+                    email_datetime = parsedate_to_datetime(message['date'])
+                    email_date = email_datetime.date()
+                except Exception as e:
+                    print(f"Error parsing email date '{message['date']}': {e}")
+                    email_date = timezone.now().date()
+                    email_datetime = timezone.now()
+            else:
+                email_date = timezone.now().date()
+                email_datetime = timezone.now()
+            
             Communication.objects.create(
                 type='email',
                 subject=message['subject'],
                 message=message['body'][:250],  # Truncate for database field
                 direction=direction,
-                date=timezone.now().date(),
+                date=email_date,
+                date_sent=email_datetime,  # Store the full datetime
                 person_id=person_id,  # Use person_id instead of person object
                 church=church,
                 gmail_message_id=message['id'],

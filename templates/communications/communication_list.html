@@ -243,6 +243,8 @@
                                 <small class="text-muted">
                                     {% if communication.date_sent %}
                                         {{ communication.date_sent|timesince }} ago
+                                    {% elif communication.date %}
+                                        {{ communication.date|timesince }} ago
                                     {% else %}
                                         {{ communication.created_at|timesince }} ago
                                     {% endif %}
