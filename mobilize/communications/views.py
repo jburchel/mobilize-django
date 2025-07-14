@@ -237,7 +237,15 @@ class CommunicationListView(LoginRequiredMixin, ListView):
                     Q(person__contact_id=contact_id) | Q(church__contact_id=contact_id)
                 )
             
-            return queryset.order_by('-date')
+            # Sort by actual sent/received date, not import date
+            from django.db.models import Case, When, F
+            return queryset.annotate(
+                effective_date=Case(
+                    When(date_sent__isnull=False, then=F('date_sent')),
+                    When(date__isnull=False, then=F('date')),
+                    default=F('created_at')
+                )
+            ).order_by('-effective_date')
             
         except Exception as e:
             # If there's any database error, return empty queryset

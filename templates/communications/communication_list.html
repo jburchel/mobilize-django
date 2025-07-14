@@ -175,7 +175,15 @@
                                     {{ communication.direction|title }}
                                 </span>
                             </div>
-                            <small class="text-muted">{{ communication.date|date:"M d, Y" }}</small>
+                            <small class="text-muted">
+                                {% if communication.date_sent %}
+                                    {{ communication.date_sent|date:"M d, Y" }}
+                                {% elif communication.date %}
+                                    {{ communication.date|date:"M d, Y" }}
+                                {% else %}
+                                    {{ communication.created_at|date:"M d, Y" }}
+                                {% endif %}
+                            </small>
                         </div>
                         <div class="card-body">
                             <h6 class="card-title mb-2">{{ communication.subject|default:"No Subject"|truncatechars:40 }}</h6>
