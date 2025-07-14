@@ -220,7 +220,13 @@ class CommunicationListView(LoginRequiredMixin, ListView):
                 queryset = queryset.filter(
                     Q(subject__icontains=search_query) |
                     Q(sender__icontains=search_query) |
-                    Q(message__icontains=search_query)
+                    Q(message__icontains=search_query) |
+                    Q(person__contact__first_name__icontains=search_query) |
+                    Q(person__contact__last_name__icontains=search_query) |
+                    Q(person__contact__email__icontains=search_query) |
+                    Q(church__contact__name__icontains=search_query) |
+                    Q(church__contact__church_name__icontains=search_query) |
+                    Q(church__contact__email__icontains=search_query)
                 )
             
             # Filter by contact_id if provided (for "View All" button functionality)
