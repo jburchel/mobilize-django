@@ -70,11 +70,21 @@ class Command(BaseCommand):
             self.stdout.write(f'\nProcessing user: {user.email}')
             
             # Get communications that need fixing for this user
+            # Look for communications where date_sent matches created_at (indicating sync time was used)
+            # or where date_sent is null, or where date_sent is from July 11, 2025 (the sync date)
+            from django.db.models import Q
+            from datetime import date
+            
+            sync_date = date(2025, 7, 11)  # The date when the major sync happened
+            
             communications = Communication.objects.filter(
                 user=user,
-                gmail_message_id__isnull=False,
-                date_sent__isnull=True  # Only fix ones without proper date_sent
-            ).exclude(gmail_message_id='')[:limit]
+                gmail_message_id__isnull=False
+            ).exclude(gmail_message_id='').filter(
+                Q(date_sent__isnull=True) |  # Missing date_sent
+                Q(date_sent__date=sync_date) |  # Set to sync date
+                Q(date__gte=sync_date, date_sent__date__gte=sync_date)  # Both date and date_sent are recent (likely sync artifacts)
+            )[:limit]
             
             if not communications:
                 self.stdout.write('  No communications to fix for this user')
