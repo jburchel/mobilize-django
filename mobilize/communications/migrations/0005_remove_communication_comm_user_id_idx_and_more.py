@@ -26,32 +26,10 @@ class Migration(migrations.Migration):
             old_name="user_id",
             new_name="firebase_user_id",
         ),
-        # Safe archived field addition - only adds if column doesn't exist
+        # Skip archived field - handled by production database schema sync
         migrations.RunSQL(
-            """
-            DO $$
-            BEGIN
-                IF NOT EXISTS (SELECT column_name FROM information_schema.columns 
-                              WHERE table_name = 'communications_communication' 
-                              AND column_name = 'archived') THEN
-                    ALTER TABLE communications_communication 
-                    ADD COLUMN archived BOOLEAN DEFAULT FALSE NOT NULL;
-                    
-                    COMMENT ON COLUMN communications_communication.archived 
-                    IS 'Whether this communication is archived';
-                END IF;
-            END $$;
-            """,
-            reverse_sql="""
-            DO $$
-            BEGIN
-                IF EXISTS (SELECT column_name FROM information_schema.columns 
-                          WHERE table_name = 'communications_communication' 
-                          AND column_name = 'archived') THEN
-                    ALTER TABLE communications_communication DROP COLUMN archived;
-                END IF;
-            END $$;
-            """
+            sql="SELECT 1; -- archived column handled by schema sync",
+            reverse_sql="SELECT 1; -- archived column handled by schema sync",
         ),
         migrations.AddField(
             model_name="communication",
