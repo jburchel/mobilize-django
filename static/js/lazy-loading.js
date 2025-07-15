@@ -81,44 +81,9 @@ class LazyLoader {
     }
     
     initSearchHandlers() {
-        // Debounce search input
-        const searchInput = document.querySelector('input[name="q"]');
-        if (searchInput) {
-            let debounceTimer;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    this.searchParams.set('q', e.target.value);
-                    this.resetAndLoad();
-                }, 300);
-            });
-        }
-        
-        // Handle filter changes
-        const filterSelects = document.querySelectorAll('select[name="priority"]');
-        filterSelects.forEach(select => {
-            select.addEventListener('change', (e) => {
-                if (e.target.value) {
-                    this.searchParams.set('priority', e.target.value);
-                } else {
-                    this.searchParams.delete('priority');
-                }
-                this.resetAndLoad();
-            });
-        });
-        
-        // Handle pipeline stage filter
-        const pipelineStageSelect = document.querySelector('select[name="pipeline_stage"]');
-        if (pipelineStageSelect) {
-            pipelineStageSelect.addEventListener('change', (e) => {
-                if (e.target.value) {
-                    this.searchParams.set('pipeline_stage', e.target.value);
-                } else {
-                    this.searchParams.delete('pipeline_stage');
-                }
-                this.resetAndLoad();
-            });
-        }
+        // Note: Search handlers are now managed in the template
+        // This method is kept for compatibility but does nothing
+        // to avoid duplicate event listeners
     }
     
     async loadMore() {

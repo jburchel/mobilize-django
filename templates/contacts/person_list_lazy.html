@@ -386,6 +386,8 @@ document.addEventListener('DOMContentLoaded', function() {
             pipeline_stage: pipelineFilter.value,
             sort: sortFilter.value
         });
+        // Reset and reload data with new filters
+        personLoader.resetAndLoad();
     }
     
     // Add event listeners for filters
