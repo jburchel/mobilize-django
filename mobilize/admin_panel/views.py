@@ -431,6 +431,11 @@ class UserManagementView(SuperAdminRequiredMixin, ListView):
     
     def get_context_data(self, **kwargs):
         try:
+            # Ensure required attributes are set before calling super()
+            if not hasattr(self, 'object_list'):
+                self.object_list = self.get_queryset()
+            if not hasattr(self, 'kwargs'):
+                self.kwargs = {}
             context = super().get_context_data(**kwargs)
             
             # Add filter options
