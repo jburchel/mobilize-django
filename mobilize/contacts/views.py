@@ -848,6 +848,10 @@ def google_sync(request):
             # Get sync preference from form
             sync_preference = request.POST.get('sync_preference', 'crm_only')
             
+            # Handle selective import - redirect to selection page
+            if sync_preference == 'selective':
+                return redirect('contacts:selective_google_import')
+            
             # Temporarily update sync settings for this operation
             original_preference = sync_settings.sync_preference
             sync_settings.sync_preference = sync_preference
@@ -880,6 +884,76 @@ def google_sync(request):
             return redirect('communications:gmail_auth')
     
     return render(request, 'contacts/google_sync.html', context)
+
+
+@login_required
+def selective_google_import(request):
+    """
+    Selective Google Contacts import page.
+    """
+    from mobilize.communications.google_contacts_service import GoogleContactsService
+    
+    contacts_service = GoogleContactsService(request.user)
+    
+    if not contacts_service.is_authenticated():
+        messages.error(request, "Google Contacts not authenticated. Please connect Gmail first.")
+        return redirect('communications:gmail_auth')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'import_selected':
+            selected_contacts_json = request.POST.get('selected_contacts', '[]')
+            
+            try:
+                import json
+                selected_contact_ids = json.loads(selected_contacts_json)
+                
+                if not selected_contact_ids:
+                    messages.error(request, "No contacts selected for import")
+                    return redirect('contacts:selective_google_import')
+                
+                # Import selected contacts
+                result = contacts_service.import_selected_contacts(selected_contact_ids)
+                
+                if result['success']:
+                    messages.success(request, result['message'])
+                    messages.info(request, f"Successfully imported {result.get('imported_count', 0)} contact(s)")
+                    return redirect('contacts:person_list')
+                else:
+                    messages.error(request, f"Import failed: {result.get('error', 'Unknown error')}")
+                    
+            except json.JSONDecodeError:
+                messages.error(request, "Invalid contact selection data")
+            except Exception as e:
+                messages.error(request, f"Error importing contacts: {str(e)}")
+    
+    return render(request, 'contacts/selective_google_import.html')
+
+
+@login_required
+def google_contacts_api(request):
+    """
+    API endpoint to fetch Google contacts for selective import.
+    """
+    from mobilize.communications.google_contacts_service import GoogleContactsService
+    
+    contacts_service = GoogleContactsService(request.user)
+    
+    if not contacts_service.is_authenticated():
+        return JsonResponse({'error': 'Google Contacts not authenticated'}, status=401)
+    
+    try:
+        contacts = contacts_service.get_all_contacts_for_selection()
+        return JsonResponse({
+            'success': True,
+            'contacts': contacts
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
 
 
 @login_required

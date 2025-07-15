@@ -133,6 +133,9 @@
                                 {% elif choice_value == 'all_contacts' %}
                                     Import all your Google contacts into the CRM as new contacts. 
                                     Existing contacts will be updated with Google data.
+                                {% elif choice_value == 'selective' %}
+                                    Browse and select specific contacts from your Google Workspace to import. 
+                                    You can search and choose individual contacts.
                                 {% endif %}
                             </div>
                         </div>
@@ -197,6 +200,9 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (selectedValue === 'all_contacts') {
                 syncButton.innerHTML = '<i class="fas fa-download"></i> Import All Google Contacts';
                 syncButton.className = 'btn btn-success btn-lg';
+            } else if (selectedValue === 'selective') {
+                syncButton.innerHTML = '<i class="fas fa-search"></i> Select Contacts to Import';
+                syncButton.className = 'btn btn-info btn-lg';
             }
         });
     });

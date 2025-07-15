@@ -14,6 +14,8 @@ urlpatterns = [
     path('import/', views.import_contacts, name='import_contacts'),
     path('export/', views.export_contacts, name='export_contacts'),
     path('google-sync/', views.google_sync, name='google_sync'),
+    path('google-sync/selective/', views.selective_google_import, name='selective_google_import'),
+    path('api/google-contacts/', views.google_contacts_api, name='google_contacts_api'),
     # Bulk operations
     path('bulk/delete/', views.bulk_delete, name='bulk_delete'),
     path('bulk/update-priority/', views.bulk_update_priority, name='bulk_update_priority'),

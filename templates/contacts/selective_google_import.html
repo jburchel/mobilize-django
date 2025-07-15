@@ -1,0 +1,496 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Select Google Contacts to Import - Mobilize CRM{% endblock %}
+
+{% block page_title %}Select Google Contacts to Import{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'contacts:google_sync' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Import Options
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .contact-card {
+        border: 2px solid #e9ecef;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: white;
+    }
+    
+    .contact-card:hover {
+        border-color: #007bff;
+        background-color: #f8f9fa;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .contact-card.selected {
+        border-color: #007bff;
+        background-color: #e7f3ff;
+        box-shadow: 0 2px 8px rgba(0,123,255,0.2);
+    }
+    
+    .contact-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 16px;
+    }
+    
+    .contact-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .contact-name {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.25rem;
+    }
+    
+    .contact-email {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .contact-organization {
+        color: #6c757d;
+        font-size: 0.8rem;
+    }
+    
+    .search-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+        padding: 2rem 1.5rem;
+        border-radius: 0.5rem 0.5rem 0 0;
+    }
+    
+    .search-input {
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .search-input:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(255,255,255,0.3);
+    }
+    
+    .selection-summary {
+        background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        color: white;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    
+    .import-button-section {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        padding: 1rem;
+        margin: 1rem -1.5rem -1.5rem -1.5rem;
+        border-top: 1px solid #e9ecef;
+        border-radius: 0 0 0.5rem 0.5rem;
+    }
+    
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .no-contacts {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6c757d;
+    }
+    
+    .batch-actions {
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+        border: 1px solid #e9ecef;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-xl-10 col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="search-section">
+                    <div class="text-center mb-3">
+                        <h4 class="mb-2">
+                            <i class="fab fa-google me-2"></i>
+                            Browse Your Google Contacts
+                        </h4>
+                        <p class="mb-0 opacity-75">
+                            Search and select the contacts you want to import into your CRM
+                        </p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8 mx-auto">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input 
+                                    type="text" 
+                                    id="contactSearch" 
+                                    class="search-input form-control border-0" 
+                                    placeholder="Search contacts by name, email, or organization..."
+                                    autocomplete="off"
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Selection Summary -->
+                <div id="selectionSummary" class="selection-summary" style="display: none;">
+                    <h5 class="mb-2">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span id="selectedCount">0</span> Contact(s) Selected
+                    </h5>
+                    <p class="mb-0">
+                        These contacts will be imported into your CRM
+                    </p>
+                </div>
+                
+                <!-- Batch Actions -->
+                <div class="batch-actions">
+                    <div class="row align-items-center">
+                        <div class="col-sm-6">
+                            <div class="d-flex gap-2">
+                                <button type="button" id="selectAllBtn" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-check-square"></i> Select All Visible
+                                </button>
+                                <button type="button" id="clearAllBtn" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-square"></i> Clear All
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 text-sm-end mt-2 mt-sm-0">
+                            <small class="text-muted">
+                                Showing <span id="visibleCount">0</span> of <span id="totalCount">0</span> contacts
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Loading Spinner -->
+                <div id="loadingSpinner" class="loading-spinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading contacts...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Loading your Google contacts...</p>
+                </div>
+                
+                <!-- Contacts List -->
+                <div id="contactsList">
+                    <!-- Contacts will be loaded here via AJAX -->
+                </div>
+                
+                <!-- No Contacts Message -->
+                <div id="noContacts" class="no-contacts" style="display: none;">
+                    <i class="fas fa-address-book fa-3x mb-3 text-muted"></i>
+                    <h5 class="text-muted">No contacts found</h5>
+                    <p class="text-muted">Try adjusting your search terms or check your Google Contacts.</p>
+                </div>
+                
+                <!-- Import Button Section -->
+                <div class="import-button-section">
+                    <form method="post" id="importForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="import_selected">
+                        <input type="hidden" name="selected_contacts" id="selectedContactsInput">
+                        
+                        <div class="text-center">
+                            <button type="submit" id="importButton" class="btn btn-success btn-lg" disabled>
+                                <i class="fas fa-download"></i>
+                                Import <span id="importCount">0</span> Selected Contact(s)
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const contactsList = document.getElementById('contactsList');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const noContacts = document.getElementById('noContacts');
+    const searchInput = document.getElementById('contactSearch');
+    const selectionSummary = document.getElementById('selectionSummary');
+    const selectedCount = document.getElementById('selectedCount');
+    const importButton = document.getElementById('importButton');
+    const importCount = document.getElementById('importCount');
+    const selectedContactsInput = document.getElementById('selectedContactsInput');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    const visibleCountSpan = document.getElementById('visibleCount');
+    const totalCountSpan = document.getElementById('totalCount');
+    const importForm = document.getElementById('importForm');
+    
+    let allContacts = [];
+    let filteredContacts = [];
+    let selectedContacts = new Set();
+    
+    // Load Google contacts
+    async function loadGoogleContacts() {
+        try {
+            loadingSpinner.style.display = 'block';
+            contactsList.style.display = 'none';
+            noContacts.style.display = 'none';
+            
+            const response = await fetch('{% url "contacts:google_contacts_api" %}', {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to load contacts');
+            }
+            
+            const data = await response.json();
+            allContacts = data.contacts || [];
+            filteredContacts = [...allContacts];
+            
+            updateCounts();
+            renderContacts();
+            
+        } catch (error) {
+            console.error('Error loading contacts:', error);
+            showError('Failed to load Google contacts. Please try again.');
+        } finally {
+            loadingSpinner.style.display = 'none';
+        }
+    }
+    
+    // Render contacts list
+    function renderContacts() {
+        if (filteredContacts.length === 0) {
+            contactsList.style.display = 'none';
+            noContacts.style.display = 'block';
+            return;
+        }
+        
+        contactsList.style.display = 'block';
+        noContacts.style.display = 'none';
+        
+        const contactsHtml = filteredContacts.map(contact => {
+            const isSelected = selectedContacts.has(contact.id);
+            const avatar = getContactAvatar(contact);
+            
+            return `
+                <div class="contact-card ${isSelected ? 'selected' : ''}" data-contact-id="${contact.id}">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <input type="checkbox" class="form-check-input contact-checkbox" 
+                                   ${isSelected ? 'checked' : ''} 
+                                   data-contact-id="${contact.id}">
+                        </div>
+                        <div class="contact-avatar me-3">
+                            ${avatar}
+                        </div>
+                        <div class="contact-info">
+                            <div class="contact-name">
+                                ${escapeHtml(contact.name || 'No Name')}
+                            </div>
+                            ${contact.email ? `<div class="contact-email">${escapeHtml(contact.email)}</div>` : ''}
+                            ${contact.organization ? `<div class="contact-organization">${escapeHtml(contact.organization)}</div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        contactsList.innerHTML = contactsHtml;
+        
+        // Add event listeners
+        addContactEventListeners();
+        updateCounts();
+    }
+    
+    // Get contact avatar initials
+    function getContactAvatar(contact) {
+        if (contact.name) {
+            const names = contact.name.trim().split(' ');
+            if (names.length >= 2) {
+                return names[0][0].toUpperCase() + names[names.length - 1][0].toUpperCase();
+            }
+            return names[0][0].toUpperCase();
+        }
+        return '?';
+    }
+    
+    // Add event listeners to contact cards and checkboxes
+    function addContactEventListeners() {
+        // Contact card click handlers
+        document.querySelectorAll('.contact-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                if (e.target.type === 'checkbox') return; // Don't double-toggle for checkbox clicks
+                
+                const contactId = this.dataset.contactId;
+                const checkbox = this.querySelector('.contact-checkbox');
+                
+                checkbox.checked = !checkbox.checked;
+                toggleContactSelection(contactId, checkbox.checked);
+            });
+        });
+        
+        // Checkbox change handlers
+        document.querySelectorAll('.contact-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const contactId = this.dataset.contactId;
+                toggleContactSelection(contactId, this.checked);
+            });
+        });
+    }
+    
+    // Toggle contact selection
+    function toggleContactSelection(contactId, isSelected) {
+        const card = document.querySelector(`[data-contact-id="${contactId}"]`);
+        
+        if (isSelected) {
+            selectedContacts.add(contactId);
+            card.classList.add('selected');
+        } else {
+            selectedContacts.delete(contactId);
+            card.classList.remove('selected');
+        }
+        
+        updateSelectionUI();
+    }
+    
+    // Update selection UI
+    function updateSelectionUI() {
+        const count = selectedContacts.size;
+        
+        selectedCount.textContent = count;
+        importCount.textContent = count;
+        
+        if (count > 0) {
+            selectionSummary.style.display = 'block';
+            importButton.disabled = false;
+            selectedContactsInput.value = JSON.stringify([...selectedContacts]);
+        } else {
+            selectionSummary.style.display = 'none';
+            importButton.disabled = true;
+            selectedContactsInput.value = '';
+        }
+    }
+    
+    // Update counts
+    function updateCounts() {
+        visibleCountSpan.textContent = filteredContacts.length;
+        totalCountSpan.textContent = allContacts.length;
+    }
+    
+    // Search functionality
+    function filterContacts(searchTerm) {
+        if (!searchTerm.trim()) {
+            filteredContacts = [...allContacts];
+        } else {
+            const term = searchTerm.toLowerCase();
+            filteredContacts = allContacts.filter(contact => {
+                return (contact.name && contact.name.toLowerCase().includes(term)) ||
+                       (contact.email && contact.email.toLowerCase().includes(term)) ||
+                       (contact.organization && contact.organization.toLowerCase().includes(term));
+            });
+        }
+        
+        renderContacts();
+    }
+    
+    // Search input handler with debounce
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            filterContacts(this.value);
+        }, 300);
+    });
+    
+    // Select all visible contacts
+    selectAllBtn.addEventListener('click', function() {
+        filteredContacts.forEach(contact => {
+            selectedContacts.add(contact.id);
+        });
+        renderContacts();
+        updateSelectionUI();
+    });
+    
+    // Clear all selections
+    clearAllBtn.addEventListener('click', function() {
+        selectedContacts.clear();
+        renderContacts();
+        updateSelectionUI();
+    });
+    
+    // Form submission
+    importForm.addEventListener('submit', function(e) {
+        if (selectedContacts.size === 0) {
+            e.preventDefault();
+            alert('Please select at least one contact to import.');
+            return;
+        }
+        
+        // Show loading state
+        importButton.disabled = true;
+        importButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importing Contacts...';
+    });
+    
+    // Utility functions
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function showError(message) {
+        contactsList.innerHTML = `
+            <div class="alert alert-danger text-center" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                ${message}
+            </div>
+        `;
+        contactsList.style.display = 'block';
+        noContacts.style.display = 'none';
+    }
+    
+    // Initialize
+    loadGoogleContacts();
+});
+</script>
+{% endblock %}

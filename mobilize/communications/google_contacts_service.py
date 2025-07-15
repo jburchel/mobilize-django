@@ -349,3 +349,135 @@ class GoogleContactsService:
         )
         
         return contact
+
+    def get_all_contacts_for_selection(self) -> List[Dict]:
+        """Get all Google contacts formatted for selective import UI"""
+        if not self.service:
+            return []
+        
+        google_contacts = self.get_all_contacts()
+        formatted_contacts = []
+        
+        for contact_data in google_contacts:
+            parsed = self.parse_contact(contact_data)
+            
+            # Format contact for UI display
+            formatted_contact = {
+                'id': parsed['google_resource_name'],
+                'name': parsed['full_name'] or f"{parsed['first_name']} {parsed['last_name']}".strip() or 'No Name',
+                'email': parsed['email'],
+                'organization': parsed['organization'],
+                'first_name': parsed['first_name'],
+                'last_name': parsed['last_name'],
+                'phone': parsed['phone'],
+                'title': parsed['title'],
+                'address': parsed['address'],
+                'google_data': parsed  # Keep original parsed data for import
+            }
+            
+            # Only include contacts with either name or email
+            if formatted_contact['name'] != 'No Name' or formatted_contact['email']:
+                formatted_contacts.append(formatted_contact)
+        
+        # Sort by name
+        formatted_contacts.sort(key=lambda x: x['name'].lower())
+        
+        return formatted_contacts
+
+    def import_selected_contacts(self, selected_contact_ids: List[str]) -> Dict[str, Any]:
+        """Import specific Google contacts by their resource names"""
+        if not self.service or not selected_contact_ids:
+            return {'success': False, 'error': 'No contacts selected or service unavailable'}
+        
+        try:
+            # Get all contacts first (we could optimize this to fetch only selected ones)
+            all_contacts = self.get_all_contacts_for_selection()
+            
+            # Filter to only selected contacts
+            contacts_to_import = {contact['id']: contact for contact in all_contacts}
+            selected_contacts = [contacts_to_import[contact_id] for contact_id in selected_contact_ids if contact_id in contacts_to_import]
+            
+            if not selected_contacts:
+                return {'success': False, 'error': 'No valid contacts found to import'}
+            
+            imported_count = 0
+            updated_count = 0
+            errors = []
+            
+            for contact in selected_contacts:
+                try:
+                    google_data = contact['google_data']
+                    email = google_data.get('email', '').lower()
+                    
+                    if not email:
+                        errors.append(f"Skipped contact '{contact['name']}' - no email address")
+                        continue
+                    
+                    # Check if contact already exists
+                    from mobilize.contacts.models import Contact
+                    existing_contact = Contact.objects.filter(email__iexact=email).first()
+                    
+                    if existing_contact:
+                        # Update existing contact
+                        updated = self._update_contact_from_google(existing_contact, google_data)
+                        if updated:
+                            updated_count += 1
+                    else:
+                        # Create new contact
+                        self._create_contact_from_google_with_office(google_data)
+                        imported_count += 1
+                        
+                except Exception as e:
+                    errors.append(f"Error importing '{contact['name']}': {str(e)}")
+            
+            total_imported = imported_count + updated_count
+            message = f"Successfully imported {imported_count} new contacts"
+            if updated_count > 0:
+                message += f" and updated {updated_count} existing contacts"
+            
+            return {
+                'success': True,
+                'imported_count': total_imported,
+                'created_count': imported_count,
+                'updated_count': updated_count,
+                'errors': errors,
+                'message': message
+            }
+            
+        except Exception as e:
+            return {'success': False, 'error': f"Import failed: {str(e)}"}
+
+    def _create_contact_from_google_with_office(self, google_data: Dict):
+        """Create new CRM contact from Google data with office assignment"""
+        from mobilize.contacts.models import Contact, Person
+        from mobilize.admin_panel.models import UserOffice
+        
+        # Get the user's office assignment
+        user_office = UserOffice.objects.filter(user_id=str(self.user.id)).first()
+        office = user_office.office if user_office else None
+        
+        # Create Contact first
+        address_data = google_data.get('address', {})
+        
+        contact = Contact.objects.create(
+            first_name=google_data.get('first_name', ''),
+            last_name=google_data.get('last_name', ''),
+            email=google_data.get('email', ''),
+            phone=google_data.get('phone', ''),
+            street_address=address_data.get('street', ''),
+            city=address_data.get('city', ''),
+            state=address_data.get('state', ''),
+            zip_code=address_data.get('zip', ''),
+            google_resource_name=google_data.get('google_resource_name', ''),
+            type='person',  # Default to person type
+            office=office  # Assign to user's office
+        )
+        
+        # Create Person record
+        person = Person.objects.create(
+            contact=contact,
+            occupation=google_data.get('title', ''),
+            company=google_data.get('organization', '')
+        )
+        
+        return contact

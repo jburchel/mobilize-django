@@ -203,6 +203,7 @@ class UserContactSyncSettings(models.Model):
         ('disabled', 'Disabled - No contact sync'),
         ('crm_only', 'CRM Only - Sync only contacts that exist in CRM'),
         ('all_contacts', 'All Contacts - Import all Google contacts to CRM'),
+        ('selective', 'Selective - Choose specific contacts to import'),
     ]
     
     user = models.OneToOneField(
