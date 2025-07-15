@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 
 from .models import Communication
 from .tasks import sync_gmail_emails
+from mobilize.contacts.models import Person, Contact
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -107,3 +108,99 @@ def trigger_gmail_sync_after_inactivity(user):
             
     except Exception as e:
         logger.error(f"Error triggering Gmail sync after inactivity for user {user.username}: {str(e)}")
+
+
+@receiver(post_save, sender=Person)
+def trigger_gmail_sync_for_new_person(sender, instance, created, **kwargs):
+    """
+    Signal handler to trigger Gmail sync when a new person is created.
+    
+    This will sync emails to/from the new person's email address to ensure
+    all historical communications are captured in the CRM.
+    
+    Args:
+        sender: The Person model class
+        instance: The Person instance that was saved
+        created: Boolean indicating if this is a new record
+        **kwargs: Additional keyword arguments
+    """
+    if created and instance.contact and instance.contact.email:
+        try:
+            # Get the user who created this person (or their assigned user)
+            user = instance.contact.user
+            if not user:
+                logger.debug(f"New person {instance.contact.first_name} {instance.contact.last_name} has no assigned user, skipping Gmail sync")
+                return
+            
+            # Check if user has Gmail authentication
+            from mobilize.authentication.models import GoogleToken
+            try:
+                google_token = GoogleToken.objects.get(user=user)
+                if google_token.access_token:
+                    # Queue Gmail sync for this user focusing on the new contact's email
+                    # Use more days back to capture historical emails with this person
+                    sync_gmail_emails.delay(user.id, days_back=30)
+                    
+                    logger.info(
+                        f"Triggered Gmail sync for user {user.username} due to new person: "
+                        f"{instance.contact.first_name} {instance.contact.last_name} ({instance.contact.email})"
+                    )
+                else:
+                    logger.debug(f"User {user.username} has no Gmail access token")
+                    
+            except GoogleToken.DoesNotExist:
+                logger.debug(f"User {user.username} has no Gmail authentication")
+                
+        except Exception as e:
+            logger.error(
+                f"Error triggering Gmail sync for new person "
+                f"{instance.contact.first_name} {instance.contact.last_name}: {str(e)}"
+            )
+
+
+@receiver(post_save, sender=Contact)
+def trigger_gmail_sync_for_new_contact(sender, instance, created, **kwargs):
+    """
+    Signal handler to trigger Gmail sync when a new contact with email is created.
+    
+    This handles cases where Contact records are created directly (e.g., during import)
+    before Person records are created.
+    
+    Args:
+        sender: The Contact model class
+        instance: The Contact instance that was saved
+        created: Boolean indicating if this is a new record
+        **kwargs: Additional keyword arguments
+    """
+    if created and instance.email and instance.type == 'person':
+        try:
+            # Get the user who created this contact
+            user = instance.user
+            if not user:
+                logger.debug(f"New contact {instance.first_name} {instance.last_name} has no assigned user, skipping Gmail sync")
+                return
+            
+            # Check if user has Gmail authentication
+            from mobilize.authentication.models import GoogleToken
+            try:
+                google_token = GoogleToken.objects.get(user=user)
+                if google_token.access_token:
+                    # Queue Gmail sync for this user focusing on the new contact's email
+                    # Use more days back to capture historical emails with this contact
+                    sync_gmail_emails.delay(user.id, days_back=30)
+                    
+                    logger.info(
+                        f"Triggered Gmail sync for user {user.username} due to new contact: "
+                        f"{instance.first_name} {instance.last_name} ({instance.email})"
+                    )
+                else:
+                    logger.debug(f"User {user.username} has no Gmail access token")
+                    
+            except GoogleToken.DoesNotExist:
+                logger.debug(f"User {user.username} has no Gmail authentication")
+                
+        except Exception as e:
+            logger.error(
+                f"Error triggering Gmail sync for new contact "
+                f"{instance.first_name} {instance.last_name}: {str(e)}"
+            )
