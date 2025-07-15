@@ -53,22 +53,25 @@ class LazyLoader {
         sentinel.style.height = '1px';
         this.tableBody.appendChild(sentinel);
         
-        // Set up intersection observer
-        const observerOptions = {
-            root: null,
-            rootMargin: '100px',
-            threshold: 0.1
-        };
-        
-        this.observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting && !this.isLoading && this.hasMore) {
-                    this.loadMore();
-                }
-            });
-        }, observerOptions);
-        
-        this.observer.observe(sentinel);
+        // Only set up observer if infinite scroll is enabled
+        if (this.enableInfiniteScroll) {
+            // Set up intersection observer
+            const observerOptions = {
+                root: null,
+                rootMargin: '100px',
+                threshold: 0.1
+            };
+            
+            this.observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !this.isLoading && this.hasMore) {
+                        this.loadMore();
+                    }
+                });
+            }, observerOptions);
+            
+            this.observer.observe(sentinel);
+        }
     }
     
     createSentinel() {
