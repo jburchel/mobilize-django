@@ -344,8 +344,8 @@ class GoogleContactsService:
         # Create Person record
         person = Person.objects.create(
             contact=contact,
-            occupation=google_data.get('title', ''),
-            company=google_data.get('organization', '')
+            profession=google_data.get('title', ''),
+            organization=google_data.get('organization', '')
         )
         
         return contact
@@ -432,9 +432,15 @@ class GoogleContactsService:
                             print(f"No changes needed for existing contact: {email}")
                     else:
                         # Create new contact
-                        self._create_contact_from_google_with_office(google_data)
-                        imported_count += 1
-                        print(f"Created new contact: {email}")
+                        try:
+                            self._create_contact_from_google_with_office(google_data)
+                            imported_count += 1
+                            print(f"Created new contact: {email}")
+                        except Exception as create_error:
+                            errors.append(f"Failed to create contact '{contact['name']}': {str(create_error)}")
+                            print(f"ERROR creating contact {email}: {str(create_error)}")
+                            import traceback
+                            traceback.print_exc()
                         
                 except Exception as e:
                     errors.append(f"Error importing '{contact['name']}': {str(e)}")
@@ -485,8 +491,8 @@ class GoogleContactsService:
         # Create Person record
         person = Person.objects.create(
             contact=contact,
-            occupation=google_data.get('title', ''),
-            company=google_data.get('organization', '')
+            profession=google_data.get('title', ''),
+            organization=google_data.get('organization', '')
         )
         
         return contact
