@@ -50,10 +50,10 @@ class Command(BaseCommand):
         batch_size = options['batch_size']
         batch_delay = options['batch_delay']
         
-        # Target contact names (combined list)
+        # Target contact names (combined list) - corrected spellings
         target_names = [
             # Original list
-            'Niranjan Madhaven',
+            'Niranjan Madhavan',  # Fixed spelling: Madhavan not Madhaven
             'Beka Ahlstrom', 
             'Ellie Montgomery',
             'Austin Riggs',
@@ -89,7 +89,7 @@ class Command(BaseCommand):
             'Mark Stanley',
             'Matt Rhodes',
             'Michael Hull',
-            'Rev. David Bunn',
+            'David Bunn',  # Database has no "Rev." prefix
             'Richard Thomas',
             'Rob Campbell',
             'Ruthanne Lynch',
@@ -105,21 +105,32 @@ class Command(BaseCommand):
         for target_name in target_names:
             contact_found = False
             
-            # Strategy 1: Full name match (first + last)
-            name_parts = target_name.split()
-            if len(name_parts) >= 2:
-                first_name = name_parts[0]
-                last_name = ' '.join(name_parts[1:])
-                
-                contact = Contact.objects.filter(
-                    first_name__icontains=first_name,
-                    last_name__icontains=last_name,
-                    type='person'
-                ).first()
-                
-                if contact and hasattr(contact, 'person_details'):
-                    found_contacts.append((contact, target_name))
-                    contact_found = True
+            # Strategy 1: Full name exact match
+            contacts = Contact.objects.filter(type='person')
+            for contact in contacts:
+                full_name = f"{contact.first_name or ''} {contact.last_name or ''}".strip()
+                if target_name.lower() == full_name.lower():
+                    if hasattr(contact, 'person_details'):
+                        found_contacts.append((contact, target_name))
+                        contact_found = True
+                        break
+            
+            # Strategy 2: Partial name match (first + last)
+            if not contact_found:
+                name_parts = target_name.split()
+                if len(name_parts) >= 2:
+                    first_name = name_parts[0]
+                    last_name = ' '.join(name_parts[1:])
+                    
+                    contact = Contact.objects.filter(
+                        first_name__icontains=first_name,
+                        last_name__icontains=last_name,
+                        type='person'
+                    ).first()
+                    
+                    if contact and hasattr(contact, 'person_details'):
+                        found_contacts.append((contact, target_name))
+                        contact_found = True
             
             if not contact_found:
                 missing_contacts.append(target_name)

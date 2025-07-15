@@ -38,8 +38,8 @@ class Command(BaseCommand):
         
         # Target contact names (combined list)
         target_names = [
-            # Original list
-            'Niranjan Madhaven',
+            # Original list - corrected spellings
+            'Niranjan Madhavan',  # Fixed spelling: Madhavan not Madhaven
             'Beka Ahlstrom', 
             'Ellie Montgomery',
             'Austin Riggs',
@@ -75,7 +75,7 @@ class Command(BaseCommand):
             'Mark Stanley',
             'Matt Rhodes',
             'Michael Hull',
-            'Rev. David Bunn',
+            'David Bunn',  # Database has no "Rev." prefix
             'Richard Thomas',
             'Rob Campbell',
             'Ruthanne Lynch',
