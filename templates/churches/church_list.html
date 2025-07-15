@@ -235,7 +235,7 @@
                         <td>
                             {% with primary_contact=church.get_primary_contact %}
                                 {% if primary_contact and primary_contact.contact.email %}
-                                    <a href="#" onclick="openEmailCompose('{{ primary_contact.contact.email }}', '{{ primary_contact.contact.first_name }} {{ primary_contact.contact.last_name }}', {{ primary_contact.contact.id }})" class="text-decoration-none">
+                                    <a href="#" onclick="openEmailCompose('{{ primary_contact.contact.email|escapejs }}', '{{ primary_contact.contact.first_name|escapejs }} {{ primary_contact.contact.last_name|escapejs }}', {{ primary_contact.contact.id }})" class="text-decoration-none">
                                         <i class="fas fa-envelope me-1"></i>{{ primary_contact.contact.email }}
                                     </a>
                                 {% else %}

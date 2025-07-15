@@ -216,7 +216,7 @@
                         </td>
                         <td>
                             {% if person.contact.email %}
-                                <a href="#" onclick="openEmailCompose('{{ person.contact.email }}', '{{ person.contact.first_name }} {{ person.contact.last_name }}', {{ person.contact.id }})" class="text-decoration-none">
+                                <a href="#" onclick="openEmailCompose('{{ person.contact.email|escapejs }}', '{{ person.contact.first_name|escapejs }} {{ person.contact.last_name|escapejs }}', {{ person.contact.id }})" class="text-decoration-none">
                                     <i class="fas fa-envelope me-1"></i>{{ person.contact.email }}
                                 </a>
                             {% else %}

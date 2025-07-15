@@ -318,7 +318,7 @@
                                 <span class="field-label">Email:</span>
                                 <span class="field-value">
                                     {% if church.contact.email %}
-                                        <a href="#" onclick="openEmailCompose('{{ church.contact.email }}', '{{ church.name|default:church.contact.church_name }}', {{ church.contact.id }})" class="text-decoration-none">
+                                        <a href="#" onclick="openEmailCompose('{{ church.contact.email|escapejs }}', '{{ church.name|default:church.contact.church_name|escapejs }}', {{ church.contact.id }})" class="text-decoration-none">
                                             <i class="fas fa-envelope me-1"></i>{{ church.contact.email }}
                                         </a>
                                     {% else %}
@@ -737,7 +737,7 @@
                                         <div class="small text-muted">
                                             {% if membership.person.contact.email %}
                                                 <div>
-                                                    <a href="#" onclick="openEmailCompose('{{ membership.person.contact.email }}', '{{ membership.person.name }}', {{ membership.person.contact.id }})" class="text-decoration-none">
+                                                    <a href="#" onclick="openEmailCompose('{{ membership.person.contact.email|escapejs }}', '{{ membership.person.name|escapejs }}', {{ membership.person.contact.id }})" class="text-decoration-none">
                                                         <i class="fas fa-envelope me-1"></i>{{ membership.person.contact.email }}
                                                     </a>
                                                 </div>

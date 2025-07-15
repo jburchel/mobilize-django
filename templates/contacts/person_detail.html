@@ -345,7 +345,7 @@
                             <div class="field-label">Email</div>
                             <div class="field-value">
                                 {% if person.contact.email %}
-                                    <a href="#" onclick="openEmailCompose('{{ person.contact.email }}', '{{ person.name }}', {{ person.contact.id }})" class="text-decoration-none">
+                                    <a href="#" onclick="openEmailCompose('{{ person.contact.email|escapejs }}', '{{ person.name|escapejs }}', {{ person.contact.id }})" class="text-decoration-none">
                                         <i class="fas fa-envelope me-1"></i>{{ person.contact.email }}
                                     </a>
                                 {% else %}

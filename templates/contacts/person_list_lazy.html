@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </td>
             <td>
                 ${item.email ? 
-                    `<a href="#" onclick="openEmailCompose('${item.email}', '${item.name}', ${item.id})" class="text-decoration-none">
+                    `<a href="#" onclick="openEmailCompose('${item.email.replace(/'/g, '\\\'').replace(/"/g, '\\"')}', '${item.name.replace(/'/g, '\\\'').replace(/"/g, '\\"')}', ${item.id})" class="text-decoration-none">
                         <i class="fas fa-envelope me-1"></i>${item.email}
                     </a>` : '-'}
             </td>
