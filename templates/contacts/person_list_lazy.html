@@ -392,7 +392,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add event listeners for filters
     if (searchInput) {
-        searchInput.addEventListener('input', debounce(updateFilters, 300));
+        searchInput.addEventListener('input', debounce(updateFilters, 50));
     }
     if (priorityFilter) {
         priorityFilter.addEventListener('change', updateFilters);
