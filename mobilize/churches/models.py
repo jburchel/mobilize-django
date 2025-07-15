@@ -11,6 +11,9 @@ class Church(models.Model):
     Matches the 'churches' table in the Supabase database.
     It extends the Contact model via a OneToOneField.
     """
+    # Explicitly define the primary key to ensure proper auto-increment behavior
+    id = models.AutoField(primary_key=True)
+    
     # Note: Using separate id field to match existing database schema
     # The database has both 'id' (primary key) and 'contact_id' (foreign key)
     contact = models.OneToOneField(

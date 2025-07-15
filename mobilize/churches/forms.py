@@ -242,7 +242,7 @@ class ChurchForm(forms.ModelForm):
             # Editing existing church
             contact = self.instance.contact
         else:
-            # Creating new church
+            # Creating new church - ensure no ID is set on the instance
             contact = Contact(type='church')
             if user:
                 contact.user = user
@@ -265,13 +265,19 @@ class ChurchForm(forms.ModelForm):
         if commit:
             contact.save()
             if not self.instance.pk:
-                # Only set contact for new instances
+                # Only set contact for new instances and ensure no explicit ID is set
                 self.instance.contact = contact
+                # Ensure the church instance doesn't have an explicit ID set
+                if hasattr(self.instance, 'id'):
+                    self.instance.id = None
             church = super().save(commit=True)
             return church
         else:
             if not self.instance.pk:
                 self.instance.contact = contact
+                # Ensure the church instance doesn't have an explicit ID set
+                if hasattr(self.instance, 'id'):
+                    self.instance.id = None
             return super().save(commit=False)
 
 
