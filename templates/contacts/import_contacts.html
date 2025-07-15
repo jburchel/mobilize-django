@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Import Contacts - Mobilize CRM{% endblock %}
+
+{% block page_title %}Import Contacts{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'contacts:person_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to People
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-upload me-2"></i>Import Contacts from CSV
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Instructions -->
+                <div class="alert alert-info">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-info-circle me-2"></i>CSV Format Instructions
+                    </h6>
+                    <p>Your CSV file should include the following columns (headers are case-sensitive):</p>
+                    <ul class="mb-2">
+                        <li><strong>Required:</strong> first_name, last_name</li>
+                        <li><strong>Optional:</strong> email, phone, title, profession, organization</li>
+                        <li><strong>Address:</strong> street_address, city, state, zip_code, country</li>
+                        <li><strong>CRM Fields:</strong> priority (low/medium/high), pipeline_stage, notes</li>
+                    </ul>
+                    <p class="mb-0">
+                        <small class="text-muted">
+                            Contacts with existing emails will be updated. New contacts will be created.
+                        </small>
+                    </p>
+                </div>
+
+                <!-- Sample CSV Download -->
+                <div class="mb-4">
+                    <h6>Sample CSV Template</h6>
+                    <p class="text-muted">Download a sample CSV file to see the expected format:</p>
+                    <a href="#" class="btn btn-sm btn-outline-primary" onclick="downloadSampleCSV()">
+                        <i class="fas fa-download me-1"></i> Download Sample CSV
+                    </a>
+                </div>
+
+                <!-- Upload Form -->
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.csv_file.id_for_label }}" class="form-label">
+                            {{ form.csv_file.label }}
+                        </label>
+                        {{ form.csv_file }}
+                        {% if form.csv_file.help_text %}
+                            <div class="form-text">{{ form.csv_file.help_text }}</div>
+                        {% endif %}
+                        {% if form.csv_file.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.csv_file.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'contacts:person_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload me-1"></i> Import Contacts
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Import Tips -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Import Tips
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Ensure your CSV file is properly formatted with headers in the first row</li>
+                    <li>Email addresses are used to identify existing contacts for updates</li>
+                    <li>Valid priority values are: low, medium, high (default: medium)</li>
+                    <li>Country defaults to "United States" if not specified</li>
+                    <li>Large files may take a few moments to process</li>
+                    <li>You'll see a summary of created, updated, and error counts after import</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function downloadSampleCSV() {
+    // Create sample CSV content
+    const csvContent = [
+        'first_name,last_name,email,phone,title,profession,organization,street_address,city,state,zip_code,country,priority,pipeline_stage,notes',
+        'John,Doe,john.doe@example.com,(555) 123-4567,Pastor,Clergy,First Baptist Church,123 Main St,Anytown,CA,12345,United States,high,information,Sample contact entry',
+        'Jane,Smith,jane.smith@example.com,(555) 987-6543,Administrator,Administration,Grace Community Church,456 Oak Ave,Hometown,TX,67890,United States,medium,invitation,Another sample contact'
+    ].join('\n');
+    
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('href', url);
+    a.setAttribute('download', 'contact_import_sample.csv');
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+// File input styling and validation
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) {
+        fileInput.classList.add('form-control');
+        
+        // Add file validation
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (!file.name.toLowerCase().endsWith('.csv')) {
+                    alert('Please select a CSV file.');
+                    this.value = '';
+                    return;
+                }
+                
+                // Check file size (limit to 10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('File size must be less than 10MB.');
+                    this.value = '';
+                    return;
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

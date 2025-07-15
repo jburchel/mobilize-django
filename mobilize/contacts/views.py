@@ -610,6 +610,7 @@ def person_list_api(request):
 
 
 @login_required
+@ensure_user_office_assignment
 def import_contacts(request):
     """
     Import contacts from CSV file.
@@ -626,6 +627,11 @@ def import_contacts(request):
             
             # Process CSV file
             try:
+                # Get the user's office assignment for imported contacts
+                from mobilize.admin_panel.models import UserOffice
+                user_office = UserOffice.objects.filter(user_id=str(request.user.id)).first()
+                office = user_office.office if user_office else None
+                
                 decoded_file = csv_file.read().decode('utf-8').splitlines()
                 reader = csv.DictReader(decoded_file)
                 
@@ -659,6 +665,7 @@ def import_contacts(request):
                                 contact.priority = row.get('priority', 'medium').strip()
                                 contact.notes = row.get('notes', '').strip()
                                 contact.user = request.user
+                                contact.office = office
                                 contact.save()
                             except Contact.DoesNotExist:
                                 # Create new contact
@@ -677,6 +684,7 @@ def import_contacts(request):
                                     priority=row.get('priority', 'medium').strip(),
                                     notes=row.get('notes', '').strip(),
                                     user=request.user,
+                                    office=office,
                                 )
                                 created = True
                         else:
@@ -695,6 +703,7 @@ def import_contacts(request):
                                 priority=row.get('priority', 'medium').strip(),
                                 notes=row.get('notes', '').strip(),
                                 user=request.user,
+                                office=office,
                             )
                             created = True
                         
