@@ -239,7 +239,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/lazy-loading.js' %}?v=1750793996"></script>
+<script src="{% static 'js/lazy-loading.js' %}?v={{ 'now'|date:'U' }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize lazy loader for person list

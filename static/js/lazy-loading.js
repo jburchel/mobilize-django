@@ -128,9 +128,11 @@ class LazyLoader {
             this.currentPage++;
             this.hasMore = data.has_next;
             this.totalCount = data.total || 0;
+            console.log('LazyLoader: Received total count:', this.totalCount);
             
             // Calculate current count more reliably
             this.updateCurrentCount();
+            console.log('LazyLoader: Current count after update:', this.currentCount);
             
             // Update pagination display
             this.updatePaginationDisplay();
@@ -332,6 +334,8 @@ class LazyLoader {
         // Update pagination counts in the UI
         const currentCountSpan = document.getElementById('current-count');
         const totalCountSpan = document.getElementById('total-count');
+        
+        console.log('LazyLoader: Updating pagination display - current:', this.currentCount, 'total:', this.totalCount);
         
         if (currentCountSpan) {
             currentCountSpan.textContent = this.currentCount;
