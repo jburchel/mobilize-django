@@ -94,7 +94,25 @@ class EmailSignatureForm(forms.ModelForm):
         if self.user:
             instance.user = self.user
         if commit:
-            instance.save()
+            # Handle unique constraint on user_id by using get_or_create logic
+            try:
+                instance.save()
+            except Exception:
+                # If creation fails due to unique constraint, update existing signature
+                existing_signature = EmailSignature.objects.filter(user=self.user).first()
+                if existing_signature:
+                    # Update existing signature with new data
+                    existing_signature.name = instance.name
+                    existing_signature.content = instance.content
+                    existing_signature.logo_url = instance.logo_url
+                    existing_signature.logo_file = instance.logo_file
+                    existing_signature.is_default = instance.is_default
+                    existing_signature.is_html = instance.is_html
+                    existing_signature.save()
+                    instance = existing_signature
+                else:
+                    # Re-raise if it's not a unique constraint issue
+                    raise
         return instance
 
 

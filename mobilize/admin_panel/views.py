@@ -396,7 +396,7 @@ class UserManagementView(SuperAdminRequiredMixin, ListView):
     
     def get_queryset(self):
         try:
-            queryset = User.objects.select_related('person').prefetch_related('useroffice_set__office').order_by('username')
+            queryset = User.objects.select_related('person').order_by('username')
             
             # Filter by role if specified
             role_filter = self.request.GET.get('role')
@@ -457,6 +457,11 @@ class UserManagementView(SuperAdminRequiredMixin, ListView):
             # Get first office for create user link
             context['first_office'] = Office.objects.first()
             
+            # Add office assignments to each user object
+            for user in context['users']:
+                user_offices = UserOffice.objects.filter(user_id=str(user.id)).select_related('office')
+                user.office_assignments = user_offices
+            
             return context
         except Exception as e:
             # Log the error for debugging
@@ -464,8 +469,11 @@ class UserManagementView(SuperAdminRequiredMixin, ListView):
             logger = logging.getLogger(__name__)
             logger.error(f"Error in UserManagementView.get_context_data: {e}", exc_info=True)
             # Return minimal context to prevent 500 error
+            empty_users = User.objects.none()
+            for user in empty_users:
+                user.office_assignments = []
             return {
-                'users': User.objects.none(),
+                'users': empty_users,
                 'role_choices': [],
                 'current_role': '',
                 'current_active': '',
