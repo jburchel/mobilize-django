@@ -237,8 +237,9 @@ def person_detail(request, pk):
         
         # Get recent communications for this person
         from mobilize.communications.models import Communication
+        from django.db.models import Q
         recent_communications = Communication.objects.filter(
-            person=person
+            Q(person__contact_id=person.contact.id) | Q(church__contact_id=person.contact.id)
         ).order_by('-date_sent', '-created_at')[:5]
         
         # Get related tasks for this person
