@@ -918,7 +918,14 @@ def selective_google_import(request):
                 
                 if result['success']:
                     messages.success(request, result['message'])
-                    messages.info(request, f"Successfully imported {result.get('imported_count', 0)} contact(s)")
+                    
+                    # Show any errors/warnings
+                    if result.get('errors'):
+                        for error in result['errors'][:3]:
+                            messages.warning(request, error)
+                        if len(result['errors']) > 3:
+                            messages.warning(request, f"... and {len(result['errors']) - 3} more warnings")
+                    
                     return redirect('contacts:person_list')
                 else:
                     messages.error(request, f"Import failed: {result.get('error', 'Unknown error')}")

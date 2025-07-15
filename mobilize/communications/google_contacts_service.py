@@ -404,13 +404,18 @@ class GoogleContactsService:
             updated_count = 0
             errors = []
             
+            print(f"Starting import of {len(selected_contacts)} selected contacts")
+            
             for contact in selected_contacts:
                 try:
+                    print(f"Processing contact: {contact.get('name', 'Unknown')}")
                     google_data = contact['google_data']
                     email = google_data.get('email', '').lower()
+                    print(f"Contact email: {email or 'No email'}")
                     
                     if not email:
                         errors.append(f"Skipped contact '{contact['name']}' - no email address")
+                        print(f"Skipping contact without email: {contact['name']}")
                         continue
                     
                     # Check if contact already exists
@@ -422,10 +427,14 @@ class GoogleContactsService:
                         updated = self._update_contact_from_google(existing_contact, google_data)
                         if updated:
                             updated_count += 1
+                            print(f"Updated existing contact: {email}")
+                        else:
+                            print(f"No changes needed for existing contact: {email}")
                     else:
                         # Create new contact
                         self._create_contact_from_google_with_office(google_data)
                         imported_count += 1
+                        print(f"Created new contact: {email}")
                         
                 except Exception as e:
                     errors.append(f"Error importing '{contact['name']}': {str(e)}")
