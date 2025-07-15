@@ -191,19 +191,46 @@ class Command(BaseCommand):
         
         if contact_emails:
             try:
-                # Trigger Gmail sync task
-                result = sync_gmail_emails.delay(
-                    user_id=sync_user.id,
-                    days_back=days_back,
-                    specific_emails=contact_emails  # Pass specific emails to sync
-                )
-                
-                self.stdout.write(self.style.SUCCESS(f'Gmail sync task queued with ID: {result.id}'))
-                self.stdout.write(f'Syncing emails for {len(contact_emails)} email addresses')
-                self.stdout.write('Monitor the task progress in your Celery logs')
+                # Try to use Celery first, fall back to direct execution
+                try:
+                    # Trigger Gmail sync task
+                    result = sync_gmail_emails.delay(
+                        user_id=sync_user.id,
+                        days_back=days_back,
+                        specific_emails=contact_emails  # Pass specific emails to sync
+                    )
+                    
+                    self.stdout.write(self.style.SUCCESS(f'Gmail sync task queued with ID: {result.id}'))
+                    self.stdout.write(f'Syncing emails for {len(contact_emails)} email addresses')
+                    self.stdout.write('Monitor the task progress in your Celery logs')
+                    
+                except Exception as celery_error:
+                    self.stdout.write(self.style.WARNING(f'Celery not available ({celery_error}), running sync directly...'))
+                    
+                    # Run sync directly without Celery
+                    from mobilize.communications.gmail_service import GmailService
+                    
+                    gmail_service = GmailService(sync_user)
+                    if not gmail_service.is_authenticated():
+                        self.stdout.write(self.style.ERROR('Gmail not authenticated for user'))
+                        return
+                    
+                    self.stdout.write(f'Starting direct Gmail sync for {len(contact_emails)} email addresses...')
+                    
+                    # Run the sync directly
+                    result = gmail_service.sync_emails_to_communications(
+                        days_back=days_back,
+                        contacts_only=False,
+                        specific_emails=contact_emails
+                    )
+                    
+                    if result['success']:
+                        self.stdout.write(self.style.SUCCESS(f'Successfully synced {result["synced_count"]} emails'))
+                    else:
+                        self.stdout.write(self.style.ERROR(f'Sync failed: {result.get("error", "Unknown error")}'))
                 
             except Exception as e:
-                self.stdout.write(self.style.ERROR(f'Failed to queue Gmail sync task: {e}'))
+                self.stdout.write(self.style.ERROR(f'Failed to sync emails: {e}'))
         else:
             self.stdout.write(self.style.WARNING('No email addresses found for the matched contacts'))
         
