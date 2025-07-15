@@ -34,7 +34,8 @@ class EmailTemplateListView(LoginRequiredMixin, ListView):
         return super().dispatch(request, *args, **kwargs)
     
     def get_queryset(self):
-        queryset = EmailTemplate.objects.all()
+        # Only fetch fields that exist in database - exclude 'body' field temporarily due to schema mismatch
+        queryset = EmailTemplate.objects.all().only('id', 'name', 'subject', 'is_active', 'category', 'created_by', 'created_at', 'updated_at')
         
         # Super admins see all templates
         if self.request.user.role == 'super_admin':
@@ -549,7 +550,7 @@ class ComposeEmailView(LoginRequiredMixin, FormView):
         context = super().get_context_data(**kwargs)
         context['email_templates'] = EmailTemplate.objects.filter(
             created_by=self.request.user
-        )
+        ).only('id', 'name', 'subject', 'is_active', 'category')
         context['email_signatures'] = EmailSignature.objects.filter(
             user=self.request.user
         ).only('id', 'name', 'content', 'is_default', 'user')
@@ -722,7 +723,8 @@ class GmailComposeView(LoginRequiredMixin, FormView):
             context['gmail_error'] = str(e)
         
         try:
-            context['email_templates'] = EmailTemplate.objects.filter(is_active=True)
+            # Only fetch fields that exist in database - exclude 'body' field temporarily due to schema mismatch
+            context['email_templates'] = EmailTemplate.objects.filter(is_active=True).only('id', 'name', 'subject', 'is_active', 'category')
             context['email_signatures'] = EmailSignature.objects.filter(user=self.request.user).only('id', 'name', 'content', 'is_default', 'user')
         except Exception:
             context['email_templates'] = []
