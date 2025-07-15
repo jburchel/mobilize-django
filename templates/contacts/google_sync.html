@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Contacts from Google Workspace - Mobilize CRM{% endblock %}
+
+{% block page_title %}Add Contacts from Google Workspace{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'contacts:person_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to People
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .sync-option {
+        border: 2px solid #e9ecef;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .sync-option:hover {
+        border-color: #007bff;
+        background-color: #f8f9fa;
+    }
+    .sync-option.selected {
+        border-color: #007bff;
+        background-color: #e7f3ff;
+    }
+    .sync-option .option-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    .sync-option .option-header input[type="radio"] {
+        margin-right: 0.75rem;
+    }
+    .sync-option .option-description {
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+    .status-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+    }
+    .warning-card {
+        background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+        color: #2d3436;
+        border: none;
+    }
+    .google-icon {
+        color: #4285f4;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- Authentication Status -->
+        {% if is_authenticated %}
+        <div class="card status-card mb-4">
+            <div class="card-body text-center">
+                <h5 class="card-title">
+                    <i class="fab fa-google google-icon"></i>
+                    Google Workspace Connected
+                </h5>
+                <p class="card-text mb-0">
+                    Your Google account is connected and ready to import contacts.
+                </p>
+            </div>
+        </div>
+        {% else %}
+        <div class="card warning-card mb-4">
+            <div class="card-body text-center">
+                <h5 class="card-title">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Google Workspace Not Connected
+                </h5>
+                <p class="card-text mb-3">
+                    You need to connect your Google account to import contacts from Google Workspace.
+                </p>
+                <form method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="auth_google">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fab fa-google"></i> Connect Google Account
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Sync Options -->
+        {% if is_authenticated %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users"></i> Import Google Contacts
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    Choose how you want to import your Google Workspace contacts into Mobilize CRM.
+                </p>
+
+                <form method="post" id="syncForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="sync">
+                    
+                    <div class="mb-4">
+                        {% for choice_value, choice_label in sync_choices %}
+                        <div class="sync-option" data-value="{{ choice_value }}">
+                            <div class="option-header">
+                                <input type="radio" name="sync_preference" value="{{ choice_value }}" 
+                                       id="sync_{{ choice_value }}" 
+                                       {% if choice_value == sync_settings.sync_preference %}checked{% endif %}>
+                                <label for="sync_{{ choice_value }}" class="mb-0">
+                                    <strong>{{ choice_label }}</strong>
+                                </label>
+                            </div>
+                            <div class="option-description">
+                                {% if choice_value == 'disabled' %}
+                                    Your Google contacts will remain separate. No sync will occur.
+                                {% elif choice_value == 'crm_only' %}
+                                    Only update contacts that already exist in your CRM with Google contact data. 
+                                    No new contacts will be created.
+                                {% elif choice_value == 'all_contacts' %}
+                                    Import all your Google contacts into the CRM as new contacts. 
+                                    Existing contacts will be updated with Google data.
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg" id="syncButton">
+                            <i class="fas fa-sync-alt"></i> Import Contacts from Google Workspace
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-info-circle text-info"></i> Important Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li><strong>Privacy:</strong> Your Google contacts are securely imported and stored only in your CRM.</li>
+                    <li><strong>Duplicates:</strong> Contacts are matched by email address to avoid duplicates.</li>
+                    <li><strong>Updates:</strong> Existing contacts will be updated with additional information from Google.</li>
+                    <li><strong>Permissions:</strong> Only you can see and manage your imported contacts.</li>
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const syncOptions = document.querySelectorAll('.sync-option');
+    const syncForm = document.getElementById('syncForm');
+    const syncButton = document.getElementById('syncButton');
+    
+    // Handle sync option selection
+    syncOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            const radio = this.querySelector('input[type="radio"]');
+            radio.checked = true;
+            
+            // Update visual selection
+            syncOptions.forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+            
+            // Update button text based on selection
+            const selectedValue = radio.value;
+            if (selectedValue === 'disabled') {
+                syncButton.innerHTML = '<i class="fas fa-times"></i> Disable Google Contacts';
+                syncButton.className = 'btn btn-secondary btn-lg';
+            } else if (selectedValue === 'crm_only') {
+                syncButton.innerHTML = '<i class="fas fa-sync-alt"></i> Update Existing Contacts';
+                syncButton.className = 'btn btn-primary btn-lg';
+            } else if (selectedValue === 'all_contacts') {
+                syncButton.innerHTML = '<i class="fas fa-download"></i> Import All Google Contacts';
+                syncButton.className = 'btn btn-success btn-lg';
+            }
+        });
+    });
+    
+    // Initialize selected state
+    const checkedOption = document.querySelector('.sync-option input[type="radio"]:checked');
+    if (checkedOption) {
+        checkedOption.closest('.sync-option').classList.add('selected');
+        checkedOption.closest('.sync-option').click();
+    }
+    
+    // Handle form submission
+    if (syncForm) {
+        syncForm.addEventListener('submit', function(e) {
+            const selectedValue = document.querySelector('input[name="sync_preference"]:checked')?.value;
+            
+            if (selectedValue === 'disabled') {
+                if (!confirm('Are you sure you want to disable Google Contacts sync?')) {
+                    e.preventDefault();
+                    return;
+                }
+            } else if (selectedValue === 'all_contacts') {
+                if (!confirm('This will import all your Google contacts into the CRM. Are you sure?')) {
+                    e.preventDefault();
+                    return;
+                }
+            }
+            
+            // Disable button and show loading state
+            syncButton.disabled = true;
+            syncButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importing...';
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -803,15 +803,74 @@ def export_contacts(request):
 @login_required
 def google_sync(request):
     """
-    Synchronize contacts with Google Contacts API.
-    
-    This is a placeholder for the Google Contacts API integration.
+    Add contacts from Google Workspace using the Google Contacts API.
     """
-    if request.method == 'POST':
-        # This would be implemented with the Google Contacts API
-        messages.info(request, "Google Contacts sync is not yet implemented")
+    from mobilize.communications.google_contacts_service import GoogleContactsService
+    from mobilize.authentication.models import UserContactSyncSettings
     
-    return render(request, 'contacts/google_sync.html')
+    # Get user's sync settings
+    sync_settings = None
+    try:
+        sync_settings = UserContactSyncSettings.objects.get(user=request.user)
+    except UserContactSyncSettings.DoesNotExist:
+        # Create default sync settings for the user
+        sync_settings = UserContactSyncSettings.objects.create(
+            user=request.user,
+            sync_preference='crm_only',
+            auto_sync_enabled=False
+        )
+    
+    contacts_service = GoogleContactsService(request.user)
+    
+    context = {
+        'sync_settings': sync_settings,
+        'is_authenticated': contacts_service.is_authenticated(),
+        'sync_choices': UserContactSyncSettings.SYNC_CHOICES,
+    }
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'sync':
+            if not contacts_service.is_authenticated():
+                messages.error(request, "Google Contacts not authenticated. Please connect Gmail first.")
+                return redirect('communications:gmail_auth')
+            
+            # Get sync preference from form
+            sync_preference = request.POST.get('sync_preference', 'crm_only')
+            
+            # Temporarily update sync settings for this operation
+            original_preference = sync_settings.sync_preference
+            sync_settings.sync_preference = sync_preference
+            
+            # Perform the sync
+            result = contacts_service.sync_contacts_based_on_preference()
+            
+            # Restore original preference
+            sync_settings.sync_preference = original_preference
+            sync_settings.save()
+            
+            if result['success']:
+                messages.success(request, result['message'])
+                # Add additional info about what was synced
+                if 'created_count' in result and 'updated_count' in result:
+                    messages.info(request, f"Created {result['created_count']} new contacts, updated {result['updated_count']} existing contacts")
+                elif 'synced_count' in result:
+                    messages.info(request, f"Synced {result['synced_count']} contacts")
+                
+                # Show any warnings
+                if 'errors' in result and result['errors']:
+                    for error in result['errors'][:3]:  # Show first 3 errors
+                        messages.warning(request, error)
+                    if len(result['errors']) > 3:
+                        messages.warning(request, f"... and {len(result['errors']) - 3} more warnings")
+            else:
+                messages.error(request, f"Contact sync failed: {result.get('error', 'Unknown error')}")
+        
+        elif action == 'auth_google':
+            return redirect('communications:gmail_auth')
+    
+    return render(request, 'contacts/google_sync.html', context)
 
 
 @login_required
