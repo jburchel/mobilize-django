@@ -356,15 +356,20 @@ class GmailService:
         
         return body
     
-    def sync_emails_to_communications(self, days_back: int = 7, contacts_only: bool = True):
+    def sync_emails_to_communications(self, days_back: int = 7, contacts_only: bool = True, specific_emails: list = None):
         """Sync recent Gmail messages to communications table"""
         if not self.service:
             return {'success': False, 'error': 'Gmail service not authenticated'}
         
         from datetime import datetime, timedelta
         
-        # Get all known contact emails if we're filtering by contacts only
-        if contacts_only:
+        # Handle specific emails filtering
+        if specific_emails:
+            known_emails = set(email.lower() for email in specific_emails)
+            contacts_only = True  # Force filtering when specific emails are provided
+            print(f"Syncing emails for {len(known_emails)} specific email addresses")
+        elif contacts_only:
+            # Get all known contact emails if we're filtering by contacts only
             known_emails = set()
             try:
                 from mobilize.contacts.models import Person
@@ -386,6 +391,8 @@ class GmailService:
             except Exception as e:
                 print(f"Error getting known emails: {e}")
                 known_emails = set()
+        else:
+            known_emails = set()
         
         # Query for recent emails - include both inbox and sent
         since_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y/%m/%d')

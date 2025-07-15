@@ -149,13 +149,14 @@ def send_email_communication(self, communication_id: int):
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=300)
-def sync_gmail_emails(self, user_id: int, days_back: int = 7):
+def sync_gmail_emails(self, user_id: int, days_back: int = 7, specific_emails: list = None):
     """
     Sync emails from Gmail for a specific user using their preferences.
     
     Args:
         user_id: ID of the user to sync emails for
         days_back: Number of days back to sync emails (can be overridden by user settings)
+        specific_emails: Optional list of email addresses to sync for (overrides contacts_only setting)
     """
     try:
         user = User.objects.get(id=user_id)
@@ -171,15 +172,24 @@ def sync_gmail_emails(self, user_id: int, days_back: int = 7):
             sync_settings = GmailSyncSettings.objects.get(user=user)
             contacts_only = sync_settings.contacts_only
             # Use user's preferred days_back if available
-            if sync_settings.days_back_on_sync:
+            if sync_settings.days_back_on_sync and not specific_emails:
                 days_back = sync_settings.days_back_on_sync
         except GmailSyncSettings.DoesNotExist:
             # Create default settings
             sync_settings = GmailSyncSettings.objects.create(user=user)
             contacts_only = True
         
+        # Override contacts_only if specific emails are provided
+        if specific_emails:
+            contacts_only = False  # We want to sync regardless of contact existence
+            logger.info(f"Syncing emails for {len(specific_emails)} specific email addresses")
+        
         # Use the actual Gmail service sync method with user preferences
-        result = gmail_service.sync_emails_to_communications(days_back, contacts_only=contacts_only)
+        result = gmail_service.sync_emails_to_communications(
+            days_back, 
+            contacts_only=contacts_only,
+            specific_emails=specific_emails
+        )
         
         if result['success']:
             logger.info(f"Synced {result['synced_count']} emails for user {user_id}")
