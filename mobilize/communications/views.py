@@ -29,7 +29,8 @@ class EmailTemplateListView(LoginRequiredMixin, ListView):
     
     def dispatch(self, request, *args, **kwargs):
         # Check office assignment
-        if request.user.role != 'super_admin' and not request.user.useroffice_set.exists():
+        from mobilize.admin_panel.models import UserOffice
+        if request.user.role != 'super_admin' and not UserOffice.objects.filter(user_id=str(request.user.id)).exists():
             raise PermissionDenied("Access denied. User not assigned to any office.")
         return super().dispatch(request, *args, **kwargs)
     
@@ -43,7 +44,8 @@ class EmailTemplateListView(LoginRequiredMixin, ListView):
         
         # Other users see templates from their offices or created by them
         try:
-            user_offices = list(self.request.user.useroffice_set.values_list('office_id', flat=True))
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = list(UserOffice.objects.filter(user_id=str(self.request.user.id)).values_list('office_id', flat=True))
             
             if user_offices:
                 # Templates are shared within offices
@@ -77,7 +79,8 @@ class EmailTemplateCreateView(LoginRequiredMixin, CreateView):
             raise PermissionDenied("Limited users cannot create email templates")
         
         # Check office assignment
-        if request.user.role != 'super_admin' and not request.user.useroffice_set.exists():
+        from mobilize.admin_panel.models import UserOffice
+        if request.user.role != 'super_admin' and not UserOffice.objects.filter(user_id=str(request.user.id)).exists():
             raise PermissionDenied("Access denied. User not assigned to any office.")
         
         return super().dispatch(request, *args, **kwargs)
@@ -314,7 +317,8 @@ class CommunicationDetailView(LoginRequiredMixin, DetailView):
         # Apply office-level filtering
         if self.request.user.role != 'super_admin':
             try:
-                user_offices = list(self.request.user.useroffice_set.values_list('office_id', flat=True))
+                from mobilize.admin_panel.models import UserOffice
+                user_offices = list(UserOffice.objects.filter(user_id=str(self.request.user.id)).values_list('office_id', flat=True))
                 
                 if user_offices:
                     queryset = queryset.filter(
@@ -431,7 +435,8 @@ class CommunicationUpdateView(LoginRequiredMixin, UpdateView):
         # Apply office-level filtering
         if self.request.user.role != 'super_admin':
             try:
-                user_offices = list(self.request.user.useroffice_set.values_list('office_id', flat=True))
+                from mobilize.admin_panel.models import UserOffice
+                user_offices = list(UserOffice.objects.filter(user_id=str(self.request.user.id)).values_list('office_id', flat=True))
                 
                 if user_offices:
                     queryset = queryset.filter(
@@ -497,7 +502,8 @@ class CommunicationDeleteView(LoginRequiredMixin, DeleteView):
             # Apply office-level filtering
             if self.request.user.role != 'super_admin':
                 try:
-                    user_offices = list(self.request.user.useroffice_set.values_list('office_id', flat=True))
+                    from mobilize.admin_panel.models import UserOffice
+                    user_offices = list(UserOffice.objects.filter(user_id=str(self.request.user.id)).values_list('office_id', flat=True))
                     
                     if user_offices:
                         # Simplified filtering to avoid complex joins that might fail

@@ -234,8 +234,9 @@ def church_create(request):
     if request.method == 'POST':
         form = ChurchForm(request.POST)
         if form.is_valid():
-            # Get the user's first office assignment (or could be from form data)
-            user_office = request.user.useroffice_set.first()
+            # Get the user's office assignment
+            from mobilize.admin_panel.models import UserOffice
+            user_office = UserOffice.objects.filter(user_id=str(request.user.id)).first()
             office = user_office.office if user_office else None
             
             church = form.save(user=request.user, office=office)
