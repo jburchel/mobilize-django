@@ -1192,21 +1192,44 @@ def get_contacts_json(request):
     from mobilize.contacts.models import Person
     from mobilize.churches.models import Church
     
-    people = Person.objects.select_related('contact').all()
-    churches = Church.objects.select_related('contact').all()
+    # Apply office-level filtering similar to other views
+    if request.user.role == 'super_admin':
+        people = Person.objects.select_related('contact').all()
+        churches = Church.objects.select_related('contact').all()
+    else:
+        try:
+            from mobilize.admin_panel.models import UserOffice
+            user_offices = list(UserOffice.objects.filter(user_id=str(request.user.id)).values_list('office_id', flat=True))
+            
+            if user_offices:
+                # Filter by office - contacts belong to offices
+                people = Person.objects.select_related('contact').filter(
+                    contact__office__in=user_offices
+                )
+                churches = Church.objects.select_related('contact').filter(
+                    contact__office__in=user_offices
+                )
+            else:
+                # If user has no office assignments, return empty querysets
+                people = Person.objects.none()
+                churches = Church.objects.none()
+        except Exception:
+            # If there's any error with office filtering, return empty querysets
+            people = Person.objects.none()
+            churches = Church.objects.none()
     
     people_data = [
         {
-            'id': person.contact.id,
-            'name': f"{person.contact.first_name} {person.contact.last_name}".strip() or person.contact.email or f"Person {person.contact.id}"
+            'id': person.id,  # Use person.id instead of person.contact.id
+            'name': f"{person.contact.first_name} {person.contact.last_name}".strip() or person.contact.email or f"Person {person.id}"
         } 
         for person in people
     ]
     
     churches_data = [
         {
-            'id': church.contact.id,
-            'name': church.contact.church_name or church.contact.email or f"Church {church.contact.id}"
+            'id': church.id,  # Use church.id instead of church.contact.id
+            'name': church.contact.church_name or church.contact.email or f"Church {church.id}"
         }
         for church in churches
     ]
