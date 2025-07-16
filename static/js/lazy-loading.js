@@ -129,10 +129,7 @@ class LazyLoader {
             this.hasMore = data.has_next;
             this.totalCount = data.total || 0;
             console.log('LazyLoader: Received total count:', this.totalCount);
-            
-            // Calculate current count more reliably
-            this.updateCurrentCount();
-            console.log('LazyLoader: Current count after update:', this.currentCount);
+            console.log('LazyLoader: Current count after renderRows:', this.currentCount);
             
             // Update pagination display
             this.updatePaginationDisplay();
@@ -170,6 +167,9 @@ class LazyLoader {
         // Insert before the sentinel
         const sentinel = document.getElementById('load-more-sentinel');
         this.tableBody.insertBefore(fragment, sentinel);
+        
+        // Update current count based on items actually rendered
+        this.currentCount += items.length;
         
         // Update bulk selection handlers
         this.updateBulkSelectionHandlers();
@@ -317,17 +317,9 @@ class LazyLoader {
     }
     
     updateCurrentCount() {
-        // Count all table rows except system rows (sentinel and loading indicator)
-        const allRows = this.tableBody.querySelectorAll('tr');
-        let dataRows = 0;
-        
-        allRows.forEach(row => {
-            if (row.id !== 'load-more-sentinel' && row.id !== 'loading-indicator') {
-                dataRows++;
-            }
-        });
-        
-        this.currentCount = dataRows;
+        // This method is deprecated - count is now updated incrementally in renderRows()
+        // Keeping for backwards compatibility but now does nothing
+        // The count is maintained by tracking items rendered, not counting DOM elements
     }
     
     updatePaginationDisplay() {
