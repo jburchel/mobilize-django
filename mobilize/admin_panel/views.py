@@ -717,6 +717,17 @@ class BatchUserDeleteView(SuperAdminRequiredMixin, View):
     def post(self, request):
         user_ids = request.POST.getlist("user_ids")
 
+        # Handle comma-separated string from JavaScript
+        if len(user_ids) == 1 and "," in user_ids[0]:
+            user_ids = [uid.strip() for uid in user_ids[0].split(",") if uid.strip()]
+        elif not user_ids:
+            # Try to get as a single string
+            user_ids_str = request.POST.get("user_ids", "")
+            if user_ids_str:
+                user_ids = [
+                    uid.strip() for uid in user_ids_str.split(",") if uid.strip()
+                ]
+
         if not user_ids:
             messages.error(request, "No users selected for deletion")
             return redirect("admin_panel:user_management")
@@ -756,6 +767,17 @@ class BatchUserStatusView(SuperAdminRequiredMixin, View):
     def post(self, request):
         user_ids = request.POST.getlist("user_ids")
         action = request.POST.get("action")
+
+        # Handle comma-separated string from JavaScript
+        if len(user_ids) == 1 and "," in user_ids[0]:
+            user_ids = [uid.strip() for uid in user_ids[0].split(",") if uid.strip()]
+        elif not user_ids:
+            # Try to get as a single string
+            user_ids_str = request.POST.get("user_ids", "")
+            if user_ids_str:
+                user_ids = [
+                    uid.strip() for uid in user_ids_str.split(",") if uid.strip()
+                ]
 
         if not user_ids:
             messages.error(request, "No users selected for status update")
@@ -804,6 +826,17 @@ class BatchUserRoleView(SuperAdminRequiredMixin, View):
     def post(self, request):
         user_ids = request.POST.getlist("user_ids")
         new_role = request.POST.get("role")
+
+        # Handle comma-separated string from JavaScript
+        if len(user_ids) == 1 and "," in user_ids[0]:
+            user_ids = [uid.strip() for uid in user_ids[0].split(",") if uid.strip()]
+        elif not user_ids:
+            # Try to get as a single string
+            user_ids_str = request.POST.get("user_ids", "")
+            if user_ids_str:
+                user_ids = [
+                    uid.strip() for uid in user_ids_str.split(",") if uid.strip()
+                ]
 
         if not user_ids:
             messages.error(request, "No users selected for role update")
@@ -878,6 +911,17 @@ class BatchUserOfficeView(SuperAdminRequiredMixin, View):
     def post(self, request):
         user_ids = request.POST.getlist("user_ids")
         office_id = request.POST.get("office_id")
+
+        # Handle comma-separated string from JavaScript
+        if len(user_ids) == 1 and "," in user_ids[0]:
+            user_ids = [uid.strip() for uid in user_ids[0].split(",") if uid.strip()]
+        elif not user_ids:
+            # Try to get as a single string
+            user_ids_str = request.POST.get("user_ids", "")
+            if user_ids_str:
+                user_ids = [
+                    uid.strip() for uid in user_ids_str.split(",") if uid.strip()
+                ]
 
         if not user_ids:
             messages.error(request, "No users selected for office assignment")

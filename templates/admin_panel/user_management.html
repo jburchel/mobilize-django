@@ -504,7 +504,7 @@ function toggleUserStatus(userId, username, isActive) {
     
     message.textContent = `Are you sure you want to ${action} user "${username}"? This user will be ${statusText} and ${isActive ? 'will not be able to log in' : 'will be able to log in again'}.`;
     
-    form.action = `/admin/users/${userId}/toggle-active/`;
+    form.action = `/admin-panel/users/${userId}/toggle-active/`;
     
     modal.show();
 }
