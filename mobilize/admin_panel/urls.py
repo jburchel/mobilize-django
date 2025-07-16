@@ -26,5 +26,11 @@ urlpatterns = [
     path('users/<int:pk>/update/', views.UserUpdateView.as_view(), name='user_update'),
     path('users/<int:pk>/toggle-active/', views.UserToggleActiveView.as_view(), name='user_toggle_active'),
     path('users/<int:user_id>/assign-office/', views.AssignUserToOfficeView.as_view(), name='assign_user_to_office'),
-    path('users/<int:user_id>/remove-office/<int:office_id>/', views.RemoveUserFromOfficeView.as_view(), name='remove_user_from_office_direct'),
+    path('users/<int:user_id>/remove-office/<int:office_id>/', views.RemoveUserFromOfficeDirectView.as_view(), name='remove_user_from_office_direct'),
+    
+    # Batch user operations
+    path('users/batch-delete/', views.BatchUserDeleteView.as_view(), name='batch_user_delete'),
+    path('users/batch-status/', views.BatchUserStatusView.as_view(), name='batch_user_status'),
+    path('users/batch-role/', views.BatchUserRoleView.as_view(), name='batch_user_role'),
+    path('users/batch-office/', views.BatchUserOfficeView.as_view(), name='batch_user_office'),
 ]
