@@ -11,13 +11,21 @@ class LazyLoader {
         this.currentPage = 1;
         this.isLoading = false;
         this.hasMore = true;
+        this.totalCount = 0;
+        this.currentCount = 0;
+        this.enableInfiniteScroll = options.enableInfiniteScroll !== false; // Default true
         this.searchParams = new URLSearchParams(window.location.search);
         
         // Create loading indicator
         this.loadingIndicator = this.createLoadingIndicator();
         
-        // Initialize intersection observer for infinite scroll
-        this.initIntersectionObserver();
+        // Initialize intersection observer for infinite scroll (only if enabled)
+        if (this.enableInfiniteScroll) {
+            this.initIntersectionObserver();
+        } else {
+            // Create sentinel even for manual pagination to ensure consistent DOM structure
+            this.createSentinel();
+        }
         
         // Initialize search/filter handlers
         this.initSearchHandlers();
@@ -45,63 +53,40 @@ class LazyLoader {
         sentinel.style.height = '1px';
         this.tableBody.appendChild(sentinel);
         
-        // Set up intersection observer
-        const observerOptions = {
-            root: null,
-            rootMargin: '100px',
-            threshold: 0.1
-        };
-        
-        this.observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting && !this.isLoading && this.hasMore) {
-                    this.loadMore();
-                }
-            });
-        }, observerOptions);
-        
-        this.observer.observe(sentinel);
+        // Only set up observer if infinite scroll is enabled
+        if (this.enableInfiniteScroll) {
+            // Set up intersection observer
+            const observerOptions = {
+                root: null,
+                rootMargin: '100px',
+                threshold: 0.1
+            };
+            
+            this.observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !this.isLoading && this.hasMore) {
+                        this.loadMore();
+                    }
+                });
+            }, observerOptions);
+            
+            this.observer.observe(sentinel);
+        }
+    }
+    
+    createSentinel() {
+        // Create sentinel element at the bottom of the table for manual pagination
+        const sentinel = document.createElement('tr');
+        sentinel.id = 'load-more-sentinel';
+        sentinel.style.height = '1px';
+        sentinel.style.display = 'none'; // Hide it for manual pagination
+        this.tableBody.appendChild(sentinel);
     }
     
     initSearchHandlers() {
-        // Debounce search input
-        const searchInput = document.querySelector('input[name="q"]');
-        if (searchInput) {
-            let debounceTimer;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    this.searchParams.set('q', e.target.value);
-                    this.resetAndLoad();
-                }, 300);
-            });
-        }
-        
-        // Handle filter changes
-        const filterSelects = document.querySelectorAll('select[name="priority"]');
-        filterSelects.forEach(select => {
-            select.addEventListener('change', (e) => {
-                if (e.target.value) {
-                    this.searchParams.set('priority', e.target.value);
-                } else {
-                    this.searchParams.delete('priority');
-                }
-                this.resetAndLoad();
-            });
-        });
-        
-        // Handle pipeline stage filter
-        const pipelineStageSelect = document.querySelector('select[name="pipeline_stage"]');
-        if (pipelineStageSelect) {
-            pipelineStageSelect.addEventListener('change', (e) => {
-                if (e.target.value) {
-                    this.searchParams.set('pipeline_stage', e.target.value);
-                } else {
-                    this.searchParams.delete('pipeline_stage');
-                }
-                this.resetAndLoad();
-            });
-        }
+        // Note: Search handlers are now managed in the template
+        // This method is kept for compatibility but does nothing
+        // to avoid duplicate event listeners
     }
     
     async loadMore() {
@@ -142,9 +127,25 @@ class LazyLoader {
             // Update pagination state
             this.currentPage++;
             this.hasMore = data.has_next;
+            this.totalCount = data.total || 0;
+            console.log('LazyLoader: Received total count:', this.totalCount);
+            console.log('LazyLoader: Current count after renderRows:', this.currentCount);
+            
+            // Update pagination display
+            this.updatePaginationDisplay();
             
             // Update URL without page reload
             this.updateUrl();
+            
+            // Trigger custom event for pagination updates
+            window.dispatchEvent(new CustomEvent('lazyLoaderUpdate', {
+                detail: {
+                    total: this.totalCount,
+                    loaded: this.currentCount,
+                    hasMore: this.hasMore,
+                    currentPage: this.currentPage
+                }
+            }));
             
         } catch (error) {
             console.error('Error loading data:', error);
@@ -166,6 +167,9 @@ class LazyLoader {
         // Insert before the sentinel
         const sentinel = document.getElementById('load-more-sentinel');
         this.tableBody.insertBefore(fragment, sentinel);
+        
+        // Update current count based on items actually rendered
+        this.currentCount += items.length;
         
         // Update bulk selection handlers
         this.updateBulkSelectionHandlers();
@@ -245,6 +249,8 @@ class LazyLoader {
         // Reset pagination
         this.currentPage = 1;
         this.hasMore = true;
+        this.totalCount = 0;
+        this.currentCount = 0;
         
         // Load first page
         this.loadMore();
@@ -294,6 +300,60 @@ class LazyLoader {
                 }
             });
         });
+    }
+    
+    updateFilters(filters) {
+        // Update search parameters with new filter values
+        Object.keys(filters).forEach(key => {
+            if (filters[key]) {
+                this.searchParams.set(key, filters[key]);
+            } else {
+                this.searchParams.delete(key);
+            }
+        });
+        
+        // Reset pagination and reload data with new filters
+        this.resetAndLoad();
+    }
+    
+    updateCurrentCount() {
+        // This method is deprecated - count is now updated incrementally in renderRows()
+        // Keeping for backwards compatibility but now does nothing
+        // The count is maintained by tracking items rendered, not counting DOM elements
+    }
+    
+    updatePaginationDisplay() {
+        // Update pagination counts in the UI
+        const currentCountSpan = document.getElementById('current-count');
+        const totalCountSpan = document.getElementById('total-count');
+        
+        console.log('LazyLoader: Updating pagination display - current:', this.currentCount, 'total:', this.totalCount);
+        
+        if (currentCountSpan) {
+            currentCountSpan.textContent = this.currentCount;
+        }
+        
+        if (totalCountSpan) {
+            totalCountSpan.textContent = this.totalCount;
+        }
+        
+        // Update load more button visibility (only if infinite scroll is disabled)
+        if (!this.enableInfiniteScroll) {
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            const endReachedSpan = document.getElementById('end-reached');
+            
+            if (loadMoreBtn && endReachedSpan) {
+                if (this.hasMore && this.currentCount > 0) {
+                    loadMoreBtn.style.display = 'inline-block';
+                    endReachedSpan.style.display = 'none';
+                } else {
+                    loadMoreBtn.style.display = 'none';
+                    if (this.currentCount >= this.totalCount && this.totalCount > 0) {
+                        endReachedSpan.style.display = 'inline-block';
+                    }
+                }
+            }
+        }
     }
 }
 
