@@ -332,7 +332,7 @@
                                 <span class="field-label">Phone:</span>
                                 <span class="field-value">
                                     {% if church.contact.phone %}
-                                        <a href="#" onclick="handlePhoneClick('{{ church.contact.phone }}', {{ church.contact.id }})" class="text-decoration-none">
+                                        <a href="#" onclick="handlePhoneClick('{{ church.contact.phone }}', {{ church.contact.id }}, '{{ church.name|escapejs }}')" class="text-decoration-none">
                                             <i class="fas fa-phone me-1"></i>{{ church.contact.phone }}
                                         </a>
                                     {% else %}
@@ -744,7 +744,7 @@
                                             {% endif %}
                                             {% if membership.person.contact.phone %}
                                                 <div>
-                                                    <a href="#" onclick="handlePhoneClick('{{ membership.person.contact.phone }}', {{ membership.person.contact.id }})" class="text-decoration-none">
+                                                    <a href="#" onclick="handlePhoneClick('{{ membership.person.contact.phone }}', {{ membership.person.contact.id }}, '{{ membership.person.name|escapejs }}')" class="text-decoration-none">
                                                         <i class="fas fa-phone me-1"></i>{{ membership.person.contact.phone }}
                                                     </a>
                                                 </div>
@@ -908,12 +908,24 @@ function openEmailCompose(email, name, contactId) {
 }
 
 // Handle phone click - detect mobile and either dial or open communication log
-function handlePhoneClick(phoneNumber, contactId) {
+function handlePhoneClick(phoneNumber, contactId, contactName) {
     const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
     if (isMobile) {
+        // Store call information for when user returns from phone app
+        const callInfo = {
+            phoneNumber: phoneNumber,
+            contactId: contactId,
+            contactName: contactName,
+            timestamp: new Date().toISOString(),
+            personDetailUrl: `/contacts/person/${contactId}/`
+        };
+        localStorage.setItem('pendingPhoneCall', JSON.stringify(callInfo));
+        
+        // Initiate the phone call
         window.location.href = `tel:${phoneNumber}`;
     } else {
+        // On desktop, redirect to communications page and open the log modal
         window.location.href = `/communications/?open_log_modal=phone&contact_id=${contactId}`;
     }
 }

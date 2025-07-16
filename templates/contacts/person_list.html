@@ -225,7 +225,7 @@
                         </td>
                         <td>
                             {% if person.contact.phone %}
-                                <a href="#" onclick="handlePhoneClick('{{ person.contact.phone }}', {{ person.contact.id }})" class="text-decoration-none">
+                                <a href="#" onclick="handlePhoneClick('{{ person.contact.phone }}', {{ person.contact.id }}, '{{ person.name|escapejs }}')" class="text-decoration-none">
                                     <i class="fas fa-phone me-1"></i>{{ person.contact.phone }}
                                 </a>
                             {% else %}
@@ -468,12 +468,22 @@ function openEmailCompose(email, name, contactId) {
 }
 
 // Handle phone click - detect mobile and either dial or open communication log
-function handlePhoneClick(phoneNumber, contactId) {
+function handlePhoneClick(phoneNumber, contactId, contactName) {
     // Check if we're on a mobile device
     const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
     if (isMobile) {
-        // On mobile, dial the number
+        // Store call information for when user returns from phone app
+        const callInfo = {
+            phoneNumber: phoneNumber,
+            contactId: contactId,
+            contactName: contactName,
+            timestamp: new Date().toISOString(),
+            personDetailUrl: `/contacts/person/${contactId}/`
+        };
+        localStorage.setItem('pendingPhoneCall', JSON.stringify(callInfo));
+        
+        // Initiate the phone call
         window.location.href = `tel:${phoneNumber}`;
     } else {
         // On desktop, redirect to communications page and open the log modal
