@@ -361,8 +361,11 @@
                                         <a href="#" onclick="handlePhoneClick('{{ person.contact.phone }}', {{ person.pk }})" class="text-decoration-none">
                                             <i class="fas fa-phone me-1"></i>{{ person.contact.phone }}
                                         </a>
-                                        <a href="#" onclick="handleSMSClick('{{ person.contact.phone }}', {{ person.pk }})" class="text-decoration-none text-success" title="Send SMS">
+                                        <a href="#" onclick="handleSMSClick('{{ person.contact.phone }}', {{ person.pk }})" class="text-decoration-none text-success me-2" title="Send SMS">
                                             <i class="fas fa-sms"></i>
+                                        </a>
+                                        <a href="#" onclick="logReceivedSMS()" class="text-decoration-none text-info" title="Log Received SMS">
+                                            <i class="fas fa-inbox"></i>
                                         </a>
                                     </div>
                                 {% else %}
@@ -546,7 +549,10 @@
                                         <i class="fas fa-phone me-2"></i>Phone Call
                                     </a></li>
                                     <li><a class="dropdown-item" href="#" onclick="openLogModal('text', '{{ person.pk }}', '{{ person.name }}')">
-                                        <i class="fas fa-sms me-2"></i>Text Message
+                                        <i class="fas fa-sms me-2"></i>Text Message (Sent)
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="logReceivedSMS()">
+                                        <i class="fas fa-inbox me-2"></i>Text Message (Received)
                                     </a></li>
                                     <li><a class="dropdown-item" href="#" onclick="openLogModal('meeting', '{{ person.pk }}', '{{ person.name }}')">
                                         <i class="fas fa-users me-2"></i>Meeting
@@ -921,7 +927,7 @@ function handlePhoneClick(phoneNumber, contactId) {
     }
 }
 
-// Handle SMS click - detect mobile and open SMS app or communication log
+// Handle SMS click - open SMS composition modal
 function handleSMSClick(phoneNumber, contactId) {
     const mobile = isMobileDevice();
     
@@ -932,35 +938,30 @@ function handleSMSClick(phoneNumber, contactId) {
         userAgent: navigator.userAgent
     });
     
-    if (mobile) {
-        // Clean up any old pending SMS first
-        cleanupOldPendingCommunications();
-        
-        // Store SMS information for when user returns from SMS app
-        const smsInfo = {
-            phoneNumber: phoneNumber,
-            contactId: contactId,
-            contactName: '{{ person.name|escapejs }}',
-            timestamp: new Date().toISOString(),
-            personDetailUrl: window.location.pathname, // Use pathname instead of full href
-            sessionId: generateSessionId() // Add unique session ID
-        };
-        localStorage.setItem('pendingSMSMessage', JSON.stringify(smsInfo));
-        
-        debugPhoneIntegration('Stored pending SMS message', smsInfo);
-        
-        // Track that we initiated an SMS to prevent false triggers
-        window.smsInitiated = true;
-        setTimeout(() => { window.smsInitiated = false; }, 2000);
-        
-        // Initiate SMS using native SMS URL scheme
-        debugPhoneIntegration('Initiating SMS', { sms: `sms:${phoneNumber}` });
-        window.location.href = `sms:${phoneNumber}`;
-    } else {
-        // For desktop, directly open communication modal
-        debugPhoneIntegration('Desktop detected, opening SMS modal directly');
-        openLogModal('text', {{ person.pk }}, '{{ person.name|escapejs }}');
+    // Always show SMS composition modal first
+    openSMSCompositionModal(phoneNumber, contactId);
+}
+
+// Open SMS composition modal
+function openSMSCompositionModal(phoneNumber, contactId) {
+    // Create modal if it doesn't exist
+    if (!document.getElementById('smsCompositionModal')) {
+        createSMSCompositionModal();
     }
+    
+    const modal = new bootstrap.Modal(document.getElementById('smsCompositionModal'));
+    const phoneInput = document.getElementById('smsPhoneNumber');
+    const messageInput = document.getElementById('smsMessage');
+    const contactIdInput = document.getElementById('smsContactId');
+    
+    // Pre-populate form
+    phoneInput.value = phoneNumber;
+    contactIdInput.value = contactId;
+    messageInput.value = '';
+    messageInput.focus();
+    
+    // Show the modal
+    modal.show();
 }
 
 // Pipeline stage update functionality
@@ -1165,9 +1166,9 @@ function checkForPendingSMSMessage() {
             
             // Only open modal if we're not in the middle of another action
             if (!window.smsInitiated && !document.querySelector('.modal.show')) {
-                // Open the communication modal with SMS pre-selected
+                // Open the communication modal with SMS pre-selected and message content
                 setTimeout(function() {
-                    openSMSModal(smsInfo.contactId, smsInfo.contactName, smsInfo.phoneNumber);
+                    openSMSModal(smsInfo.contactId, smsInfo.contactName, smsInfo.phoneNumber, smsInfo.messageContent);
                 }, 500); // Reduced delay for better responsiveness
             }
         } else if (timeDiff >= 120000) {
@@ -1181,7 +1182,7 @@ function checkForPendingSMSMessage() {
 }
 
 // Open communication modal specifically for SMS messages
-function openSMSModal(contactId, contactName, phoneNumber) {
+function openSMSModal(contactId, contactName, phoneNumber, messageContent) {
     // Create modal if it doesn't exist
     if (!document.getElementById('logCommunicationModal')) {
         createCommunicationModal();
@@ -1190,7 +1191,7 @@ function openSMSModal(contactId, contactName, phoneNumber) {
     // Open the modal with SMS pre-selected
     openLogModal('text', contactId, contactName);
     
-    // Pre-fill the subject with the phone number
+    // Pre-fill the subject with the phone number and message content
     setTimeout(function() {
         const subjectInput = document.getElementById('communicationSubject');
         if (subjectInput && phoneNumber) {
@@ -1203,9 +1204,14 @@ function openSMSModal(contactId, contactName, phoneNumber) {
             dateInput.value = new Date().toISOString().split('T')[0];
         }
         
-        // Focus on the notes field for user convenience
+        // Pre-populate the message field with the sent message content
         const notesField = document.getElementById('communicationMessage');
         if (notesField) {
+            if (messageContent) {
+                notesField.value = `Message sent: "${messageContent}"\n\nAdditional notes:`;
+                // Move cursor to end for additional notes
+                notesField.setSelectionRange(notesField.value.length, notesField.value.length);
+            }
             notesField.focus();
             notesField.placeholder = 'Add notes about your text message conversation...';
         }
@@ -1406,6 +1412,145 @@ function createCommunicationModal() {
 </div>`;
     
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// Create SMS composition modal
+function createSMSCompositionModal() {
+    const modalHTML = `
+<!-- SMS Composition Modal -->
+<div class="modal fade" id="smsCompositionModal" tabindex="-1" aria-labelledby="smsCompositionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="smsCompositionModalLabel">
+                    <i class="fas fa-sms me-2"></i>Send Text Message
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="smsCompositionForm">
+                <div class="modal-body">
+                    <input type="hidden" id="smsContactId" name="contact_id" value="">
+                    <input type="hidden" name="contact_type" value="person">
+                    
+                    <!-- Phone Number -->
+                    <div class="mb-3">
+                        <label for="smsPhoneNumber" class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="smsPhoneNumber" name="to_number" required readonly>
+                    </div>
+                    
+                    <!-- Message -->
+                    <div class="mb-3">
+                        <label for="smsMessage" class="form-label">Message</label>
+                        <textarea class="form-control" id="smsMessage" name="message" rows="4" 
+                                  placeholder="Enter your text message..." required maxlength="160"></textarea>
+                        <div class="form-text">
+                            <span id="smsCharCount">0</span>/160 characters
+                        </div>
+                    </div>
+                    
+                    <!-- Send Options -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="smsLogCommunication" checked>
+                            <label class="form-check-label" for="smsLogCommunication">
+                                Log this message in communications
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="sendViaNativeApp()">
+                        <i class="fas fa-mobile-alt me-1"></i> Send via Phone
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>`;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Add event listeners
+    const form = document.getElementById('smsCompositionForm');
+    const messageInput = document.getElementById('smsMessage');
+    const charCount = document.getElementById('smsCharCount');
+    
+    // Character counter
+    messageInput.addEventListener('input', function() {
+        const count = this.value.length;
+        charCount.textContent = count;
+        
+        // Change color based on character count
+        if (count > 140) {
+            charCount.style.color = '#dc3545'; // red
+        } else if (count > 120) {
+            charCount.style.color = '#fd7e14'; // orange
+        } else {
+            charCount.style.color = '#28a745'; // green
+        }
+    });
+    
+    // Form submission (not needed for native app, but kept for structure)
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendViaNativeApp();
+    });
+}
+
+// Send SMS via native app (fallback)
+function sendViaNativeApp() {
+    const phoneNumber = document.getElementById('smsPhoneNumber').value;
+    const message = document.getElementById('smsMessage').value;
+    const contactId = document.getElementById('smsContactId').value;
+    
+    // Store SMS info for when user returns to app
+    const smsInfo = {
+        contactId: contactId,
+        contactName: '{{ person.name|escapejs }}',
+        phoneNumber: phoneNumber,
+        messageContent: message, // Store the actual message content
+        timestamp: new Date().toISOString(),
+        personDetailUrl: window.location.pathname
+    };
+    localStorage.setItem('pendingSMSMessage', JSON.stringify(smsInfo));
+    
+    // Create SMS URL with pre-filled message
+    const smsUrl = `sms:${phoneNumber}${message ? `?body=${encodeURIComponent(message)}` : ''}`;
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('smsCompositionModal'));
+    modal.hide();
+    
+    // Open native SMS app
+    window.location.href = smsUrl;
+}
+
+// Note: Server-side SMS sending removed to keep solution free and use native phone app only
+// For incoming SMS logging, users will need to manually log received messages using the communication modal
+
+// Helper function to open communication modal for manual SMS logging
+function logReceivedSMS() {
+    openLogModal('text', {{ person.pk }}, '{{ person.name|escapejs }}');
+    
+    // Pre-fill for received message
+    setTimeout(function() {
+        const subjectInput = document.getElementById('communicationSubject');
+        if (subjectInput) {
+            subjectInput.value = 'SMS received from {{ person.name|escapejs }}';
+        }
+        
+        const directionSelect = document.getElementById('communicationDirection');
+        if (directionSelect) {
+            directionSelect.value = 'inbound';
+        }
+        
+        const notesField = document.getElementById('communicationMessage');
+        if (notesField) {
+            notesField.placeholder = 'Enter the message you received and any additional notes...';
+            notesField.focus();
+        }
+    }, 100);
 }
 
 // Utility functions for improved phone integration
