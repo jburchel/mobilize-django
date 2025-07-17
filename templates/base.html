@@ -832,7 +832,7 @@
             <div class="col-md-10 col-lg-10 main-content" id="mainContent">
                 <!-- Mobile Top Navigation -->
                 <div class="mobile-top-nav d-md-none">
-                    <h1>{% block mobile_title %}{% block page_title %}Dashboard{% endblock %}{% endblock %}</h1>
+                    <h1>{% block mobile_title %}Dashboard{% endblock %}</h1>
                     <div class="mobile-user-menu dropdown">
                         <div data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-user me-1"></i>{{ user.get_full_name|default:user.username|truncatechars:15 }}
@@ -905,7 +905,7 @@
                         {% block page_actions_mobile %}
                             {% if page_actions %}
                                 <div class="d-md-none mb-3">
-                                    {% block page_actions %}{% endblock %}
+                                    {{ page_actions }}
                                 </div>
                             {% endif %}
                         {% endblock %}
