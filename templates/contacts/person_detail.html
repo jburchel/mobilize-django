@@ -16,19 +16,19 @@
             <li><a class="dropdown-item" href="{% url 'communications:gmail_compose' %}?recipient={{ person.contact.email }}&name={{ person.name }}&contact_id={{ person.contact.id }}">
                 <i class="fas fa-envelope me-2"></i>Send Email
             </a></li>
-            <li><a class="dropdown-item" href="#" onclick="openLogModal('phone', '{{ person.contact.id }}', '{{ person.name }}')">
+            <li><a class="dropdown-item" href="#" onclick="openLogModal('phone', '{{ person.pk }}', '{{ person.name }}')">
                 <i class="fas fa-phone me-2"></i>Log Phone Call
             </a></li>
-            <li><a class="dropdown-item" href="#" onclick="openLogModal('text', '{{ person.contact.id }}', '{{ person.name }}')">
+            <li><a class="dropdown-item" href="#" onclick="openLogModal('text', '{{ person.pk }}', '{{ person.name }}')">
                 <i class="fas fa-sms me-2"></i>Log Text Message
             </a></li>
-            <li><a class="dropdown-item" href="#" onclick="openLogModal('meeting', '{{ person.contact.id }}', '{{ person.name }}')">
+            <li><a class="dropdown-item" href="#" onclick="openLogModal('meeting', '{{ person.pk }}', '{{ person.name }}')">
                 <i class="fas fa-users me-2"></i>Log Meeting
             </a></li>
-            <li><a class="dropdown-item" href="#" onclick="openLogModal('video_call', '{{ person.contact.id }}', '{{ person.name }}')">
+            <li><a class="dropdown-item" href="#" onclick="openLogModal('video_call', '{{ person.pk }}', '{{ person.name }}')">
                 <i class="fas fa-video me-2"></i>Log Video Call
             </a></li>
-            <li><a class="dropdown-item" href="#" onclick="openLogModal('other', '{{ person.contact.id }}', '{{ person.name }}')">
+            <li><a class="dropdown-item" href="#" onclick="openLogModal('other', '{{ person.pk }}', '{{ person.name }}')">
                 <i class="fas fa-comment-dots me-2"></i>Log Other
             </a></li>
         </ul>
@@ -358,10 +358,10 @@
                             <div class="field-value">
                                 {% if person.contact.phone %}
                                     <div class="d-flex align-items-center gap-2">
-                                        <a href="#" onclick="handlePhoneClick('{{ person.contact.phone }}', {{ person.contact.id }})" class="text-decoration-none">
+                                        <a href="#" onclick="handlePhoneClick('{{ person.contact.phone }}', {{ person.pk }})" class="text-decoration-none">
                                             <i class="fas fa-phone me-1"></i>{{ person.contact.phone }}
                                         </a>
-                                        <a href="#" onclick="handleSMSClick('{{ person.contact.phone }}', {{ person.contact.id }})" class="text-decoration-none text-success" title="Send SMS">
+                                        <a href="#" onclick="handleSMSClick('{{ person.contact.phone }}', {{ person.pk }})" class="text-decoration-none text-success" title="Send SMS">
                                             <i class="fas fa-sms"></i>
                                         </a>
                                     </div>
@@ -542,19 +542,19 @@
                                     <i class="fas fa-plus-circle"></i> Log Communication
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="openLogModal('phone', '{{ person.contact.id }}', '{{ person.name }}')">
+                                    <li><a class="dropdown-item" href="#" onclick="openLogModal('phone', '{{ person.pk }}', '{{ person.name }}')">
                                         <i class="fas fa-phone me-2"></i>Phone Call
                                     </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="openLogModal('text', '{{ person.contact.id }}', '{{ person.name }}')">
+                                    <li><a class="dropdown-item" href="#" onclick="openLogModal('text', '{{ person.pk }}', '{{ person.name }}')">
                                         <i class="fas fa-sms me-2"></i>Text Message
                                     </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="openLogModal('meeting', '{{ person.contact.id }}', '{{ person.name }}')">
+                                    <li><a class="dropdown-item" href="#" onclick="openLogModal('meeting', '{{ person.pk }}', '{{ person.name }}')">
                                         <i class="fas fa-users me-2"></i>Meeting
                                     </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="openLogModal('video_call', '{{ person.contact.id }}', '{{ person.name }}')">
+                                    <li><a class="dropdown-item" href="#" onclick="openLogModal('video_call', '{{ person.pk }}', '{{ person.name }}')">
                                         <i class="fas fa-video me-2"></i>Video Call
                                     </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="openLogModal('other', '{{ person.contact.id }}', '{{ person.name }}')">
+                                    <li><a class="dropdown-item" href="#" onclick="openLogModal('other', '{{ person.pk }}', '{{ person.name }}')">
                                         <i class="fas fa-comment-dots me-2"></i>Other
                                     </a></li>
                                 </ul>
@@ -917,7 +917,7 @@ function handlePhoneClick(phoneNumber, contactId) {
     } else {
         // For desktop, directly open communication modal
         debugPhoneIntegration('Desktop detected, opening modal directly');
-        openLogModal('phone', contactId, '{{ person.name|escapejs }}');
+        openLogModal('phone', {{ person.pk }}, '{{ person.name|escapejs }}');
     }
 }
 
@@ -959,7 +959,7 @@ function handleSMSClick(phoneNumber, contactId) {
     } else {
         // For desktop, directly open communication modal
         debugPhoneIntegration('Desktop detected, opening SMS modal directly');
-        openLogModal('text', contactId, '{{ person.name|escapejs }}');
+        openLogModal('text', {{ person.pk }}, '{{ person.name|escapejs }}');
     }
 }
 
@@ -1089,7 +1089,7 @@ function checkForPendingPhoneCall() {
         // and we're on the correct person's detail page (using pathname for reliability)
         if (timeDiff < 120000 && 
             window.location.pathname === callInfo.personDetailUrl &&
-            callInfo.contactId == {{ person.contact.id }}) {
+            callInfo.contactId == {{ person.pk }}) {
             
             // Clear the pending call immediately to prevent duplicates
             localStorage.removeItem('pendingPhoneCall');
@@ -1158,7 +1158,7 @@ function checkForPendingSMSMessage() {
         // and we're on the correct person's detail page (using pathname for reliability)
         if (timeDiff < 120000 && 
             window.location.pathname === smsInfo.personDetailUrl &&
-            smsInfo.contactId == {{ person.contact.id }}) {
+            smsInfo.contactId == {{ person.pk }}) {
             
             // Clear the pending SMS immediately to prevent duplicates
             localStorage.removeItem('pendingSMSMessage');
@@ -1263,8 +1263,17 @@ function openLogModal(type, contactId, contactName) {
     const personSelect = document.getElementById('personSelect');
     const subjectInput = document.getElementById('communicationSubject');
     
+    // Map shorthand types to full Communication model values
+    const typeMapping = {
+        'phone': 'Phone Call',
+        'text': 'Text Message',
+        'meeting': 'Meeting',
+        'video_call': 'Video Call',
+        'other': 'Email'  // Default fallback
+    };
+    
     // Set the communication type
-    typeInput.value = type;
+    typeInput.value = typeMapping[type] || type;
     
     // Update modal title based on type
     const typeLabels = {
@@ -1354,7 +1363,7 @@ function createCommunicationModal() {
                         <label for="personSelect" class="form-label">Person</label>
                         <select class="form-select" id="personSelect" name="person" required>
                             <option value="">Select Person...</option>
-                            <option value="{{ person.contact.id }}" selected>{{ person.name }}</option>
+                            <option value="{{ person.pk }}" selected>{{ person.name }}</option>
                         </select>
                     </div>
                     
