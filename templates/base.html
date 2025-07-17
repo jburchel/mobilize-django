@@ -47,12 +47,18 @@
         padding: 35px 45px 20px 30px;
         background: #f8f9fb;
         transition: all 0.3s ease;
+        width: auto;
+        max-width: none;
+        flex: auto;
     }
 
     /* Sidebar column container styling */
     .sidebar-container {
         padding: 15px 15px 15px 15px !important;
         transition: all 0.3s ease;
+        width: auto;
+        max-width: none;
+        min-width: auto;
     }
 
     .sidebar-container.collapsed {
@@ -517,19 +523,6 @@
             margin: 0 !important;
         }
 
-        .container-fluid {
-            padding: 0 !important;
-            margin: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-        }
-
-        .row {
-            margin: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-        }
-
         /* Content area specific styling */
         .content {
             padding: 15px !important;
@@ -650,9 +643,27 @@
             border-radius: 12px;
         }
 
-        /* Card improvements */
+        /* Card improvements and centering */
+        .card {
+            margin-left: auto;
+            margin-right: auto;
+            max-width: 100%;
+        }
+        
         .card-body {
             padding: 1rem;
+        }
+        
+        /* Center cards in their containers */
+        .row > .col-12,
+        .row > .col-xl-10 {
+            display: flex;
+            justify-content: center;
+        }
+        
+        .row > .col-12 > .card,
+        .row > .col-xl-10 > .card {
+            width: 100%;
         }
 
         /* Lists and content spacing */
@@ -705,6 +716,53 @@
         }
     }
 
+    /* Desktop layout preservation - ensure mobile styles don't affect desktop */
+    @media (min-width: 769px) {
+        .container-fluid {
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        
+        .row {
+            margin: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        
+        .sidebar-container {
+            display: block !important;
+            width: auto !important;
+            max-width: none !important;
+            flex: 0 0 auto !important;
+        }
+        
+        .main-content, #mainContent {
+            width: auto !important;
+            max-width: none !important;
+            flex: 1 1 auto !important;
+            padding: 35px 45px 20px 30px !important;
+        }
+        
+        .content {
+            width: auto !important;
+            padding: 20px !important;
+        }
+        
+        /* Reset card centering for desktop */
+        .row > .col-12,
+        .row > .col-xl-10 {
+            display: block;
+            justify-content: initial;
+        }
+        
+        .card {
+            margin-left: 0;
+            margin-right: 0;
+        }
+    }
+
     /* Landscape orientation adjustments */
     @media (max-height: 500px) and (orientation: landscape) {
         body {
@@ -753,7 +811,7 @@
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <div class="col-md-2 col-lg-2 sidebar-container">
+            <div class="col-12 col-md-3 col-lg-2 col-xl-2 sidebar-container">
                 <div class="sidebar" id="sidebar">
                 <div class="d-flex flex-column p-3">
                     <a href="{% url 'core:dashboard' %}" class="d-flex align-items-center text-white text-decoration-none sidebar-brand-link">
@@ -829,7 +887,7 @@
             </div>
             
             <!-- Main Content -->
-            <div class="col-md-10 col-lg-10 main-content" id="mainContent">
+            <div class="col-12 col-md-9 col-lg-10 col-xl-10 main-content" id="mainContent">
                 <!-- Mobile Top Navigation -->
                 <div class="mobile-top-nav d-md-none">
                     <h1>{% block mobile_title %}Dashboard{% endblock %}</h1>
