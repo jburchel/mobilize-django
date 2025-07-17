@@ -357,9 +357,14 @@
                             <div class="field-label">Phone</div>
                             <div class="field-value">
                                 {% if person.contact.phone %}
-                                    <a href="#" onclick="handlePhoneClick('{{ person.contact.phone }}', {{ person.contact.id }})" class="text-decoration-none">
-                                        <i class="fas fa-phone me-1"></i>{{ person.contact.phone }}
-                                    </a>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <a href="#" onclick="handlePhoneClick('{{ person.contact.phone }}', {{ person.contact.id }})" class="text-decoration-none">
+                                            <i class="fas fa-phone me-1"></i>{{ person.contact.phone }}
+                                        </a>
+                                        <a href="#" onclick="handleSMSClick('{{ person.contact.phone }}', {{ person.contact.id }})" class="text-decoration-none text-success" title="Send SMS">
+                                            <i class="fas fa-sms"></i>
+                                        </a>
+                                    </div>
                                 {% else %}
                                     Not specified
                                 {% endif %}
@@ -897,6 +902,29 @@ function handlePhoneClick(phoneNumber, contactId) {
     }
 }
 
+// Handle SMS click - detect mobile and open SMS app or communication log
+function handleSMSClick(phoneNumber, contactId) {
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        // Store SMS information for when user returns from SMS app
+        const smsInfo = {
+            phoneNumber: phoneNumber,
+            contactId: contactId,
+            contactName: '{{ person.name|escapejs }}',
+            timestamp: new Date().toISOString(),
+            personDetailUrl: window.location.href
+        };
+        localStorage.setItem('pendingSMSMessage', JSON.stringify(smsInfo));
+        
+        // Initiate SMS using native SMS URL scheme
+        window.location.href = `sms:${phoneNumber}`;
+    } else {
+        // For desktop, directly open communication modal
+        window.location.href = `/communications/?open_log_modal=text&contact_id=${contactId}`;
+    }
+}
+
 // Pipeline stage update functionality
 document.addEventListener('DOMContentLoaded', function() {
     const pipelineStages = document.querySelectorAll('.pipeline-stage');
@@ -950,17 +978,19 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Phone call return detection using Page Visibility API
+// Phone call and SMS return detection using Page Visibility API
 document.addEventListener('DOMContentLoaded', function() {
     // Check if we should open a communication modal on page load
     checkForPendingPhoneCall();
+    checkForPendingSMSMessage();
     
-    // Listen for when user returns to the page (after phone call)
+    // Listen for when user returns to the page (after phone call or SMS)
     document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
-            // User returned to the page, check for pending phone call
+            // User returned to the page, check for pending communications
             setTimeout(function() {
                 checkForPendingPhoneCall();
+                checkForPendingSMSMessage();
             }, 500); // Small delay to ensure page is fully visible
         }
     });
@@ -969,6 +999,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('focus', function() {
         setTimeout(function() {
             checkForPendingPhoneCall();
+            checkForPendingSMSMessage();
         }, 500);
     });
 });
@@ -1032,6 +1063,69 @@ function openPhoneCallModal(contactId, contactName, phoneNumber) {
         if (notesField) {
             notesField.focus();
             notesField.placeholder = 'Add notes about your phone conversation...';
+        }
+    }, 100);
+}
+
+// Check for pending SMS message and open communication modal
+function checkForPendingSMSMessage() {
+    const pendingSMS = localStorage.getItem('pendingSMSMessage');
+    if (!pendingSMS) return;
+    
+    try {
+        const smsInfo = JSON.parse(pendingSMS);
+        const now = new Date();
+        const smsTime = new Date(smsInfo.timestamp);
+        const timeDiff = now - smsTime;
+        
+        // Only process if SMS was initiated within the last 5 minutes
+        // and we're on the correct person's detail page
+        if (timeDiff < 300000 && window.location.href === smsInfo.personDetailUrl) {
+            // Clear the pending SMS
+            localStorage.removeItem('pendingSMSMessage');
+            
+            // Open the communication modal with SMS pre-selected
+            setTimeout(function() {
+                openSMSModal(smsInfo.contactId, smsInfo.contactName, smsInfo.phoneNumber);
+            }, 1000); // Delay to ensure page is fully loaded
+        } else if (timeDiff >= 300000) {
+            // Clean up old pending SMS (older than 5 minutes)
+            localStorage.removeItem('pendingSMSMessage');
+        }
+    } catch (e) {
+        // Clean up corrupted data
+        localStorage.removeItem('pendingSMSMessage');
+    }
+}
+
+// Open communication modal specifically for SMS messages
+function openSMSModal(contactId, contactName, phoneNumber) {
+    // Create modal if it doesn't exist
+    if (!document.getElementById('logCommunicationModal')) {
+        createCommunicationModal();
+    }
+    
+    // Open the modal with SMS pre-selected
+    openLogModal('text', contactId, contactName);
+    
+    // Pre-fill the subject with the phone number
+    setTimeout(function() {
+        const subjectInput = document.getElementById('communicationSubject');
+        if (subjectInput && phoneNumber) {
+            subjectInput.value = `SMS to ${phoneNumber}`;
+        }
+        
+        // Set today's date
+        const dateInput = document.getElementById('communicationDate');
+        if (dateInput) {
+            dateInput.value = new Date().toISOString().split('T')[0];
+        }
+        
+        // Focus on the notes field for user convenience
+        const notesField = document.getElementById('communicationMessage');
+        if (notesField) {
+            notesField.focus();
+            notesField.placeholder = 'Add notes about your text message conversation...';
         }
     }, 100);
 }
