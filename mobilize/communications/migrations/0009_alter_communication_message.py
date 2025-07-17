@@ -5,14 +5,16 @@ from django.db import migrations, models
 
 def truncate_long_messages(apps, schema_editor):
     """Truncate messages longer than 1000 characters before altering the field"""
-    Communication = apps.get_model('communications', 'Communication')
+    Communication = apps.get_model("communications", "Communication")
     db_alias = schema_editor.connection.alias
-    
+
     # Find and truncate messages longer than 1000 characters
-    long_messages = Communication.objects.using(db_alias).filter(
-        message__isnull=False
-    ).exclude(message='')
-    
+    long_messages = (
+        Communication.objects.using(db_alias)
+        .filter(message__isnull=False)
+        .exclude(message="")
+    )
+
     for comm in long_messages:
         if comm.message and len(comm.message) > 1000:
             # Truncate to 997 characters and add "..."
@@ -28,7 +30,7 @@ def reverse_truncate_messages(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('communications', '0008_fix_user_id_column_type'),
+        ("communications", "0008_fix_user_id_column_type"),
     ]
 
     operations = [
@@ -39,8 +41,8 @@ class Migration(migrations.Migration):
         ),
         # Then alter the field
         migrations.AlterField(
-            model_name='communication',
-            name='message',
+            model_name="communication",
+            name="message",
             field=models.CharField(blank=True, max_length=1000, null=True),
         ),
     ]

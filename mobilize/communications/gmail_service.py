@@ -24,39 +24,40 @@ User = get_user_model()
 
 class GmailService:
     """Gmail API service for sending and managing emails"""
-    
+
     SCOPES = [
-        'https://www.googleapis.com/auth/gmail.send',
-        'https://www.googleapis.com/auth/gmail.readonly',
-        'https://www.googleapis.com/auth/gmail.modify',
-        'https://www.googleapis.com/auth/calendar',
-        'https://www.googleapis.com/auth/calendar.events'
+        "https://www.googleapis.com/auth/gmail.send",
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.modify",
+        "https://www.googleapis.com/auth/calendar",
+        "https://www.googleapis.com/auth/calendar.events",
     ]
-    
+
     def __init__(self, user):
         self.user = user
         self.service = None
         self._initialize_service()
-    
+
     def _initialize_service(self):
         """Initialize Gmail API service with user credentials"""
         try:
             credentials = self._get_user_credentials()
             if credentials and credentials.valid:
-                self.service = build('gmail', 'v1', credentials=credentials)
+                self.service = build("gmail", "v1", credentials=credentials)
             elif credentials and credentials.expired and credentials.refresh_token:
                 credentials.refresh(Request())
                 self._save_user_credentials(credentials)
-                self.service = build('gmail', 'v1', credentials=credentials)
+                self.service = build("gmail", "v1", credentials=credentials)
         except Exception as e:
             print(f"Error initializing Gmail service: {e}")
             self.service = None
-    
+
     def _get_user_credentials(self) -> Optional[Credentials]:
         """Get stored credentials for the user"""
         try:
             # Look for stored credentials in user profile or GoogleToken model
             from mobilize.authentication.models import GoogleToken
+
             token = GoogleToken.objects.filter(user=self.user).first()
             if token and token.access_token:
                 # Convert stored scopes from string to list if needed
@@ -67,24 +68,25 @@ class GmailService:
                         stored_scopes = token.scopes
                 else:
                     stored_scopes = self.SCOPES
-                    
+
                 creds_data = {
-                    'token': token.access_token,
-                    'refresh_token': token.refresh_token,
-                    'token_uri': 'https://oauth2.googleapis.com/token',
-                    'client_id': settings.GOOGLE_CLIENT_ID,
-                    'client_secret': settings.GOOGLE_CLIENT_SECRET,
-                    'scopes': stored_scopes
+                    "token": token.access_token,
+                    "refresh_token": token.refresh_token,
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "client_id": settings.GOOGLE_CLIENT_ID,
+                    "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                    "scopes": stored_scopes,
                 }
                 return Credentials.from_authorized_user_info(creds_data)
         except Exception as e:
             print(f"Error getting user credentials: {e}")
         return None
-    
+
     def _save_user_credentials(self, credentials: Credentials):
         """Save updated credentials for the user"""
         try:
             from mobilize.authentication.models import GoogleToken
+
             token, created = GoogleToken.objects.get_or_create(user=self.user)
             token.access_token = credentials.token
             token.refresh_token = credentials.refresh_token
@@ -92,7 +94,7 @@ class GmailService:
             token.save()
         except Exception as e:
             print(f"Error saving user credentials: {e}")
-    
+
     def get_authorization_url(self, redirect_uri: str) -> str:
         """Get Gmail authorization URL for OAuth flow"""
         flow = Flow.from_client_config(
@@ -102,20 +104,19 @@ class GmailService:
                     "client_secret": settings.GOOGLE_CLIENT_SECRET,
                     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                     "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [redirect_uri]
+                    "redirect_uris": [redirect_uri],
                 }
             },
-            scopes=self.SCOPES
+            scopes=self.SCOPES,
         )
         flow.redirect_uri = redirect_uri
-        
+
         authorization_url, state = flow.authorization_url(
-            access_type='offline',
-            include_granted_scopes='true'
+            access_type="offline", include_granted_scopes="true"
         )
-        
+
         return authorization_url
-    
+
     def handle_oauth_callback(self, authorization_code: str, redirect_uri: str):
         """Handle OAuth callback and store credentials"""
         flow = Flow.from_client_config(
@@ -125,64 +126,68 @@ class GmailService:
                     "client_secret": settings.GOOGLE_CLIENT_SECRET,
                     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                     "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [redirect_uri]
+                    "redirect_uris": [redirect_uri],
                 }
             },
-            scopes=self.SCOPES
+            scopes=self.SCOPES,
         )
         flow.redirect_uri = redirect_uri
-        
+
         flow.fetch_token(code=authorization_code)
         credentials = flow.credentials
-        
+
         self._save_user_credentials(credentials)
         self._initialize_service()
-        
+
         return credentials
-    
+
     def is_authenticated(self) -> bool:
         """Check if user has valid Gmail credentials"""
         return self.service is not None
-    
-    def send_email(self, 
-                   to_emails: List[str], 
-                   subject: str, 
-                   body: str, 
-                   is_html: bool = True,
-                   cc_emails: Optional[List[str]] = None,
-                   bcc_emails: Optional[List[str]] = None,
-                   attachments: Optional[List[Dict]] = None,
-                   template_id: Optional[int] = None,
-                   signature_id: Optional[int] = None,
-                   related_person_id: Optional[int] = None,
-                   related_church_id: Optional[int] = None) -> Dict[str, Any]:
+
+    def send_email(
+        self,
+        to_emails: List[str],
+        subject: str,
+        body: str,
+        is_html: bool = True,
+        cc_emails: Optional[List[str]] = None,
+        bcc_emails: Optional[List[str]] = None,
+        attachments: Optional[List[Dict]] = None,
+        template_id: Optional[int] = None,
+        signature_id: Optional[int] = None,
+        related_person_id: Optional[int] = None,
+        related_church_id: Optional[int] = None,
+    ) -> Dict[str, Any]:
         """Send an email via Gmail API"""
-        
+
         if not self.service:
-            return {'success': False, 'error': 'Gmail service not authenticated'}
-        
+            return {"success": False, "error": "Gmail service not authenticated"}
+
         try:
             # Create message
             message = MIMEMultipart()
-            message['To'] = ', '.join(to_emails)
-            message['Subject'] = subject
-            message['From'] = self.user.email
-            
+            message["To"] = ", ".join(to_emails)
+            message["Subject"] = subject
+            message["From"] = self.user.email
+
             if cc_emails:
-                message['Cc'] = ', '.join(cc_emails)
+                message["Cc"] = ", ".join(cc_emails)
             if bcc_emails:
-                message['Bcc'] = ', '.join(bcc_emails)
-            
+                message["Bcc"] = ", ".join(bcc_emails)
+
             # Add signature if specified
             email_body = body
             if signature_id:
                 try:
-                    signature = EmailSignature.objects.get(id=signature_id, user=self.user)
+                    signature = EmailSignature.objects.get(
+                        id=signature_id, user=self.user
+                    )
                     if is_html:
                         # Always convert line breaks to <br> for HTML emails
-                        signature_html = signature.content.replace('\n', '<br>')
+                        signature_html = signature.content.replace("\n", "<br>")
                         email_body += f"<br><br>{signature_html}"
-                        
+
                         # Add company logo at the bottom of all HTML signatures
                         company_logo_url = "https://drive.google.com/uc?export=view&id=1s2fLid4Q686r1bGzb6JA84eC2E6N9zj2"
                         email_body += f'<br><br><img src="{company_logo_url}" alt="Crossover Global Logo" style="max-width: 200px; height: auto;">'
@@ -192,35 +197,37 @@ class GmailService:
                         email_body += f"\n\n[Company Logo]"
                 except EmailSignature.DoesNotExist:
                     pass
-            
+
             # Add body
             if is_html:
-                message.attach(MIMEText(email_body, 'html'))
+                message.attach(MIMEText(email_body, "html"))
             else:
-                message.attach(MIMEText(email_body, 'plain'))
-            
+                message.attach(MIMEText(email_body, "plain"))
+
             # Add attachments
             if attachments:
                 for attachment in attachments:
-                    with open(attachment['path'], 'rb') as f:
-                        part = MIMEBase('application', 'octet-stream')
+                    with open(attachment["path"], "rb") as f:
+                        part = MIMEBase("application", "octet-stream")
                         part.set_payload(f.read())
                         encoders.encode_base64(part)
                         part.add_header(
-                            'Content-Disposition',
-                            f'attachment; filename= {attachment["filename"]}'
+                            "Content-Disposition",
+                            f'attachment; filename= {attachment["filename"]}',
                         )
                         message.attach(part)
-            
+
             # Send message
             raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
-            send_message = {'raw': raw_message}
-            
-            result = self.service.users().messages().send(
-                userId='me', 
-                body=send_message
-            ).execute()
-            
+            send_message = {"raw": raw_message}
+
+            result = (
+                self.service.users()
+                .messages()
+                .send(userId="me", body=send_message)
+                .execute()
+            )
+
             # Create communication record
             self._create_communication_record(
                 to_emails=to_emails,
@@ -228,141 +235,147 @@ class GmailService:
                 bcc_emails=bcc_emails or [],
                 subject=subject,
                 body=body,
-                gmail_message_id=result.get('id'),
+                gmail_message_id=result.get("id"),
                 template_id=template_id,
                 related_person_id=related_person_id,
-                related_church_id=related_church_id
+                related_church_id=related_church_id,
             )
-            
+
             return {
-                'success': True, 
-                'message_id': result.get('id'),
-                'thread_id': result.get('threadId')
+                "success": True,
+                "message_id": result.get("id"),
+                "thread_id": result.get("threadId"),
             }
-            
+
         except HttpError as error:
-            return {'success': False, 'error': f'Gmail API error: {error}'}
+            return {"success": False, "error": f"Gmail API error: {error}"}
         except Exception as error:
-            return {'success': False, 'error': f'Unexpected error: {error}'}
-    
+            return {"success": False, "error": f"Unexpected error: {error}"}
+
     def _create_communication_record(self, **kwargs):
         """Create a communication record for sent email"""
         try:
             from mobilize.contacts.models import Person
             from mobilize.churches.models import Church
-            
+
             person = None
             church = None
-            
-            if kwargs.get('related_person_id'):
+
+            if kwargs.get("related_person_id"):
                 try:
-                    person = Person.objects.get(contact_id=kwargs['related_person_id'])
+                    person = Person.objects.get(contact_id=kwargs["related_person_id"])
                 except Person.DoesNotExist:
                     pass
-            
-            if kwargs.get('related_church_id'):
+
+            if kwargs.get("related_church_id"):
                 try:
-                    church = Church.objects.get(id=kwargs['related_church_id'])
+                    church = Church.objects.get(id=kwargs["related_church_id"])
                 except Church.DoesNotExist:
                     pass
-            
+
             Communication.objects.create(
-                type='email',
-                subject=kwargs['subject'],
-                message=kwargs['body'],
-                direction='outbound',
+                type="email",
+                subject=kwargs["subject"],
+                message=kwargs["body"],
+                direction="outbound",
                 date=timezone.now().date(),
                 date_sent=timezone.now(),
                 person=person,
                 church=church,
-                gmail_message_id=kwargs.get('gmail_message_id'),
-                email_status='sent',
+                gmail_message_id=kwargs.get("gmail_message_id"),
+                email_status="sent",
                 sender=self.user.email,
-                user=self.user
+                user=self.user,
             )
         except Exception as e:
             print(f"Error creating communication record: {e}")
-    
-    def get_messages(self, query: str = '', max_results: int = 10) -> List[Dict]:
+
+    def get_messages(self, query: str = "", max_results: int = 10) -> List[Dict]:
         """Get Gmail messages matching query"""
         if not self.service:
             return []
-        
+
         try:
-            results = self.service.users().messages().list(
-                userId='me', 
-                q=query, 
-                maxResults=max_results
-            ).execute()
-            
-            messages = results.get('messages', [])
+            results = (
+                self.service.users()
+                .messages()
+                .list(userId="me", q=query, maxResults=max_results)
+                .execute()
+            )
+
+            messages = results.get("messages", [])
             detailed_messages = []
-            
+
             for message in messages:
-                msg_detail = self.service.users().messages().get(
-                    userId='me', 
-                    id=message['id']
-                ).execute()
+                msg_detail = (
+                    self.service.users()
+                    .messages()
+                    .get(userId="me", id=message["id"])
+                    .execute()
+                )
                 detailed_messages.append(self._parse_message(msg_detail))
-            
+
             return detailed_messages
-            
+
         except HttpError as error:
-            print(f'Gmail API error: {error}')
+            print(f"Gmail API error: {error}")
             return []
-    
+
     def _parse_message(self, message: Dict) -> Dict:
         """Parse Gmail message into readable format"""
-        headers = message['payload'].get('headers', [])
-        
+        headers = message["payload"].get("headers", [])
+
         # Extract headers
-        subject = next((h['value'] for h in headers if h['name'] == 'Subject'), '')
-        sender = next((h['value'] for h in headers if h['name'] == 'From'), '')
-        date = next((h['value'] for h in headers if h['name'] == 'Date'), '')
-        to = next((h['value'] for h in headers if h['name'] == 'To'), '')
-        
+        subject = next((h["value"] for h in headers if h["name"] == "Subject"), "")
+        sender = next((h["value"] for h in headers if h["name"] == "From"), "")
+        date = next((h["value"] for h in headers if h["name"] == "Date"), "")
+        to = next((h["value"] for h in headers if h["name"] == "To"), "")
+
         # Extract body
-        body = self._get_message_body(message['payload'])
-        
+        body = self._get_message_body(message["payload"])
+
         return {
-            'id': message['id'],
-            'thread_id': message['threadId'],
-            'subject': subject,
-            'sender': sender,
-            'date': date,
-            'to': to,
-            'body': body,
-            'snippet': message.get('snippet', '')
+            "id": message["id"],
+            "thread_id": message["threadId"],
+            "subject": subject,
+            "sender": sender,
+            "date": date,
+            "to": to,
+            "body": body,
+            "snippet": message.get("snippet", ""),
         }
-    
+
     def _get_message_body(self, payload: Dict) -> str:
         """Extract message body from payload"""
         body = ""
-        
-        if 'parts' in payload:
-            for part in payload['parts']:
-                if part['mimeType'] == 'text/plain':
-                    data = part['body']['data']
-                    body = base64.urlsafe_b64decode(data).decode('utf-8')
+
+        if "parts" in payload:
+            for part in payload["parts"]:
+                if part["mimeType"] == "text/plain":
+                    data = part["body"]["data"]
+                    body = base64.urlsafe_b64decode(data).decode("utf-8")
                     break
-                elif part['mimeType'] == 'text/html':
-                    data = part['body']['data']
-                    body = base64.urlsafe_b64decode(data).decode('utf-8')
+                elif part["mimeType"] == "text/html":
+                    data = part["body"]["data"]
+                    body = base64.urlsafe_b64decode(data).decode("utf-8")
         else:
-            if payload['body'].get('data'):
-                body = base64.urlsafe_b64decode(
-                    payload['body']['data']
-                ).decode('utf-8')
-        
+            if payload["body"].get("data"):
+                body = base64.urlsafe_b64decode(payload["body"]["data"]).decode("utf-8")
+
         return body
-    
-    def sync_emails_to_communications(self, days_back: int = 7, contacts_only: bool = True, specific_emails: list = None):
+
+    def sync_emails_to_communications(
+        self,
+        days_back: int = 7,
+        contacts_only: bool = True,
+        specific_emails: list = None,
+    ):
         """Sync recent Gmail messages to communications table"""
         if not self.service:
-            return {'success': False, 'error': 'Gmail service not authenticated'}
-        
+            return {"success": False, "error": "Gmail service not authenticated"}
+
         from datetime import datetime, timedelta
-        
+
         # Handle specific emails filtering
         if specific_emails:
             known_emails = set(email.lower() for email in specific_emails)
@@ -374,124 +387,133 @@ class GmailService:
             try:
                 from mobilize.contacts.models import Person
                 from mobilize.churches.models import Church
-                
+
                 # Get all person emails
-                person_emails = Person.objects.filter(
-                    contact__email__isnull=False
-                ).exclude(contact__email='').values_list('contact__email', flat=True)
+                person_emails = (
+                    Person.objects.filter(contact__email__isnull=False)
+                    .exclude(contact__email="")
+                    .values_list("contact__email", flat=True)
+                )
                 known_emails.update(person_emails)
-                
+
                 # Get all church emails
-                church_emails = Church.objects.filter(
-                    contact__email__isnull=False
-                ).exclude(contact__email='').values_list('contact__email', flat=True)
+                church_emails = (
+                    Church.objects.filter(contact__email__isnull=False)
+                    .exclude(contact__email="")
+                    .values_list("contact__email", flat=True)
+                )
                 known_emails.update(church_emails)
-                
+
                 print(f"Found {len(known_emails)} known contact emails")
             except Exception as e:
                 print(f"Error getting known emails: {e}")
                 known_emails = set()
         else:
             known_emails = set()
-        
+
         # Query for recent emails - include both inbox and sent
-        since_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y/%m/%d')
-        
+        since_date = (datetime.now() - timedelta(days=days_back)).strftime("%Y/%m/%d")
+
         # Get both inbox and sent emails
-        inbox_query = f'in:inbox after:{since_date}'
-        sent_query = f'in:sent after:{since_date}'
-        
+        inbox_query = f"in:inbox after:{since_date}"
+        sent_query = f"in:sent after:{since_date}"
+
         # Combine both queries
         inbox_messages = self.get_messages(query=inbox_query, max_results=250)
         sent_messages = self.get_messages(query=sent_query, max_results=250)
-        
+
         # Combine and deduplicate messages
         all_message_ids = set()
         messages = []
         for msg_list in [inbox_messages, sent_messages]:
             for msg in msg_list:
-                if msg['id'] not in all_message_ids:
-                    all_message_ids.add(msg['id'])
+                if msg["id"] not in all_message_ids:
+                    all_message_ids.add(msg["id"])
                     messages.append(msg)
         synced_count = 0
         skipped_count = 0
-        
+
         for message in messages:
             # Check if communication already exists
-            if Communication.objects.filter(gmail_message_id=message['id']).exists():
+            if Communication.objects.filter(gmail_message_id=message["id"]).exists():
                 continue
-            
+
             # Extract sender email for matching
-            sender_full = message.get('sender', '')
+            sender_full = message.get("sender", "")
             # Parse email from "Name <email>" format
             import re
-            sender_match = re.search(r'<([^>]+)>', sender_full)
+
+            sender_match = re.search(r"<([^>]+)>", sender_full)
             if sender_match:
                 sender_email = sender_match.group(1).lower().strip()
             else:
                 sender_email = sender_full.lower().strip()
-            
+
             # Check if this is a sent email (sender is current user)
             is_sent_email = sender_email == self.user.email.lower().strip()
-            
+
             # For received emails: check if from known contact
             # For sent emails: check if to known contact (via recipients)
             relevant_contact = None
             person = None
             church = None
-            direction = 'inbound'
-            
+            direction = "inbound"
+
             if is_sent_email:
                 # This is a sent email - check recipients for known contacts
-                to_field = message.get('to', '')
+                to_field = message.get("to", "")
                 # Parse multiple recipients (comma-separated)
-                recipients = [email.strip() for email in to_field.split(',') if email.strip()]
+                recipients = [
+                    email.strip() for email in to_field.split(",") if email.strip()
+                ]
                 for recipient_email in recipients:
                     # Extract email from "Name <email>" format
                     import re
-                    email_match = re.search(r'<([^>]+)>', recipient_email)
+
+                    email_match = re.search(r"<([^>]+)>", recipient_email)
                     if email_match:
                         recipient_email = email_match.group(1)
                     recipient_email = recipient_email.lower().strip()
-                    
+
                     if contacts_only and recipient_email in known_emails:
                         person = self._find_person_by_email(recipient_email)
                         church = self._find_church_by_email(recipient_email)
                         if person or church:
                             relevant_contact = recipient_email
-                            direction = 'outbound'
+                            direction = "outbound"
                             break
-                
+
                 if contacts_only and not relevant_contact:
                     skipped_count += 1
                     continue
-                    
+
             else:
                 # This is a received email - check sender for known contact
                 if contacts_only and sender_email not in known_emails:
                     skipped_count += 1
                     continue
-                
+
                 person = self._find_person_by_email(sender_email)
                 church = self._find_church_by_email(sender_email)
-                
+
                 if contacts_only and not person and not church:
                     skipped_count += 1
                     continue
-            
+
             # Handle the person ID mapping correctly
             person_id = None
             if person:
                 # Use the person.id directly (person.pk is already the person ID)
                 person_id = person.pk
-            
+
             # Parse the email date from the message
             email_date = None
             email_datetime = None
-            if message.get('date'):
+            if message.get("date"):
                 try:
                     from email.utils import parsedate_to_datetime
-                    email_datetime = parsedate_to_datetime(message['date'])
+
+                    email_datetime = parsedate_to_datetime(message["date"])
                     email_date = email_datetime.date()
                 except Exception as e:
                     print(f"Error parsing email date '{message['date']}': {e}")
@@ -500,43 +522,47 @@ class GmailService:
             else:
                 email_date = timezone.now().date()
                 email_datetime = timezone.now()
-            
+
             Communication.objects.create(
-                type='email',
-                subject=message['subject'],
-                message=message['body'][:250],  # Truncate for database field
+                type="email",
+                subject=message["subject"],
+                message=message["body"][:250],  # Truncate for database field
                 direction=direction,
                 date=email_date,
                 date_sent=email_datetime,  # Store the full datetime
                 person_id=person_id,  # Use person_id instead of person object
                 church=church,
-                gmail_message_id=message['id'],
-                gmail_thread_id=message['thread_id'],
-                email_status='sent' if is_sent_email else 'received',
-                sender=message['sender'],
-                user=self.user
+                gmail_message_id=message["id"],
+                gmail_thread_id=message["thread_id"],
+                email_status="sent" if is_sent_email else "received",
+                sender=message["sender"],
+                user=self.user,
             )
             synced_count += 1
-        
-        result = {'success': True, 'synced_count': synced_count}
+
+        result = {"success": True, "synced_count": synced_count}
         if contacts_only:
-            result['skipped_count'] = skipped_count
-            result['message'] = f'Synced {synced_count} emails from known contacts, skipped {skipped_count} emails from unknown contacts'
-        
+            result["skipped_count"] = skipped_count
+            result["message"] = (
+                f"Synced {synced_count} emails from known contacts, skipped {skipped_count} emails from unknown contacts"
+            )
+
         return result
-    
+
     def _find_person_by_email(self, email_address: str):
         """Find person by email address"""
         try:
             from mobilize.contacts.models import Person
+
             return Person.objects.filter(contact__email=email_address).first()
         except:
             return None
-    
+
     def _find_church_by_email(self, email_address: str):
         """Find church by email address"""
         try:
             from mobilize.churches.models import Church
+
             return Church.objects.filter(contact__email=email_address).first()
         except:
             return None

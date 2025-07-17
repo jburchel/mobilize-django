@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
             USING created_at::date;
             """,
         ),
-        # Convert updated_at from DateField to DateTimeField  
+        # Convert updated_at from DateField to DateTimeField
         migrations.RunSQL(
             sql="""
             ALTER TABLE communications 

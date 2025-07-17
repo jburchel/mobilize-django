@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('admin_panel', '0003_remove_useroffice_role'),
+        ("admin_panel", "0003_remove_useroffice_role"),
     ]
 
     operations = [
@@ -23,6 +23,6 @@ class Migration(migrations.Migration):
             reverse_sql="""
             -- Remove the index if we reverse
             DROP INDEX IF EXISTS user_offices_user_id_varchar_idx;
-            """
+            """,
         ),
     ]

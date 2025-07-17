@@ -7,17 +7,20 @@ from django.db import connection
 def check_column_exists(table_name, column_name):
     """Check if a column exists in the given table."""
     with connection.cursor() as cursor:
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT column_name 
             FROM information_schema.columns 
             WHERE table_name = %s AND column_name = %s
-        """, [table_name, column_name])
+        """,
+            [table_name, column_name],
+        )
         return cursor.fetchone() is not None
 
 
 class SafeAddField(migrations.AddField):
     """Custom AddField operation that checks if column exists before adding."""
-    
+
     def database_forwards(self, app_label, schema_editor, from_state, to_state):
         model = to_state.apps.get_model(app_label, self.model_name)
         # Get the column name - use db_column if set, otherwise use field name

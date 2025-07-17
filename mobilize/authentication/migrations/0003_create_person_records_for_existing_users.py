@@ -7,44 +7,38 @@ def create_person_records_for_users(apps, schema_editor):
     """
     Create Person records for all existing Users.
     """
-    User = apps.get_model('authentication', 'User')
-    Contact = apps.get_model('contacts', 'Contact')
-    Person = apps.get_model('contacts', 'Person')
-    Office = apps.get_model('admin_panel', 'Office')
-    
+    User = apps.get_model("authentication", "User")
+    Contact = apps.get_model("contacts", "Contact")
+    Person = apps.get_model("contacts", "Person")
+    Office = apps.get_model("admin_panel", "Office")
+
     # Get or create default office
     default_office, created = Office.objects.get_or_create(
-        code='DEFAULT',
-        defaults={
-            'name': 'Default Office',
-            'is_active': True
-        }
+        code="DEFAULT", defaults={"name": "Default Office", "is_active": True}
     )
-    
+
     # Process each user that doesn't have a person record
     users_without_person = User.objects.filter(person__isnull=True)
-    
+
     for user in users_without_person:
         # Create Contact record
         contact = Contact.objects.create(
-            type='person',
-            first_name=user.first_name or '',
-            last_name=user.last_name or '',
+            type="person",
+            first_name=user.first_name or "",
+            last_name=user.last_name or "",
             email=user.email,
             office=default_office,
             user=user,  # Set the user as the creator
-            priority='medium',
-            status='active'
+            priority="medium",
+            status="active",
         )
-        
+
         # Create Person record linked to Contact
-        person = Person.objects.create(
-            contact=contact
-        )
-        
+        person = Person.objects.create(contact=contact)
+
         # Link the User to the Person
         user.person = person
-        user.save(update_fields=['person'])
+        user.save(update_fields=["person"])
 
 
 def reverse_create_person_records(apps, schema_editor):
@@ -52,30 +46,32 @@ def reverse_create_person_records(apps, schema_editor):
     Reverse migration - remove Person records created for Users.
     This is a destructive operation.
     """
-    User = apps.get_model('authentication', 'User')
-    
+    User = apps.get_model("authentication", "User")
+
     # Find users with person records and remove the relationship
     users_with_person = User.objects.filter(person__isnull=False)
-    
+
     for user in users_with_person:
         if user.person:
             # Remove the person record (cascades to contact)
             user.person.delete()
             user.person = None
-            user.save(update_fields=['person'])
+            user.save(update_fields=["person"])
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
         ("authentication", "0002_add_person_relationship"),
-        ("contacts", "0006_add_performance_indexes"),  # Make sure contacts migrations are run
+        (
+            "contacts",
+            "0006_add_performance_indexes",
+        ),  # Make sure contacts migrations are run
         ("admin_panel", "0001_initial"),  # Make sure admin_panel is available
     ]
 
     operations = [
         migrations.RunPython(
-            create_person_records_for_users,
-            reverse_create_person_records
+            create_person_records_for_users, reverse_create_person_records
         ),
     ]

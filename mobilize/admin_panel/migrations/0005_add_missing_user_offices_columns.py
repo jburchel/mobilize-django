@@ -7,7 +7,7 @@ import django.utils.timezone as django_timezone
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('admin_panel', '0004_fix_user_id_column_type'),
+        ("admin_panel", "0004_fix_user_id_column_type"),
     ]
 
     operations = [
@@ -55,6 +55,6 @@ class Migration(migrations.Migration):
             ALTER TABLE user_offices DROP COLUMN IF EXISTS permissions;
             ALTER TABLE user_offices DROP COLUMN IF EXISTS assigned_at;
             ALTER TABLE user_offices DROP COLUMN IF EXISTS updated_at;
-            """
+            """,
         ),
     ]
