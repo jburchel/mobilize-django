@@ -881,47 +881,85 @@ function openEmailCompose(email, name, contactId) {
 
 // Handle phone click - detect mobile and either dial or open communication log
 function handlePhoneClick(phoneNumber, contactId) {
-    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const mobile = isMobileDevice();
     
-    if (isMobile) {
+    debugPhoneIntegration('Phone click detected', { 
+        phoneNumber, 
+        contactId, 
+        isMobile: mobile,
+        userAgent: navigator.userAgent
+    });
+    
+    if (mobile) {
+        // Clean up any old pending calls first
+        cleanupOldPendingCommunications();
+        
         // Store call information for when user returns from phone app
         const callInfo = {
             phoneNumber: phoneNumber,
             contactId: contactId,
             contactName: '{{ person.name|escapejs }}',
             timestamp: new Date().toISOString(),
-            personDetailUrl: window.location.href
+            personDetailUrl: window.location.pathname, // Use pathname instead of full href to avoid query param issues
+            sessionId: generateSessionId() // Add unique session ID to prevent conflicts
         };
         localStorage.setItem('pendingPhoneCall', JSON.stringify(callInfo));
         
+        debugPhoneIntegration('Stored pending phone call', callInfo);
+        
+        // Track that we initiated a call to prevent false triggers
+        window.phoneCallInitiated = true;
+        setTimeout(() => { window.phoneCallInitiated = false; }, 2000);
+        
         // Initiate the phone call
+        debugPhoneIntegration('Initiating phone call', { tel: `tel:${phoneNumber}` });
         window.location.href = `tel:${phoneNumber}`;
     } else {
         // For desktop, directly open communication modal
-        window.location.href = `/communications/?open_log_modal=phone&contact_id=${contactId}`;
+        debugPhoneIntegration('Desktop detected, opening modal directly');
+        openLogModal('phone', contactId, '{{ person.name|escapejs }}');
     }
 }
 
 // Handle SMS click - detect mobile and open SMS app or communication log
 function handleSMSClick(phoneNumber, contactId) {
-    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const mobile = isMobileDevice();
     
-    if (isMobile) {
+    debugPhoneIntegration('SMS click detected', { 
+        phoneNumber, 
+        contactId, 
+        isMobile: mobile,
+        userAgent: navigator.userAgent
+    });
+    
+    if (mobile) {
+        // Clean up any old pending SMS first
+        cleanupOldPendingCommunications();
+        
         // Store SMS information for when user returns from SMS app
         const smsInfo = {
             phoneNumber: phoneNumber,
             contactId: contactId,
             contactName: '{{ person.name|escapejs }}',
             timestamp: new Date().toISOString(),
-            personDetailUrl: window.location.href
+            personDetailUrl: window.location.pathname, // Use pathname instead of full href
+            sessionId: generateSessionId() // Add unique session ID
         };
         localStorage.setItem('pendingSMSMessage', JSON.stringify(smsInfo));
         
+        debugPhoneIntegration('Stored pending SMS message', smsInfo);
+        
+        // Track that we initiated an SMS to prevent false triggers
+        window.smsInitiated = true;
+        setTimeout(() => { window.smsInitiated = false; }, 2000);
+        
         // Initiate SMS using native SMS URL scheme
+        debugPhoneIntegration('Initiating SMS', { sms: `sms:${phoneNumber}` });
         window.location.href = `sms:${phoneNumber}`;
     } else {
         // For desktop, directly open communication modal
-        window.location.href = `/communications/?open_log_modal=text&contact_id=${contactId}`;
+        debugPhoneIntegration('Desktop detected, opening SMS modal directly');
+        openLogModal('text', contactId, '{{ person.name|escapejs }}');
     }
 }
 
@@ -978,31 +1016,63 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Phone call and SMS return detection using Page Visibility API
+// Improved phone call and SMS return detection using Page Visibility API
 document.addEventListener('DOMContentLoaded', function() {
     // Check if we should open a communication modal on page load
-    checkForPendingPhoneCall();
-    checkForPendingSMSMessage();
+    checkForPendingCommunications();
+    
+    let visibilityTimeout;
+    let hasProcessedVisibilityChange = false;
     
     // Listen for when user returns to the page (after phone call or SMS)
     document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
+        if (!document.hidden && !hasProcessedVisibilityChange) {
+            // Clear any existing timeout
+            if (visibilityTimeout) {
+                clearTimeout(visibilityTimeout);
+            }
+            
+            // Set flag to prevent duplicate processing
+            hasProcessedVisibilityChange = true;
+            
             // User returned to the page, check for pending communications
-            setTimeout(function() {
-                checkForPendingPhoneCall();
-                checkForPendingSMSMessage();
-            }, 500); // Small delay to ensure page is fully visible
+            visibilityTimeout = setTimeout(function() {
+                checkForPendingCommunications();
+                hasProcessedVisibilityChange = false; // Reset flag after processing
+            }, 1500); // Increased delay for better mobile browser compatibility
         }
     });
     
-    // Also listen for focus events as a fallback
+    // Also listen for focus events as a fallback, but only if visibilitychange didn't fire
+    let focusTimeout;
     window.addEventListener('focus', function() {
-        setTimeout(function() {
-            checkForPendingPhoneCall();
-            checkForPendingSMSMessage();
-        }, 500);
+        if (!hasProcessedVisibilityChange) {
+            if (focusTimeout) {
+                clearTimeout(focusTimeout);
+            }
+            
+            focusTimeout = setTimeout(function() {
+                checkForPendingCommunications();
+            }, 1500);
+        }
+    });
+    
+    // Additional event listeners for mobile browsers
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            // Page was restored from cache
+            setTimeout(function() {
+                checkForPendingCommunications();
+            }, 1000);
+        }
     });
 });
+
+// Unified function to check for pending communications
+function checkForPendingCommunications() {
+    checkForPendingPhoneCall();
+    checkForPendingSMSMessage();
+}
 
 // Check for pending phone call and open communication modal
 function checkForPendingPhoneCall() {
@@ -1015,18 +1085,24 @@ function checkForPendingPhoneCall() {
         const callTime = new Date(callInfo.timestamp);
         const timeDiff = now - callTime;
         
-        // Only process if call was initiated within the last 5 minutes
-        // and we're on the correct person's detail page
-        if (timeDiff < 300000 && window.location.href === callInfo.personDetailUrl) {
-            // Clear the pending call
+        // Only process if call was initiated within the last 2 minutes
+        // and we're on the correct person's detail page (using pathname for reliability)
+        if (timeDiff < 120000 && 
+            window.location.pathname === callInfo.personDetailUrl &&
+            callInfo.contactId == {{ person.contact.id }}) {
+            
+            // Clear the pending call immediately to prevent duplicates
             localStorage.removeItem('pendingPhoneCall');
             
-            // Open the communication modal with phone call pre-selected
-            setTimeout(function() {
-                openPhoneCallModal(callInfo.contactId, callInfo.contactName, callInfo.phoneNumber);
-            }, 1000); // Delay to ensure page is fully loaded
-        } else if (timeDiff >= 300000) {
-            // Clean up old pending calls (older than 5 minutes)
+            // Only open modal if we're not in the middle of another action
+            if (!window.phoneCallInitiated && !document.querySelector('.modal.show')) {
+                // Open the communication modal with phone call pre-selected
+                setTimeout(function() {
+                    openPhoneCallModal(callInfo.contactId, callInfo.contactName, callInfo.phoneNumber);
+                }, 500); // Reduced delay for better responsiveness
+            }
+        } else if (timeDiff >= 120000) {
+            // Clean up old pending calls (older than 2 minutes)
             localStorage.removeItem('pendingPhoneCall');
         }
     } catch (e) {
@@ -1078,18 +1154,24 @@ function checkForPendingSMSMessage() {
         const smsTime = new Date(smsInfo.timestamp);
         const timeDiff = now - smsTime;
         
-        // Only process if SMS was initiated within the last 5 minutes
-        // and we're on the correct person's detail page
-        if (timeDiff < 300000 && window.location.href === smsInfo.personDetailUrl) {
-            // Clear the pending SMS
+        // Only process if SMS was initiated within the last 2 minutes
+        // and we're on the correct person's detail page (using pathname for reliability)
+        if (timeDiff < 120000 && 
+            window.location.pathname === smsInfo.personDetailUrl &&
+            smsInfo.contactId == {{ person.contact.id }}) {
+            
+            // Clear the pending SMS immediately to prevent duplicates
             localStorage.removeItem('pendingSMSMessage');
             
-            // Open the communication modal with SMS pre-selected
-            setTimeout(function() {
-                openSMSModal(smsInfo.contactId, smsInfo.contactName, smsInfo.phoneNumber);
-            }, 1000); // Delay to ensure page is fully loaded
-        } else if (timeDiff >= 300000) {
-            // Clean up old pending SMS (older than 5 minutes)
+            // Only open modal if we're not in the middle of another action
+            if (!window.smsInitiated && !document.querySelector('.modal.show')) {
+                // Open the communication modal with SMS pre-selected
+                setTimeout(function() {
+                    openSMSModal(smsInfo.contactId, smsInfo.contactName, smsInfo.phoneNumber);
+                }, 500); // Reduced delay for better responsiveness
+            }
+        } else if (timeDiff >= 120000) {
+            // Clean up old pending SMS (older than 2 minutes)
             localStorage.removeItem('pendingSMSMessage');
         }
     } catch (e) {
@@ -1316,5 +1398,76 @@ function createCommunicationModal() {
     
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
+
+// Utility functions for improved phone integration
+
+// Generate a unique session ID to prevent conflicts
+function generateSessionId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+// Clean up old pending communications to prevent memory buildup
+function cleanupOldPendingCommunications() {
+    const now = new Date();
+    const maxAge = 120000; // 2 minutes
+    
+    // Clean up old phone calls
+    const pendingCall = localStorage.getItem('pendingPhoneCall');
+    if (pendingCall) {
+        try {
+            const callInfo = JSON.parse(pendingCall);
+            const callTime = new Date(callInfo.timestamp);
+            if (now - callTime > maxAge) {
+                localStorage.removeItem('pendingPhoneCall');
+            }
+        } catch (e) {
+            localStorage.removeItem('pendingPhoneCall');
+        }
+    }
+    
+    // Clean up old SMS messages
+    const pendingSMS = localStorage.getItem('pendingSMSMessage');
+    if (pendingSMS) {
+        try {
+            const smsInfo = JSON.parse(pendingSMS);
+            const smsTime = new Date(smsInfo.timestamp);
+            if (now - smsTime > maxAge) {
+                localStorage.removeItem('pendingSMSMessage');
+            }
+        } catch (e) {
+            localStorage.removeItem('pendingSMSMessage');
+        }
+    }
+}
+
+// Enhanced mobile detection with more comprehensive user agent checking
+function isMobileDevice() {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const mobileKeywords = [
+        'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'windows phone',
+        'webos', 'opera mini', 'iemobile', 'mobile', 'tablet'
+    ];
+    
+    // Check user agent
+    const isMobileUA = mobileKeywords.some(keyword => userAgent.includes(keyword));
+    
+    // Check for touch capability
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
+    // Check screen size (mobile-like dimensions)
+    const isSmallScreen = window.innerWidth <= 768 || window.innerHeight <= 600;
+    
+    return isMobileUA || (hasTouch && isSmallScreen);
+}
+
+// Debug function to log phone integration events (can be enabled for troubleshooting)
+function debugPhoneIntegration(message, data = {}) {
+    if (window.phoneIntegrationDebug) {
+        console.log(`[Phone Integration] ${message}`, data);
+    }
+}
+
+// Enable debug mode by running: window.phoneIntegrationDebug = true; in console
+window.phoneIntegrationDebug = false;
 </script>
 {% endblock %}
