@@ -680,7 +680,7 @@ def bulk_delete_churches(request):
         # Get the Church objects through their Contact relationship
         church_ids = Contact.objects.filter(
             id__in=church_ids, type="church"
-        ).values_list("church__id", flat=True)
+        ).values_list("church_details__id", flat=True)
 
         # Get the churches to delete
         churches = Church.objects.filter(id__in=church_ids)
