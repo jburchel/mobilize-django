@@ -125,13 +125,9 @@
             <span class="text-muted"><span id="selected-count">0</span> selected</span>
             
             <!-- Bulk Delete -->
-            <form method="post" action="{% url 'churches:bulk_delete_churches' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected churches?');">
-                {% csrf_token %}
-                <input type="hidden" name="church_ids" id="bulk-delete-ids">
-                <button type="submit" class="btn btn-danger btn-sm">
-                    <i class="fas fa-trash"></i> Delete Selected
-                </button>
-            </form>
+            <button type="button" class="btn btn-danger btn-sm" id="bulk-delete-btn" data-bs-toggle="modal" data-bs-target="#bulkDeleteModal">
+                <i class="fas fa-trash"></i> Delete Selected
+            </button>
             
             <!-- Bulk Priority Update -->
             <form method="post" action="{% url 'churches:bulk_update_church_priority' %}" style="display: inline;">
@@ -385,6 +381,42 @@
     </div>
 {% endif %}
 
+<!-- Bulk Delete Modal -->
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1" aria-labelledby="bulkDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="bulkDeleteModalLabel">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                    Delete Selected Churches
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-trash-alt text-danger fa-3x mb-3"></i>
+                </div>
+                <p class="mb-0">Are you sure you want to delete <span id="bulk-delete-count">0</span> selected churches?</p>
+                <p class="text-muted mt-2">This action cannot be undone.</p>
+            </div>
+            
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <form method="POST" action="{% url 'churches:bulk_delete_churches' %}" class="d-inline" id="bulk-delete-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="church_ids" id="bulk-delete-modal-ids">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i> Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Handle email click - open Gmail compose in app
 function openEmailCompose(email, name, contactId) {
@@ -566,7 +598,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update hidden inputs for bulk operations
         const ids = Array.from(selected).map(cb => cb.value).join(',');
-        document.getElementById('bulk-delete-ids').value = ids;
         document.getElementById('bulk-priority-ids').value = ids;
         document.getElementById('bulk-user-ids').value = ids;
         document.getElementById('bulk-office-ids').value = ids;
@@ -694,6 +725,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 const currentParams = new URLSearchParams(window.location.search);
                 currentParams.set('view_mode', this.value);
                 window.location.href = '?' + currentParams.toString();
+            }
+        });
+    }
+    
+    // Handle bulk delete modal
+    const bulkDeleteModal = document.getElementById('bulkDeleteModal');
+    if (bulkDeleteModal) {
+        bulkDeleteModal.addEventListener('show.bs.modal', function(event) {
+            const selected = document.querySelectorAll('.church-checkbox:checked');
+            const count = selected.length;
+            
+            // Update count in modal
+            document.getElementById('bulk-delete-count').textContent = count;
+            
+            // Update church IDs in modal form
+            const ids = Array.from(selected).map(cb => cb.value).join(',');
+            document.getElementById('bulk-delete-modal-ids').value = ids;
+            
+            // Prevent showing modal if no churches selected
+            if (count === 0) {
+                event.preventDefault();
+                showMessage('error', 'Please select at least one church to delete.');
             }
         });
     }
