@@ -315,6 +315,11 @@
                         
                         <!-- Desktop: horizontal layout all on one line -->
                         <div class="d-none d-md-flex align-items-center gap-3 flex-wrap">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-eye me-2 text-muted"></i>
+                                <span class="text-muted me-3">View Mode:</span>
+                                <span class="badge bg-primary">{{ view_mode_display }}</span>
+                            </div>
                             <div class="btn-group" role="group" aria-label="View mode toggle">
                                 <a href="?view_mode=default" 
                                    class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
@@ -351,6 +356,11 @@
                         </div>
                         <!-- Desktop: horizontal buttons -->
                         <div class="d-none d-md-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-eye me-2 text-muted"></i>
+                                <span class="text-muted me-3">View Mode:</span>
+                                <span class="badge bg-primary">{{ view_mode_display }}</span>
+                            </div>
                             <div class="btn-group" role="group" aria-label="View mode toggle">
                                 <a href="?view_mode=default" 
                                    class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">

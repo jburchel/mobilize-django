@@ -50,7 +50,13 @@
                         </a>
                     </div>
                     <!-- Desktop: horizontal buttons -->
-                    <div class="btn-group d-none d-md-flex" role="group" aria-label="View mode toggle">
+                    <div class="d-none d-md-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-eye me-2 text-muted"></i>
+                            <span class="text-muted me-3">View Mode:</span>
+                            <span class="badge bg-primary">{{ view_mode_display }}</span>
+                        </div>
+                        <div class="btn-group" role="group" aria-label="View mode toggle">
                         <a href="?view_mode=default" 
                            class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                             {% if user_role == 'super_admin' %}
@@ -63,6 +69,7 @@
                            class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                             <i class="fas fa-user me-1"></i> My Contacts Only
                         </a>
+                        </div>
                     </div>
                 </div>
             </div>
