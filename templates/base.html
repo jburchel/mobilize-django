@@ -546,6 +546,14 @@
             background: linear-gradient(135deg, #183963 0%, #39A949 100%);
             border-radius: 0 !important;
         }
+        
+        /* Ensure profile doesn't get pushed down on mobile */
+        .page-header-actions {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
 
         .page-title {
             font-size: 1.5rem !important;
@@ -761,6 +769,23 @@
             margin-left: 0;
             margin-right: 0;
         }
+        
+        /* Fix desktop page header alignment */
+        .page-header {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+        }
+        
+        .page-header-content {
+            flex: 1;
+        }
+        
+        .page-header-actions {
+            flex: 0 0 auto;
+            align-self: center;
+        }
     }
 
     /* Landscape orientation adjustments */
@@ -811,7 +836,7 @@
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <div class="col-12 col-md-3 col-lg-2 col-xl-2 sidebar-container">
+            <div class="col-md-3 col-lg-2 col-xl-2 d-none d-md-block sidebar-container">
                 <div class="sidebar" id="sidebar">
                 <div class="d-flex flex-column p-3">
                     <a href="{% url 'core:dashboard' %}" class="d-flex align-items-center text-white text-decoration-none sidebar-brand-link">
