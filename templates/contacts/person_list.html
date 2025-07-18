@@ -75,7 +75,7 @@
                 </div>
                 
                 <!-- Desktop: horizontal layout all on one line -->
-                <div class="d-flex d-md-flex align-items-center gap-3 flex-wrap">
+                <div class="d-none d-md-flex align-items-center gap-3 flex-wrap">
                     <div class="d-flex align-items-center">
                         <i class="fas fa-eye me-2 text-muted"></i>
                         <span class="text-muted me-3">View Mode:</span>
@@ -123,8 +123,8 @@
 {% endif %}
 
 <!-- Bulk Operations Bar -->
-<div class="row mb-3 justify-content-center" id="bulk-operations" style="display: none;">
-    <div class="col-12 col-xl-10">
+<div class="row mb-3" id="bulk-operations" style="display: none;">
+    <div class="col-12">
         <div class="card">
             <div class="card-body py-2">
                 <!-- Mobile: Stack operations vertically -->
@@ -148,7 +148,7 @@
                             <form method="post" action="{% url 'contacts:bulk_update_priority' %}">
                                 {% csrf_token %}
                                 <input type="hidden" name="contact_ids" id="bulk-priority-ids">
-                                <select name="priority" class="form-select form-select-sm">
+                                <select name="priority" class="form-select form-select-sm" onchange="this.form.submit()">
                                     <option value="">Change Priority...</option>
                                     {% for priority_value, priority_label in priorities %}
                                     <option value="{{ priority_value }}">{{ priority_label }}</option>
@@ -168,7 +168,7 @@
                             <form method="post" action="{% url 'contacts:bulk_assign_user' %}">
                                 {% csrf_token %}
                                 <input type="hidden" name="contact_ids" id="bulk-user-ids">
-                                <select name="user_id" class="form-select form-select-sm">
+                                <select name="user_id" class="form-select form-select-sm" onchange="this.form.submit()">
                                     <option value="">Assign to User...</option>
                                     {% for user in users %}
                                     <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>

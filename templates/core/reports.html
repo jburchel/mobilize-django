@@ -33,7 +33,7 @@
                         </a>
                     </div>
                     <!-- Desktop: horizontal buttons -->
-                    <div class="btn-group d-flex d-md-flex" role="group" aria-label="View mode toggle">
+                    <div class="btn-group d-none d-md-flex" role="group" aria-label="View mode toggle">
                         <a href="?view_mode=default" 
                            class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                             {% if user_role == 'super_admin' %}

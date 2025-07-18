@@ -271,8 +271,8 @@
 
 <!-- View Mode Toggle for Admins -->
 {% if can_toggle_view %}
-<div class="row mb-3 justify-content-center">
-    <div class="col-12 col-xl-10">
+<div class="row mb-3">
+    <div class="col-12">
         <div class="card">
             <div class="card-body py-3">
                 <!-- Mobile-friendly responsive layout -->
@@ -314,7 +314,7 @@
                         </div>
                         
                         <!-- Desktop: horizontal layout all on one line -->
-                        <div class="d-flex d-md-flex align-items-center gap-3 flex-wrap">
+                        <div class="d-none d-md-flex align-items-center gap-3 flex-wrap">
                             <div class="btn-group" role="group" aria-label="View mode toggle">
                                 <a href="?view_mode=default" 
                                    class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
@@ -350,7 +350,7 @@
                             </a>
                         </div>
                         <!-- Desktop: horizontal buttons -->
-                        <div class="d-flex d-md-flex align-items-center gap-3">
+                        <div class="d-none d-md-flex align-items-center gap-3">
                             <div class="btn-group" role="group" aria-label="View mode toggle">
                                 <a href="?view_mode=default" 
                                    class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
