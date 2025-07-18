@@ -135,6 +135,9 @@ urlpatterns = [
         views.bulk_assign_communication_user,
         name="bulk_assign_user",
     ),
+    # SMS functionality
+    path("sms/send/", views.send_sms_view, name="send_sms"),
+    path("sms/webhook/", views.sms_webhook, name="sms_webhook"),
     # API endpoints
     path("api/contacts/", views.get_contacts_json, name="get_contacts_json"),
     path("api/create-meet/", views.create_meet_link, name="create_meet_link"),

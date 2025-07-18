@@ -673,6 +673,35 @@
         .row > .col-xl-10 > .card {
             width: 100%;
         }
+        
+        /* Fix View Mode layout on mobile */
+        .btn-group {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 8px !important;
+        }
+        
+        .btn-group .btn {
+            width: 100% !important;
+            margin-bottom: 0 !important;
+        }
+        
+        /* Fix select dropdowns on mobile */
+        .form-select {
+            width: 100% !important;
+            margin-bottom: 10px !important;
+        }
+        
+        /* Ensure form elements stack vertically */
+        .d-flex.flex-column.flex-md-row {
+            flex-direction: column !important;
+            gap: 12px !important;
+        }
+        
+        /* Fix button group vertical spacing */
+        .btn-group-vertical .btn {
+            margin-bottom: 0 !important;
+        }
 
         /* Lists and content spacing */
         .list-group-item {

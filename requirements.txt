@@ -28,3 +28,4 @@ django-compressor==4.4 # For CSS/JS minification and compression
 whitenoise==6.6.0 # For serving static files efficiently
 faker==37.4.0 # For generating sample data
 supabase==2.3.0 # For Supabase database integration
+twilio==9.3.7 # For SMS sending and receiving capabilities

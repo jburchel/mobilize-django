@@ -44,21 +44,33 @@
                     <!-- View Mode Controls -->
                     <div class="col-12 col-md">
                         {% if user_role == 'super_admin' %}
-                        <div class="d-flex flex-column flex-md-row gap-3 align-items-start align-items-md-center">
-                            <!-- Button Group -->
-                            <div class="btn-group" role="group" aria-label="View mode toggle">
+                        <div class="d-flex flex-column gap-3">
+                            <!-- Button Group - Mobile: stacked, Desktop: horizontal -->
+                            <div class="btn-group-vertical d-md-none" role="group" aria-label="View mode toggle">
                                 <a href="?view_mode=default{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
                                    class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                                    <i class="fas fa-globe me-1"></i> <span class="d-none d-sm-inline">All Offices</span><span class="d-sm-none">All</span>
+                                    <i class="fas fa-globe me-1"></i> All Offices
                                 </a>
                                 <a href="?view_mode=my_only{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
                                    class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                                    <i class="fas fa-user me-1"></i> <span class="d-none d-sm-inline">My Contacts Only</span><span class="d-sm-none">Mine</span>
+                                    <i class="fas fa-user me-1"></i> My Churches Only
+                                </a>
+                            </div>
+                            
+                            <!-- Desktop horizontal button group -->
+                            <div class="btn-group d-none d-md-flex" role="group" aria-label="View mode toggle">
+                                <a href="?view_mode=default{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
+                                   class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                    <i class="fas fa-globe me-1"></i> All Offices
+                                </a>
+                                <a href="?view_mode=my_only{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
+                                   class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                    <i class="fas fa-user me-1"></i> My Churches Only
                                 </a>
                             </div>
                             
                             <!-- Office Selector -->
-                            <div class="flex-grow-1" style="min-width: 200px; max-width: 300px;">
+                            <div class="w-100">
                                 <select id="office-selector" class="form-select form-select-sm">
                                     <option value="default" {% if current_view_mode == "default" %}selected{% endif %}>Show All Offices</option>
                                     <option value="" disabled>-------------------</option>
@@ -73,14 +85,26 @@
                         </div>
                         {% else %}
                         <!-- Non-super admin view -->
-                        <div class="btn-group" role="group" aria-label="View mode toggle">
+                        <!-- Mobile: vertical buttons -->
+                        <div class="btn-group-vertical d-md-none" role="group" aria-label="View mode toggle">
                             <a href="?view_mode=default{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
                                class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                                <i class="fas fa-building me-1"></i> <span class="d-none d-sm-inline">My Office</span><span class="d-sm-none">Office</span>
+                                <i class="fas fa-building me-1"></i> My Office
                             </a>
                             <a href="?view_mode=my_only{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
                                class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                                <i class="fas fa-user me-1"></i> <span class="d-none d-sm-inline">My Contacts Only</span><span class="d-sm-none">Mine</span>
+                                <i class="fas fa-user me-1"></i> My Churches Only
+                            </a>
+                        </div>
+                        <!-- Desktop: horizontal buttons -->
+                        <div class="btn-group d-none d-md-flex" role="group" aria-label="View mode toggle">
+                            <a href="?view_mode=default{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
+                               class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                <i class="fas fa-building me-1"></i> My Office
+                            </a>
+                            <a href="?view_mode=my_only{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
+                               class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                <i class="fas fa-user me-1"></i> My Churches Only
                             </a>
                         </div>
                         {% endif %}
