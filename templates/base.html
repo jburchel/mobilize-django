@@ -20,6 +20,7 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
+    <link rel="stylesheet" href="{% static 'css/card-fixes.css' %}">
     {% endcompress %}
     
     <style>
@@ -662,16 +663,11 @@
             padding: 1rem;
         }
         
-        /* Center cards in their containers */
-        .row > .col-12,
-        .row > .col-xl-10 {
-            display: flex;
-            justify-content: center;
-        }
-        
+        /* Center cards in their containers - mobile only */
         .row > .col-12 > .card,
         .row > .col-xl-10 > .card {
             width: 100%;
+            max-width: 100%;
         }
         
         /* Fix View Mode layout on mobile */
@@ -754,7 +750,7 @@
     }
 
     /* Desktop layout preservation - ensure mobile styles don't affect desktop */
-    @media (min-width: 769px) {
+    @media (min-width: 768px) {
         .container-fluid {
             padding: 0 !important;
             margin: 0 !important;
@@ -818,7 +814,6 @@
         .row > .col-12,
         .row > .col-xl-10 {
             display: block;
-            justify-content: initial;
         }
         
         .card {

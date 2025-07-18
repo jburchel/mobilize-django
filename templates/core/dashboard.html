@@ -178,33 +178,54 @@
     margin-left: 4px;
 }
 
-/* CRITICAL: Force content and cards to be visible */
-.row {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    margin: 0 -15px !important;
-}
-
-.col-lg-3, .col-md-6 {
-    display: block !important;
-    padding: 0 15px !important;
-    flex: 0 0 auto !important;
-}
-
+/* Card layout improvements */
 .card {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    background: white !important;
-    border: 1px solid #dee2e6 !important;
-    border-radius: 0.375rem !important;
-    margin-bottom: 1rem !important;
+    display: block;
+    visibility: visible;
+    opacity: 1;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
 }
 
 .card-header, .card-body {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+    display: block;
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Dashboard card grid improvements */
+.dashboard-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.dashboard-metrics-grid .card {
+    height: 100%;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-metrics-grid .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Responsive adjustments for dashboard cards */
+@media (max-width: 1200px) {
+    .dashboard-metrics-grid {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-metrics-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
 }
 
 /* Mobile responsive improvements for dashboard */
@@ -323,68 +344,60 @@
         <div class="{% if widget.size == 'full' %}col-12{% elif widget.size == 'two_thirds' %}col-lg-8{% elif widget.size == 'half' %}col-lg-6{% elif widget.size == 'one_third' %}col-lg-4{% elif widget.size == 'quarter' %}col-lg-3{% else %}col-12{% endif %} mb-4">
             {% if widget.id == 'metrics_summary' %}
                 <!-- Metrics Summary Widget (4 cards) -->
-                <div class="row">
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <div class="card h-100 border-left-primary">
-                            <div class="card-header bg-primary text-white">
-                                <i class="fas fa-users me-2"></i> People
-                            </div>
-                            <div class="card-body">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <h2 class="mb-1">{{ people_count }}</h2>
-                                        <small class="text-success">+{{ recent_people }} this week</small>
-                                    </div>
-                                    <a href="{% url 'contacts:person_list' %}" class="btn btn-sm btn-primary">View All</a>
+                <div class="dashboard-metrics-grid">
+                    <div class="card border-left-primary">
+                        <div class="card-header bg-primary text-white">
+                            <i class="fas fa-users me-2"></i> People
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h2 class="mb-1">{{ people_count }}</h2>
+                                    <small class="text-success">+{{ recent_people }} this week</small>
                                 </div>
+                                <a href="{% url 'contacts:person_list' %}" class="btn btn-sm btn-primary">View All</a>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <div class="card h-100 border-left-success">
-                            <div class="card-header bg-success text-white">
-                                <i class="fas fa-church me-2"></i> Churches
-                            </div>
-                            <div class="card-body">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <h2 class="mb-1">{{ churches_count }}</h2>
-                                        <small class="text-success">+{{ recent_churches }} this week</small>
-                                    </div>
-                                    <a href="{% url 'churches:church_list' %}" class="btn btn-sm btn-success">View All</a>
+                    <div class="card border-left-success">
+                        <div class="card-header bg-success text-white">
+                            <i class="fas fa-church me-2"></i> Churches
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h2 class="mb-1">{{ churches_count }}</h2>
+                                    <small class="text-success">+{{ recent_churches }} this week</small>
                                 </div>
+                                <a href="{% url 'churches:church_list' %}" class="btn btn-sm btn-success">View All</a>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <div class="card h-100 border-left-warning">
-                            <div class="card-header bg-warning text-dark">
-                                <i class="fas fa-tasks me-2"></i> My Tasks
-                            </div>
-                            <div class="card-body">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <h2 class="mb-1">{{ pending_tasks|length }}</h2>
-                                        <small class="text-warning">{{ upcoming_tasks }} due this week</small>
-                                    </div>
-                                    <a href="{% url 'tasks:task_list' %}" class="btn btn-sm btn-warning">View All</a>
+                    <div class="card border-left-warning">
+                        <div class="card-header bg-warning text-dark">
+                            <i class="fas fa-tasks me-2"></i> My Tasks
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h2 class="mb-1">{{ pending_tasks|length }}</h2>
+                                    <small class="text-warning">{{ upcoming_tasks }} due this week</small>
                                 </div>
+                                <a href="{% url 'tasks:task_list' %}" class="btn btn-sm btn-warning">View All</a>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <div class="card h-100 border-left-danger">
-                            <div class="card-header bg-danger text-white">
-                                <i class="fas fa-exclamation-triangle me-2"></i> Overdue
-                            </div>
-                            <div class="card-body">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <h2 class="mb-1">{{ overdue_tasks }}</h2>
-                                        <small class="text-danger">Tasks past due</small>
-                                    </div>
-                                    <a href="{% url 'tasks:task_list' %}?due=overdue" class="btn btn-sm btn-danger">View All</a>
+                    <div class="card border-left-danger">
+                        <div class="card-header bg-danger text-white">
+                            <i class="fas fa-exclamation-triangle me-2"></i> Overdue
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h2 class="mb-1">{{ overdue_tasks }}</h2>
+                                    <small class="text-danger">Tasks past due</small>
                                 </div>
+                                <a href="{% url 'tasks:task_list' %}?due=overdue" class="btn btn-sm btn-danger">View All</a>
                             </div>
                         </div>
                     </div>

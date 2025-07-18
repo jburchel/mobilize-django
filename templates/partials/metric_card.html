@@ -10,9 +10,10 @@ Parameters:
 - color: Bootstrap color class (primary, success, warning, danger, info)
 - href: Link URL (optional)
 - button_text: Button text (default: "View All")
+- wrapper_class: Optional wrapper class (default: "col-lg-3 col-md-6 mb-4")
 {% endcomment %}
 
-<div class="col-lg-3 col-md-6 mb-4">
+<div class="{{ wrapper_class|default:'col-lg-3 col-md-6 mb-4' }}">
     <div class="card h-100 border-left-{{ color|default:'primary' }} card-metric">
         <div class="card-header bg-{{ color|default:'primary' }} text-white">
             <i class="{{ icon|default:'fas fa-chart-bar' }} me-2"></i> {{ title }}
