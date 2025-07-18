@@ -314,7 +314,7 @@
                         </div>
                         
                         <!-- Desktop: horizontal layout all on one line -->
-                        <div class="d-none d-md-flex align-items-center gap-3">
+                        <div class="d-flex d-md-flex align-items-center gap-3 flex-wrap">
                             <div class="btn-group" role="group" aria-label="View mode toggle">
                                 <a href="?view_mode=default" 
                                    class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
@@ -350,15 +350,17 @@
                             </a>
                         </div>
                         <!-- Desktop: horizontal buttons -->
-                        <div class="btn-group d-none d-md-flex" role="group" aria-label="View mode toggle">
-                            <a href="?view_mode=default" 
-                               class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                                <i class="fas fa-building me-1"></i> My Office
-                            </a>
-                            <a href="?view_mode=my_only" 
-                               class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                                <i class="fas fa-user me-1"></i> My Contacts Only
-                            </a>
+                        <div class="d-flex d-md-flex align-items-center gap-3">
+                            <div class="btn-group" role="group" aria-label="View mode toggle">
+                                <a href="?view_mode=default" 
+                                   class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                    <i class="fas fa-building me-1"></i> My Office
+                                </a>
+                                <a href="?view_mode=my_only" 
+                                   class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                    <i class="fas fa-user me-1"></i> My Contacts Only
+                                </a>
+                            </div>
                         </div>
                         {% endif %}
                     </div>
@@ -372,9 +374,18 @@
 
 <!-- Dynamic Dashboard Widgets -->
 {% for widget_row in widget_rows %}
+{% if widget_row|length > 1 %}
+<!-- Multi-widget row for desktop layout -->
 <div class="row mb-4">
+{% endif %}
     {% for widget in widget_row %}
+        {% if widget_row|length == 1 %}
+        <!-- Single widget row -->
         <div class="{% if widget.size == 'full' %}col-12{% elif widget.size == 'two_thirds' %}col-lg-8{% elif widget.size == 'half' %}col-lg-6{% elif widget.size == 'one_third' %}col-lg-4{% elif widget.size == 'quarter' %}col-lg-3{% else %}col-12{% endif %} mb-4">
+        {% else %}
+        <!-- Multi-widget row with thirds layout for desktop -->
+        <div class="col-lg-4 mb-4">
+        {% endif %}
             {% if widget.id == 'metrics_summary' %}
                 <!-- Metrics Summary Widget (4 cards) -->
                 <div class="dashboard-metrics-grid">
@@ -653,9 +664,15 @@
                     </div>
                 </div>
             {% endif %}
+        {% if widget_row|length == 1 %}
         </div>
+        {% else %}
+        </div>
+        {% endif %}
     {% endfor %}
+{% if widget_row|length > 1 %}
 </div>
+{% endif %}
 {% endfor %}
 
 {% endblock %}

@@ -3,44 +3,20 @@
 
 {% block title %}Settings - Mobilize CRM{% endblock %}
 
-{% block page_title %}Settings{% endblock %}
-
-{% block page_actions %}
-<div class="d-flex gap-2">
-    <a href="{% url 'core:dashboard' %}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> Back to Dashboard
-    </a>
-</div>
+{% block page_title %}
+    Settings
+    <button type="button" class="btn btn-primary btn-sm" id="manual-sync-header-btn">
+        <i class="fas fa-sync-alt"></i> Manual Sync
+    </button>
 {% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-lg-3">
-        <!-- Settings Navigation -->
+        <!-- Settings Status Card -->
         <div class="card">
             <div class="card-header">
-                <h6 class="mb-0">Settings Categories</h6>
-            </div>
-            <div class="list-group list-group-flush">
-                <a href="#profile-settings" class="list-group-item list-group-item-action" data-bs-toggle="tab">
-                    <i class="fas fa-user"></i> Profile
-                </a>
-                <a href="#sync-settings" class="list-group-item list-group-item-action active" data-bs-toggle="tab">
-                    <i class="fas fa-sync-alt"></i> Contact Sync
-                </a>
-                <a href="#gmail-settings" class="list-group-item list-group-item-action" data-bs-toggle="tab">
-                    <i class="fab fa-google"></i> Gmail Integration
-                </a>
-                <a href="#notification-settings" class="list-group-item list-group-item-action" data-bs-toggle="tab">
-                    <i class="fas fa-bell"></i> Notifications
-                </a>
-            </div>
-        </div>
-        
-        <!-- Sync Status Card -->
-        <div class="card mt-3">
-            <div class="card-header">
-                <h6 class="mb-0">Sync Status</h6>
+                <h6 class="mb-0">Settings Status</h6>
             </div>
             <div class="card-body">
                 <div class="d-flex align-items-center mb-2">
@@ -84,140 +60,17 @@
     </div>
     
     <div class="col-lg-9">
-        <div class="tab-content">
-            <!-- Profile Settings Tab -->
-            <div class="tab-pane fade" id="profile-settings">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Profile Settings</h5>
-                    </div>
-                    <div class="card-body">
-                        <form method="post">
-                            {% csrf_token %}
-                            <input type="hidden" name="profile_settings" value="1">
-                            {% crispy profile_form %}
-                        </form>
-                    </div>
-                </div>
+        <!-- Contact Sync Settings -->
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Contact Synchronization Settings</h5>
             </div>
-            
-            <!-- Contact Sync Settings Tab -->
-            <div class="tab-pane fade show active" id="sync-settings">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Contact Synchronization Settings</h5>
-                    </div>
-                    <div class="card-body">
-                        
-                        <form method="post" id="sync-settings-form">
-                            {% csrf_token %}
-                            <input type="hidden" name="sync_settings" value="1">
-                            {% crispy sync_form %}
-                        </form>
-                        
-                        {% if gmail_connected and sync_settings.sync_preference != 'disabled' %}
-                        <hr>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6>Manual Sync</h6>
-                                <p class="text-muted mb-0">Sync your contacts now</p>
-                            </div>
-                            <button type="button" class="btn btn-outline-primary" id="manual-sync-btn">
-                                <i class="fas fa-sync-alt"></i> Sync Now
-                            </button>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Gmail Integration Tab -->
-            <div class="tab-pane fade" id="gmail-settings">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Gmail Integration</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6>Connection Status</h6>
-                                {% if gmail_connected %}
-                                <div class="alert alert-success">
-                                    <i class="fas fa-check-circle"></i> 
-                                    Gmail is connected and ready to use.
-                                </div>
-                                
-                                <h6>Permissions</h6>
-                                <ul class="list-unstyled">
-                                    <li><i class="fas fa-check text-success"></i> Send emails</li>
-                                    <li><i class="fas fa-check text-success"></i> Read emails</li>
-                                    <li><i class="fas fa-check text-success"></i> Access contacts</li>
-                                </ul>
-                                
-                                <div class="mt-3">
-                                    <form method="post" action="{% url 'communications:gmail_disconnect' %}" style="display: inline;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-danger" 
-                                                onclick="return confirm('Are you sure you want to disconnect Gmail? This will disable email sending and contact sync.')">
-                                            <i class="fas fa-unlink"></i> Disconnect Gmail
-                                        </button>
-                                    </form>
-                                </div>
-                                
-                                {% else %}
-                                <div class="alert alert-warning">
-                                    <i class="fas fa-exclamation-triangle"></i> 
-                                    Gmail is not connected.
-                                </div>
-                                
-                                <p>Connect your Gmail account to:</p>
-                                <ul>
-                                    <li>Send emails through your Gmail account</li>
-                                    <li>Synchronize contacts with Google Contacts</li>
-                                    <li>Track email communications in the CRM</li>
-                                </ul>
-                                
-                                <a href="{% url 'communications:gmail_auth' %}" class="btn btn-primary">
-                                    <i class="fab fa-google"></i> Connect Gmail
-                                </a>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Notifications Tab -->
-            <div class="tab-pane fade" id="notification-settings">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Notification Settings</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted">Notification preferences will be available in a future update.</p>
-                        
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="" id="emailNotifications" checked disabled>
-                            <label class="form-check-label" for="emailNotifications">
-                                Email notifications for new tasks
-                            </label>
-                        </div>
-                        
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="" id="reminderNotifications" checked disabled>
-                            <label class="form-check-label" for="reminderNotifications">
-                                Task reminder notifications
-                            </label>
-                        </div>
-                        
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="" id="syncNotifications" disabled>
-                            <label class="form-check-label" for="syncNotifications">
-                                Contact sync notifications
-                            </label>
-                        </div>
-                    </div>
-                </div>
+            <div class="card-body">
+                <form method="post" id="sync-settings-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="sync_settings" value="1">
+                    {% crispy sync_form %}
+                </form>
             </div>
         </div>
     </div>
@@ -245,10 +98,10 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleFrequencyField(); // Initial state
     }
     
-    // Handle manual sync
-    const manualSyncBtn = document.getElementById('manual-sync-btn');
-    if (manualSyncBtn) {
-        manualSyncBtn.addEventListener('click', function() {
+    // Handle manual sync from header button
+    const manualSyncHeaderBtn = document.getElementById('manual-sync-header-btn');
+    
+    function handleManualSync() {
             this.disabled = true;
             this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
             
@@ -277,25 +130,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.disabled = false;
                 this.innerHTML = '<i class="fas fa-sync-alt"></i> Sync Now';
             });
-        });
     }
     
-    // Tab navigation persistence
-    const activeTab = localStorage.getItem('activeSettingsTab');
-    if (activeTab) {
-        const tabTrigger = document.querySelector(`[data-bs-toggle="tab"][href="${activeTab}"]`);
-        if (tabTrigger) {
-            const tab = new bootstrap.Tab(tabTrigger);
-            tab.show();
-        }
+    if (manualSyncHeaderBtn) {
+        manualSyncHeaderBtn.addEventListener('click', handleManualSync);
     }
-    
-    // Save active tab
-    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
-        tab.addEventListener('shown.bs.tab', function(e) {
-            localStorage.setItem('activeSettingsTab', e.target.getAttribute('href'));
-        });
-    });
 });
 </script>
 {% endblock %}

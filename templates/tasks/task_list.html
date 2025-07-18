@@ -4,29 +4,72 @@
 
 {% block title %}Task List{% endblock %}
 
+{% block page_title %}
+    Tasks
+    <a href="{% url 'tasks:task_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus"></i> Create New Task
+    </a>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div class="d-flex align-items-center">
-            <h2 class="me-3">Task List</h2>
-            <div class="form-check">
-                <input type="checkbox" id="select-all" class="form-check-input">
-                <label class="form-check-label" for="select-all">
-                    Select All
-                </label>
-            </div>
-        </div>
-        <div>
-            <a href="{% url 'tasks:task_create' %}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Create New Task
-            </a>
-            {% if request.GET %}
-            <a href="{% url 'tasks:task_list' %}" class="btn btn-outline-secondary ms-2">
-                <i class="fas fa-times"></i> Clear Filters
-            </a>
-            {% endif %}
+<!-- Select All Checkbox -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="form-check">
+            <input type="checkbox" id="select-all" class="form-check-input">
+            <label class="form-check-label" for="select-all">Select All</label>
         </div>
     </div>
+</div>
+
+<!-- View Mode Toggle -->
+{% if can_toggle_view %}
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body py-2">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-eye me-2 text-muted"></i>
+                        <span class="text-muted me-3">View Mode:</span>
+                        <span class="badge bg-primary">{{ view_mode_display }}</span>
+                    </div>
+                    <!-- Mobile: vertical buttons -->
+                    <div class="btn-group-vertical d-md-none" role="group" aria-label="View mode toggle">
+                        <a href="?view_mode=default" 
+                           class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            {% if user_role == 'super_admin' %}
+                                <i class="fas fa-globe me-1"></i> All Offices
+                            {% else %}
+                                <i class="fas fa-building me-1"></i> My Office
+                            {% endif %}
+                        </a>
+                        <a href="?view_mode=my_only" 
+                           class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-user me-1"></i> My Contacts Only
+                        </a>
+                    </div>
+                    <!-- Desktop: horizontal buttons -->
+                    <div class="btn-group d-flex" role="group" aria-label="View mode toggle">
+                        <a href="?view_mode=default" 
+                           class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            {% if user_role == 'super_admin' %}
+                                <i class="fas fa-globe me-1"></i> All Offices
+                            {% else %}
+                                <i class="fas fa-building me-1"></i> My Office
+                            {% endif %}
+                        </a>
+                        <a href="?view_mode=my_only" 
+                           class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-user me-1"></i> My Contacts Only
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
     <!-- Filter Form -->
     <div class="card mb-4">
