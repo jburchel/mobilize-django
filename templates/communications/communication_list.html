@@ -125,8 +125,71 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body py-2">
-                    <div class="d-flex align-items-center gap-3 flex-wrap">
-                        <span class="text-muted"><span id="selected-count">0</span> selected</span>
+                    <!-- Mobile: stacked layout -->
+                    <div class="d-md-none">
+                        <div class="mb-2">
+                            <span class="text-muted"><span id="selected-count">0</span> selected</span>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <form method="post" action="{% url 'communications:bulk_delete' %}" onsubmit="return confirm('Are you sure you want to delete the selected communications?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="communication_ids" id="bulk-delete-ids-mobile">
+                                    <button type="submit" class="btn btn-danger btn-sm w-100">
+                                        <i class="fas fa-trash"></i> Delete Selected
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="col-6">
+                                <form method="post" action="{% url 'communications:bulk_archive' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="communication_ids" id="bulk-archive-ids-mobile">
+                                    <input type="hidden" name="archive_action" value="archive">
+                                    <button type="submit" class="btn btn-warning btn-sm w-100">
+                                        <i class="fas fa-archive"></i> Archive
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="col-6">
+                                <form method="post" action="{% url 'communications:bulk_archive' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="communication_ids" id="bulk-unarchive-ids-mobile">
+                                    <input type="hidden" name="archive_action" value="unarchive">
+                                    <button type="submit" class="btn btn-outline-warning btn-sm w-100">
+                                        <i class="fas fa-box-open"></i> Unarchive
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="col-6">
+                                <form method="post" action="{% url 'communications:bulk_update_status' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="communication_ids" id="bulk-status-ids-mobile">
+                                    <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                        <option value="">Change Status...</option>
+                                        {% for status_value, status_label in status_choices %}
+                                        <option value="{{ status_value }}">{{ status_label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+                            </div>
+                            <div class="col-6">
+                                <form method="post" action="{% url 'communications:bulk_update_type' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="communication_ids" id="bulk-type-ids-mobile">
+                                    <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+                                        <option value="">Change Type...</option>
+                                        {% for type_value, type_label in type_choices %}
+                                        <option value="{{ type_value }}">{{ type_label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Desktop: horizontal layout all on one line -->
+                    <div class="d-none d-md-flex align-items-center gap-3 flex-wrap">
+                        <span class="text-muted"><span id="selected-count-desktop">0</span> selected</span>
                         
                         <!-- Bulk Delete -->
                         <form method="post" action="{% url 'communications:bulk_delete' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected communications?');">
@@ -202,37 +265,78 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="filter-section p-3">
-                <form method="get" class="row g-3">
-                    <div class="col-md-3">
-                        <label for="type" class="form-label">Type</label>
-                        <select class="form-select" name="type" id="type">
-                            <option value="">All Types</option>
-                            {% for type_value, type_label in type_choices %}
-                            <option value="{{ type_value }}" {% if request.GET.type == type_value %}selected{% endif %}>{{ type_label }}</option>
-                            {% endfor %}
-                        </select>
+                <form method="get">
+                    <!-- Mobile: stacked layout -->
+                    <div class="d-md-none">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="search" class="form-label">Search</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="search" id="search" 
+                                        placeholder="Search subject, sender, person, church..." value="{{ request.GET.search }}">
+                                    <button class="btn btn-outline-secondary" type="submit">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label for="type" class="form-label">Type</label>
+                                <select class="form-select" name="type" id="type">
+                                    <option value="">All Types</option>
+                                    {% for type_value, type_label in type_choices %}
+                                    <option value="{{ type_value }}" {% if request.GET.type == type_value %}selected{% endif %}>{{ type_label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label for="direction" class="form-label">Direction</label>
+                                <select class="form-select" name="direction" id="direction">
+                                    <option value="">All Directions</option>
+                                    {% for direction_value, direction_label in direction_choices %}
+                                    <option value="{{ direction_value }}" {% if request.GET.direction == direction_value %}selected{% endif %}>{{ direction_label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label for="date_from" class="form-label">From Date</label>
+                                <input type="date" class="form-control" name="date_from" id="date_from" value="{{ request.GET.date_from }}">
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-3">
-                        <label for="direction" class="form-label">Direction</label>
-                        <select class="form-select" name="direction" id="direction">
-                            <option value="">All Directions</option>
-                            {% for direction_value, direction_label in direction_choices %}
-                            <option value="{{ direction_value }}" {% if request.GET.direction == direction_value %}selected{% endif %}>{{ direction_label }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="date_from" class="form-label">From Date</label>
-                        <input type="date" class="form-control" name="date_from" id="date_from" value="{{ request.GET.date_from }}">
-                    </div>
-                    <div class="col-md-3">
-                        <label for="search" class="form-label">Search</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" name="search" id="search" 
-                                placeholder="Search subject, sender, person, church..." value="{{ request.GET.search }}">
-                            <button class="btn btn-outline-secondary" type="submit">
-                                <i class="fas fa-search"></i>
-                            </button>
+                    
+                    <!-- Desktop: horizontal layout all on one line -->
+                    <div class="d-none d-md-flex align-items-end gap-3">
+                        <div>
+                            <label for="search-desktop" class="form-label">Search</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="search" id="search-desktop" 
+                                    placeholder="Search subject, sender, person, church..." value="{{ request.GET.search }}" style="min-width: 200px;">
+                                <button class="btn btn-outline-secondary" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="type-desktop" class="form-label">Type</label>
+                            <select class="form-select" name="type" id="type-desktop">
+                                <option value="">All Types</option>
+                                {% for type_value, type_label in type_choices %}
+                                <option value="{{ type_value }}" {% if request.GET.type == type_value %}selected{% endif %}>{{ type_label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="direction-desktop" class="form-label">Direction</label>
+                            <select class="form-select" name="direction" id="direction-desktop">
+                                <option value="">All Directions</option>
+                                {% for direction_value, direction_label in direction_choices %}
+                                <option value="{{ direction_value }}" {% if request.GET.direction == direction_value %}selected{% endif %}>{{ direction_label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="date_from-desktop" class="form-label">From Date</label>
+                            <input type="date" class="form-control" name="date_from" id="date_from-desktop" value="{{ request.GET.date_from }}">
                         </div>
                     </div>
                 </form>

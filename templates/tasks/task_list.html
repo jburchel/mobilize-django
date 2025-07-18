@@ -31,47 +31,97 @@
     <!-- Filter Form -->
     <div class="card mb-4">
         <div class="card-body">
-            <form method="get" class="row g-3" id="filter-form">
-                <div class="col-md-3">
-                    <label for="status" class="form-label">Status</label>
-                    <select class="form-select" name="status" id="status">
-                        <option value="">All Statuses</option>
-                        <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
-                        <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>In Progress</option>
-                        <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
-                    </select>
+            <form method="get" id="filter-form">
+                <!-- Mobile: stacked layout -->
+                <div class="d-md-none">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" name="search" id="search" 
+                                placeholder="Search tasks, people, churches..." value="{{ search_query }}" autocomplete="off">
+                        </div>
+                        <div class="col-6">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" name="status" id="status">
+                                <option value="">All Statuses</option>
+                                <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="priority" class="form-label">Priority</label>
+                            <select class="form-select" name="priority" id="priority">
+                                <option value="">All Priorities</option>
+                                <option value="high" {% if current_priority == 'high' %}selected{% endif %}>High</option>
+                                <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
+                                <option value="low" {% if current_priority == 'low' %}selected{% endif %}>Low</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="assigned_to" class="form-label">Assigned To</label>
+                            <select class="form-select" name="assigned_to" id="assigned_to">
+                                <option value="">All Tasks</option>
+                                <option value="me" {% if current_assigned == 'me' %}selected{% endif %}>My Tasks</option>
+                                <option value="unassigned" {% if current_assigned == 'unassigned' %}selected{% endif %}>Unassigned</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="due" class="form-label">Due Date</label>
+                            <select class="form-select" name="due" id="due">
+                                <option value="">All Dates</option>
+                                <option value="overdue" {% if current_due == 'overdue' %}selected{% endif %}>Overdue</option>
+                                <option value="today" {% if current_due == 'today' %}selected{% endif %}>Today</option>
+                                <option value="week" {% if current_due == 'week' %}selected{% endif %}>This Week</option>
+                                <option value="month" {% if current_due == 'month' %}selected{% endif %}>This Month</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-2">
-                    <label for="priority" class="form-label">Priority</label>
-                    <select class="form-select" name="priority" id="priority">
-                        <option value="">All Priorities</option>
-                        <option value="high" {% if current_priority == 'high' %}selected{% endif %}>High</option>
-                        <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
-                        <option value="low" {% if current_priority == 'low' %}selected{% endif %}>Low</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label for="assigned_to" class="form-label">Assigned To</label>
-                    <select class="form-select" name="assigned_to" id="assigned_to">
-                        <option value="">All Tasks</option>
-                        <option value="me" {% if current_assigned == 'me' %}selected{% endif %}>My Tasks</option>
-                        <option value="unassigned" {% if current_assigned == 'unassigned' %}selected{% endif %}>Unassigned</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label for="due" class="form-label">Due Date</label>
-                    <select class="form-select" name="due" id="due">
-                        <option value="">All Dates</option>
-                        <option value="overdue" {% if current_due == 'overdue' %}selected{% endif %}>Overdue</option>
-                        <option value="today" {% if current_due == 'today' %}selected{% endif %}>Today</option>
-                        <option value="week" {% if current_due == 'week' %}selected{% endif %}>This Week</option>
-                        <option value="month" {% if current_due == 'month' %}selected{% endif %}>This Month</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="search" class="form-label">Search</label>
-                    <input type="text" class="form-control" name="search" id="search" 
-                        placeholder="Search tasks, people, churches..." value="{{ search_query }}" autocomplete="off">
+                
+                <!-- Desktop: horizontal layout all on one line -->
+                <div class="d-none d-md-flex align-items-end gap-3">
+                    <div>
+                        <label for="search-desktop" class="form-label">Search</label>
+                        <input type="text" class="form-control" name="search" id="search-desktop" 
+                            placeholder="Search tasks, people, churches..." value="{{ search_query }}" autocomplete="off" style="min-width: 200px;">
+                    </div>
+                    <div>
+                        <label for="status-desktop" class="form-label">Status</label>
+                        <select class="form-select" name="status" id="status-desktop">
+                            <option value="">All Statuses</option>
+                            <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                            <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="priority-desktop" class="form-label">Priority</label>
+                        <select class="form-select" name="priority" id="priority-desktop">
+                            <option value="">All Priorities</option>
+                            <option value="high" {% if current_priority == 'high' %}selected{% endif %}>High</option>
+                            <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
+                            <option value="low" {% if current_priority == 'low' %}selected{% endif %}>Low</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="assigned_to-desktop" class="form-label">Assigned To</label>
+                        <select class="form-select" name="assigned_to" id="assigned_to-desktop">
+                            <option value="">All Tasks</option>
+                            <option value="me" {% if current_assigned == 'me' %}selected{% endif %}>My Tasks</option>
+                            <option value="unassigned" {% if current_assigned == 'unassigned' %}selected{% endif %}>Unassigned</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="due-desktop" class="form-label">Due Date</label>
+                        <select class="form-select" name="due" id="due-desktop">
+                            <option value="">All Dates</option>
+                            <option value="overdue" {% if current_due == 'overdue' %}selected{% endif %}>Overdue</option>
+                            <option value="today" {% if current_due == 'today' %}selected{% endif %}>Today</option>
+                            <option value="week" {% if current_due == 'week' %}selected{% endif %}>This Week</option>
+                            <option value="month" {% if current_due == 'month' %}selected{% endif %}>This Month</option>
+                        </select>
+                    </div>
                 </div>
             </form>
         </div>
@@ -80,8 +130,72 @@
     <!-- Bulk Operations Bar -->
     <div class="card mb-3" id="bulk-operations" style="display: none;">
         <div class="card-body py-2">
-            <div class="d-flex align-items-center gap-3 flex-wrap">
-                <span class="text-muted"><span id="selected-count">0</span> selected</span>
+            <!-- Mobile: stacked layout -->
+            <div class="d-md-none">
+                <div class="mb-2">
+                    <span class="text-muted"><span id="selected-count">0</span> selected</span>
+                </div>
+                <div class="row g-2">
+                    <div class="col-12">
+                        <form method="post" action="{% url 'tasks:bulk_delete' %}" onsubmit="return confirm('Are you sure you want to delete the selected tasks?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="task_ids" id="bulk-delete-ids-mobile">
+                            <button type="submit" class="btn btn-danger btn-sm w-100">
+                                <i class="fas fa-trash"></i> Delete Selected
+                            </button>
+                        </form>
+                    </div>
+                    <div class="col-6">
+                        <form method="post" action="{% url 'tasks:bulk_update_status' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="task_ids" id="bulk-status-ids-mobile">
+                            <select name="status" class="form-select form-select-sm">
+                                <option value="">Change Status...</option>
+                                <option value="pending">Pending</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </form>
+                    </div>
+                    <div class="col-6">
+                        <form method="post" action="{% url 'tasks:bulk_update_priority' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="task_ids" id="bulk-priority-ids-mobile">
+                            <select name="priority" class="form-select form-select-sm">
+                                <option value="">Change Priority...</option>
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </form>
+                    </div>
+                    <div class="col-6">
+                        <form method="post" action="{% url 'tasks:bulk_assign_user' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="task_ids" id="bulk-user-ids-mobile">
+                            <select name="user_id" class="form-select form-select-sm">
+                                <option value="">Assign to User...</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                    </div>
+                    <div class="col-6">
+                        <form method="post" action="{% url 'tasks:bulk_complete' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="task_ids" id="bulk-complete-ids-mobile">
+                            <button type="submit" class="btn btn-success btn-sm w-100">
+                                <i class="fas fa-check"></i> Complete Selected
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Desktop: horizontal layout all on one line -->
+            <div class="d-none d-md-flex align-items-center gap-3 flex-wrap">
+                <span class="text-muted"><span id="selected-count-desktop">0</span> selected</span>
                 
                 <!-- Bulk Delete -->
                 <form method="post" action="{% url 'tasks:bulk_delete' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected tasks?');">
@@ -259,11 +373,22 @@
 document.addEventListener('DOMContentLoaded', function() {
     const filterForm = document.getElementById('filter-form');
     const searchInput = document.getElementById('search');
+    const searchInputDesktop = document.getElementById('search-desktop');
     let searchTimer;
     
-    // Add dynamic search
+    // Add dynamic search for mobile
     if (searchInput) {
         searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(function() {
+                filterForm.submit();
+            }, 300); // 300ms delay
+        });
+    }
+    
+    // Add dynamic search for desktop
+    if (searchInputDesktop) {
+        searchInputDesktop.addEventListener('input', function() {
             clearTimeout(searchTimer);
             searchTimer = setTimeout(function() {
                 filterForm.submit();
@@ -384,14 +509,42 @@ document.addEventListener('DOMContentLoaded', function() {
             bulkOperationsBar.style.display = 'block';
             selectedCountSpan.textContent = count;
             
+            // Update desktop count
+            const desktopCount = document.getElementById('selected-count-desktop');
+            if (desktopCount) {
+                desktopCount.textContent = count;
+            }
+            
             // Update all hidden task_ids inputs
             const taskIds = Array.from(checkedBoxes).map(cb => cb.value).join(',');
-            document.getElementById('bulk-delete-ids').value = taskIds;
-            document.getElementById('bulk-status-ids').value = taskIds;
-            document.getElementById('bulk-priority-ids').value = taskIds;
-            document.getElementById('bulk-user-ids').value = taskIds;
-            document.getElementById('bulk-office-ids').value = taskIds;
-            document.getElementById('bulk-complete-ids').value = taskIds;
+            
+            // Desktop inputs
+            const deleteIds = document.getElementById('bulk-delete-ids');
+            const statusIds = document.getElementById('bulk-status-ids');
+            const priorityIds = document.getElementById('bulk-priority-ids');
+            const userIds = document.getElementById('bulk-user-ids');
+            const officeIds = document.getElementById('bulk-office-ids');
+            const completeIds = document.getElementById('bulk-complete-ids');
+            
+            if (deleteIds) deleteIds.value = taskIds;
+            if (statusIds) statusIds.value = taskIds;
+            if (priorityIds) priorityIds.value = taskIds;
+            if (userIds) userIds.value = taskIds;
+            if (officeIds) officeIds.value = taskIds;
+            if (completeIds) completeIds.value = taskIds;
+            
+            // Mobile inputs
+            const deleteIdsMobile = document.getElementById('bulk-delete-ids-mobile');
+            const statusIdsMobile = document.getElementById('bulk-status-ids-mobile');
+            const priorityIdsMobile = document.getElementById('bulk-priority-ids-mobile');
+            const userIdsMobile = document.getElementById('bulk-user-ids-mobile');
+            const completeIdsMobile = document.getElementById('bulk-complete-ids-mobile');
+            
+            if (deleteIdsMobile) deleteIdsMobile.value = taskIds;
+            if (statusIdsMobile) statusIdsMobile.value = taskIds;
+            if (priorityIdsMobile) priorityIdsMobile.value = taskIds;
+            if (userIdsMobile) userIdsMobile.value = taskIds;
+            if (completeIdsMobile) completeIdsMobile.value = taskIds;
         } else {
             bulkOperationsBar.style.display = 'none';
         }
