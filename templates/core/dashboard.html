@@ -237,7 +237,19 @@
                     </div>
                     {% if user_role == 'super_admin' %}
                     <div class="d-flex align-items-center gap-2">
-                        <div class="btn-group" role="group" aria-label="View mode toggle">
+                        <!-- Mobile: vertical buttons -->
+                        <div class="btn-group-vertical d-md-none" role="group" aria-label="View mode toggle">
+                            <a href="?view_mode=default" 
+                               class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                <i class="fas fa-globe me-1"></i> All Offices
+                            </a>
+                            <a href="?view_mode=my_only" 
+                               class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                <i class="fas fa-user me-1"></i> My Contacts Only
+                            </a>
+                        </div>
+                        <!-- Desktop: horizontal buttons -->
+                        <div class="btn-group d-none d-md-flex" role="group" aria-label="View mode toggle">
                             <a href="?view_mode=default" 
                                class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                                 <i class="fas fa-globe me-1"></i> All Offices
@@ -260,7 +272,19 @@
                         </div>
                     </div>
                     {% else %}
-                    <div class="btn-group" role="group" aria-label="View mode toggle">
+                    <!-- Mobile: vertical buttons -->
+                    <div class="btn-group-vertical d-md-none" role="group" aria-label="View mode toggle">
+                        <a href="?view_mode=default" 
+                           class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-building me-1"></i> My Office
+                        </a>
+                        <a href="?view_mode=my_only" 
+                           class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-user me-1"></i> My Contacts Only
+                        </a>
+                    </div>
+                    <!-- Desktop: horizontal buttons -->
+                    <div class="btn-group d-none d-md-flex" role="group" aria-label="View mode toggle">
                         <a href="?view_mode=default" 
                            class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                             <i class="fas fa-building me-1"></i> My Office
