@@ -1515,15 +1515,67 @@ function sendViaNativeApp() {
     };
     localStorage.setItem('pendingSMSMessage', JSON.stringify(smsInfo));
     
-    // Create SMS URL with pre-filled message
-    const smsUrl = `sms:${phoneNumber}${message ? `?body=${encodeURIComponent(message)}` : ''}`;
+    // Create SMS URL with pre-filled message - improved cross-platform compatibility
+    let smsUrl;
+    
+    // Clean the phone number (remove any non-digit characters except +)
+    const cleanPhoneNumber = phoneNumber.replace(/[^\d+]/g, '');
+    
+    if (message && message.trim()) {
+        // Encode the message for URL
+        const encodedMessage = encodeURIComponent(message.trim());
+        
+        // Different URL formats for different platforms
+        const userAgent = navigator.userAgent.toLowerCase();
+        
+        if (userAgent.includes('android')) {
+            // Android format: sms:number?body=message
+            smsUrl = `sms:${cleanPhoneNumber}?body=${encodedMessage}`;
+        } else if (userAgent.includes('iphone') || userAgent.includes('ipad') || userAgent.includes('ipod')) {
+            // iOS format: sms:number?body=message (standard format)
+            // Some iOS versions may need & instead of ? - we'll try both if needed
+            smsUrl = `sms:${cleanPhoneNumber}?body=${encodedMessage}`;
+        } else {
+            // Generic/fallback format
+            smsUrl = `sms:${cleanPhoneNumber}?body=${encodedMessage}`;
+        }
+    } else {
+        // No message, just the phone number
+        smsUrl = `sms:${cleanPhoneNumber}`;
+    }
+    
+    debugPhoneIntegration('SMS URL created', { 
+        originalPhone: phoneNumber, 
+        cleanPhone: cleanPhoneNumber, 
+        message: message, 
+        smsUrl: smsUrl,
+        userAgent: navigator.userAgent
+    });
     
     // Close modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('smsCompositionModal'));
     modal.hide();
     
-    // Open native SMS app
-    window.location.href = smsUrl;
+    // Try the primary SMS URL first
+    try {
+        window.location.href = smsUrl;
+    } catch (error) {
+        // If primary format fails, try alternative format
+        debugPhoneIntegration('Primary SMS URL failed, trying alternative', { error: error.message });
+        
+        if (message && message.trim()) {
+            const encodedMessage = encodeURIComponent(message.trim());
+            // Try the opposite format as fallback
+            const alternativeUrl = smsUrl.includes('?body=') ? 
+                `sms:${cleanPhoneNumber}&body=${encodedMessage}` : 
+                `sms:${cleanPhoneNumber}?body=${encodedMessage}`;
+            
+            debugPhoneIntegration('Trying alternative SMS URL', { alternativeUrl });
+            window.location.href = alternativeUrl;
+        } else {
+            window.location.href = `sms:${cleanPhoneNumber}`;
+        }
+    }
 }
 
 // Note: Server-side SMS sending removed to keep solution free and use native phone app only
@@ -1621,7 +1673,8 @@ function debugPhoneIntegration(message, data = {}) {
     }
 }
 
-// Enable debug mode by running: window.phoneIntegrationDebug = true; in console
-window.phoneIntegrationDebug = false;
+// Enable debug mode by default for SMS troubleshooting
+// To disable, run: window.phoneIntegrationDebug = false; in console
+window.phoneIntegrationDebug = true;
 </script>
 {% endblock %}
