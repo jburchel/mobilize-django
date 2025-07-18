@@ -1460,6 +1460,9 @@ function createSMSCompositionModal() {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-info btn-sm" onclick="testSMSUrls()" title="Test different SMS URL formats">
+                        <i class="fas fa-test-tube me-1"></i> Test URLs
+                    </button>
                     <button type="button" class="btn btn-primary" onclick="sendViaNativeApp()">
                         <i class="fas fa-mobile-alt me-1"></i> Send via Phone
                     </button>
@@ -1504,6 +1507,13 @@ function sendViaNativeApp() {
     const message = document.getElementById('smsMessage').value;
     const contactId = document.getElementById('smsContactId').value;
     
+    // Enhanced debugging - always log to console
+    console.log('=== SMS DEBUGGING START ===');
+    console.log('Phone Number:', phoneNumber);
+    console.log('Message:', message);
+    console.log('Contact ID:', contactId);
+    console.log('User Agent:', navigator.userAgent);
+    
     // Store SMS info for when user returns to app
     const smsInfo = {
         contactId: contactId,
@@ -1515,67 +1525,142 @@ function sendViaNativeApp() {
     };
     localStorage.setItem('pendingSMSMessage', JSON.stringify(smsInfo));
     
-    // Create SMS URL with pre-filled message - improved cross-platform compatibility
-    let smsUrl;
-    
     // Clean the phone number (remove any non-digit characters except +)
     const cleanPhoneNumber = phoneNumber.replace(/[^\d+]/g, '');
+    console.log('Clean Phone Number:', cleanPhoneNumber);
     
-    if (message && message.trim()) {
-        // Encode the message for URL
-        const encodedMessage = encodeURIComponent(message.trim());
-        
-        // Different URL formats for different platforms
-        const userAgent = navigator.userAgent.toLowerCase();
-        
-        if (userAgent.includes('android')) {
-            // Android format: sms:number?body=message
-            smsUrl = `sms:${cleanPhoneNumber}?body=${encodedMessage}`;
-        } else if (userAgent.includes('iphone') || userAgent.includes('ipad') || userAgent.includes('ipod')) {
-            // iOS format: sms:number?body=message (standard format)
-            // Some iOS versions may need & instead of ? - we'll try both if needed
-            smsUrl = `sms:${cleanPhoneNumber}?body=${encodedMessage}`;
-        } else {
-            // Generic/fallback format
-            smsUrl = `sms:${cleanPhoneNumber}?body=${encodedMessage}`;
-        }
-    } else {
-        // No message, just the phone number
-        smsUrl = `sms:${cleanPhoneNumber}`;
+    if (!message || !message.trim()) {
+        console.log('No message provided, opening SMS with just phone number');
+        window.location.href = `sms:${cleanPhoneNumber}`;
+        return;
     }
     
-    debugPhoneIntegration('SMS URL created', { 
-        originalPhone: phoneNumber, 
-        cleanPhone: cleanPhoneNumber, 
-        message: message, 
-        smsUrl: smsUrl,
-        userAgent: navigator.userAgent
+    const trimmedMessage = message.trim();
+    console.log('Trimmed Message:', trimmedMessage);
+    
+    // Encode the message for URL
+    const encodedMessage = encodeURIComponent(trimmedMessage);
+    console.log('Encoded Message:', encodedMessage);
+    
+    // Different URL formats for different platforms
+    const userAgent = navigator.userAgent.toLowerCase();
+    
+    // Create multiple URL formats to try
+    const urlFormats = [];
+    
+    // Standard format: sms:number?body=message
+    urlFormats.push(`sms:${cleanPhoneNumber}?body=${encodedMessage}`);
+    
+    // Alternative format: sms:number&body=message (some older systems)
+    urlFormats.push(`sms:${cleanPhoneNumber}&body=${encodedMessage}`);
+    
+    // iOS specific format: sms:number;body=message (rarely used)
+    urlFormats.push(`sms:${cleanPhoneNumber};body=${encodedMessage}`);
+    
+    // Android specific format with explicit text parameter
+    urlFormats.push(`sms:${cleanPhoneNumber}?text=${encodedMessage}`);
+    
+    console.log('URL Formats to try:', urlFormats);
+    
+    // Close modal first
+    const modal = bootstrap.Modal.getInstance(document.getElementById('smsCompositionModal'));
+    if (modal) {
+        modal.hide();
+    }
+    
+    // Try each URL format with a small delay between attempts
+    let currentIndex = 0;
+    
+    function tryNextFormat() {
+        if (currentIndex >= urlFormats.length) {
+            console.log('All SMS URL formats failed, showing fallback options');
+            alert('Unable to open SMS app automatically. Please copy the message and paste it manually:\n\n' + trimmedMessage);
+            return;
+        }
+        
+        const currentUrl = urlFormats[currentIndex];
+        console.log(`Trying format ${currentIndex + 1}:`, currentUrl);
+        
+        try {
+            // Create a temporary link element to test the URL
+            const link = document.createElement('a');
+            link.href = currentUrl;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            
+            // Try to click the link
+            link.click();
+            
+            // Clean up
+            document.body.removeChild(link);
+            
+            console.log('SMS URL successfully triggered');
+            
+            // Store debug info
+            debugPhoneIntegration('SMS URL triggered successfully', { 
+                formatIndex: currentIndex + 1,
+                url: currentUrl,
+                originalPhone: phoneNumber, 
+                cleanPhone: cleanPhoneNumber, 
+                message: trimmedMessage,
+                userAgent: navigator.userAgent
+            });
+            
+        } catch (error) {
+            console.log(`Format ${currentIndex + 1} failed:`, error.message);
+            currentIndex++;
+            setTimeout(tryNextFormat, 100); // Try next format after short delay
+        }
+    }
+    
+    // Start trying formats
+    tryNextFormat();
+    
+    console.log('=== SMS DEBUGGING END ===');
+}
+
+// Test function to help debug SMS URL formats
+function testSMSUrls() {
+    const phoneNumber = document.getElementById('smsPhoneNumber').value;
+    const message = document.getElementById('smsMessage').value;
+    
+    if (!phoneNumber) {
+        alert('Please enter a phone number first');
+        return;
+    }
+    
+    if (!message || !message.trim()) {
+        alert('Please enter a message first');
+        return;
+    }
+    
+    const cleanPhoneNumber = phoneNumber.replace(/[^\d+]/g, '');
+    const encodedMessage = encodeURIComponent(message.trim());
+    
+    const urlFormats = [
+        { name: 'Standard Format', url: `sms:${cleanPhoneNumber}?body=${encodedMessage}` },
+        { name: 'Alternative Format', url: `sms:${cleanPhoneNumber}&body=${encodedMessage}` },
+        { name: 'iOS Format', url: `sms:${cleanPhoneNumber};body=${encodedMessage}` },
+        { name: 'Android Text Format', url: `sms:${cleanPhoneNumber}?text=${encodedMessage}` }
+    ];
+    
+    console.log('=== SMS URL TEST START ===');
+    console.log('Phone:', phoneNumber);
+    console.log('Clean Phone:', cleanPhoneNumber);
+    console.log('Message:', message);
+    console.log('Encoded Message:', encodedMessage);
+    
+    let testResults = 'SMS URL Test Results:\n\n';
+    
+    urlFormats.forEach((format, index) => {
+        testResults += `${index + 1}. ${format.name}:\n${format.url}\n\n`;
+        console.log(`${index + 1}. ${format.name}:`, format.url);
     });
     
-    // Close modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('smsCompositionModal'));
-    modal.hide();
+    // Show test results in alert
+    alert(testResults + 'Check the browser console for detailed logs. Try copying and pasting these URLs in your browser address bar to test them.');
     
-    // Try the primary SMS URL first
-    try {
-        window.location.href = smsUrl;
-    } catch (error) {
-        // If primary format fails, try alternative format
-        debugPhoneIntegration('Primary SMS URL failed, trying alternative', { error: error.message });
-        
-        if (message && message.trim()) {
-            const encodedMessage = encodeURIComponent(message.trim());
-            // Try the opposite format as fallback
-            const alternativeUrl = smsUrl.includes('?body=') ? 
-                `sms:${cleanPhoneNumber}&body=${encodedMessage}` : 
-                `sms:${cleanPhoneNumber}?body=${encodedMessage}`;
-            
-            debugPhoneIntegration('Trying alternative SMS URL', { alternativeUrl });
-            window.location.href = alternativeUrl;
-        } else {
-            window.location.href = `sms:${cleanPhoneNumber}`;
-        }
-    }
+    console.log('=== SMS URL TEST END ===');
 }
 
 // Note: Server-side SMS sending removed to keep solution free and use native phone app only
