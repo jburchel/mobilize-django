@@ -69,6 +69,9 @@
                     <a href="{% url 'communications:gmail_compose' %}" class="btn btn-primary me-2">
                         <i class="fas fa-paper-plane me-2"></i>Compose Email
                     </a>
+                    <a href="{% url 'communications:native_sms_log' %}" class="btn btn-info me-2">
+                        <i class="fas fa-mobile-alt me-2"></i>Log SMS
+                    </a>
                     <div class="btn-group me-2" role="group">
                         <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-plus-circle me-2"></i>Log Communication
@@ -93,6 +96,10 @@
                             <i class="fas fa-cog me-2"></i>Tools
                         </button>
                         <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'communications:native_sms_log' %}">
+                                <i class="fas fa-mobile-alt me-2"></i>SMS Logging
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'communications:email_template_list' %}">
                                 <i class="fas fa-file-alt me-2"></i>Email Templates
                             </a></li>
@@ -377,6 +384,9 @@
                 <div class="d-flex justify-content-center gap-2">
                     <a href="{% url 'communications:gmail_compose' %}" class="btn btn-primary">
                         <i class="fas fa-paper-plane me-2"></i>Compose Email
+                    </a>
+                    <a href="{% url 'communications:native_sms_log' %}" class="btn btn-info">
+                        <i class="fas fa-mobile-alt me-2"></i>Log SMS
                     </a>
                     <button class="btn btn-outline-info" onclick="syncGmail()">
                         <i class="fas fa-sync me-2"></i>Sync Gmail

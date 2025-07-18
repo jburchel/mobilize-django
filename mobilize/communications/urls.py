@@ -138,6 +138,11 @@ urlpatterns = [
     # SMS functionality
     path("sms/send/", views.send_sms_view, name="send_sms"),
     path("sms/webhook/", views.sms_webhook, name="sms_webhook"),
+    # Native SMS logging
+    path("sms/log/", views.native_sms_log_view, name="native_sms_log"),
+    path("sms/quick-log/", views.sms_quick_log_api, name="sms_quick_log_api"),
+    path("sms/contact-search/", views.sms_contact_search_api, name="sms_contact_search_api"),
+    path("sms/history/", views.sms_history_api, name="sms_history_api"),
     # API endpoints
     path("api/contacts/", views.get_contacts_json, name="get_contacts_json"),
     path("api/create-meet/", views.create_meet_link, name="create_meet_link"),

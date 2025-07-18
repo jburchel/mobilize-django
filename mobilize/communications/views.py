@@ -1873,3 +1873,207 @@ def sms_webhook(request):
     except Exception as e:
         logger.error(f"Error in sms_webhook: {e}")
         return JsonResponse({"error": "Internal server error"}, status=500)
+
+
+# Native SMS Logging Views
+@login_required
+def native_sms_log_view(request):
+    """View for manually logging SMS messages"""
+    if request.method == "POST":
+        try:
+            from .native_sms_service import native_sms_service
+            
+            # Get form data
+            phone_number = request.POST.get("phone_number", "").strip()
+            message_body = request.POST.get("message_body", "").strip()
+            direction = request.POST.get("direction", "inbound")
+            
+            if not phone_number or not message_body:
+                return JsonResponse({
+                    "success": False,
+                    "error": "Phone number and message are required"
+                }, status=400)
+            
+            # Log the SMS
+            if direction == "inbound":
+                result = native_sms_service.log_incoming_sms(
+                    from_number=phone_number,
+                    message_body=message_body,
+                    user=request.user
+                )
+            else:
+                result = native_sms_service.log_outgoing_sms(
+                    to_number=phone_number,
+                    message_body=message_body,
+                    user=request.user
+                )
+            
+            if result["success"]:
+                return JsonResponse({
+                    "success": True,
+                    "message": f"SMS logged successfully",
+                    "contact_found": result["contact_found"],
+                    "contact_name": result.get("contact_name"),
+                    "normalized_phone": result.get("normalized_phone"),
+                    "communication_id": result["communication"].id
+                })
+            else:
+                return JsonResponse({
+                    "success": False,
+                    "error": result["error"]
+                }, status=400)
+                
+        except Exception as e:
+            logger.error(f"Error in native_sms_log_view: {e}")
+            return JsonResponse({
+                "success": False,
+                "error": "An unexpected error occurred"
+            }, status=500)
+    
+    # GET request - show the form
+    return render(request, "communications/native_sms_log.html")
+
+
+@login_required
+def sms_quick_log_api(request):
+    """API endpoint for quick SMS logging from mobile"""
+    if request.method == "POST":
+        try:
+            from .native_sms_service import native_sms_service
+            import json
+            
+            # Parse JSON data
+            data = json.loads(request.body)
+            
+            phone_number = data.get("phone_number", "").strip()
+            message_body = data.get("message_body", "").strip()
+            direction = data.get("direction", "inbound")
+            
+            if not phone_number or not message_body:
+                return JsonResponse({
+                    "success": False,
+                    "error": "Phone number and message are required"
+                }, status=400)
+            
+            # Log the SMS
+            if direction == "inbound":
+                result = native_sms_service.log_incoming_sms(
+                    from_number=phone_number,
+                    message_body=message_body,
+                    user=request.user
+                )
+            else:
+                result = native_sms_service.log_outgoing_sms(
+                    to_number=phone_number,
+                    message_body=message_body,
+                    user=request.user
+                )
+            
+            return JsonResponse(result)
+            
+        except Exception as e:
+            logger.error(f"Error in sms_quick_log_api: {e}")
+            return JsonResponse({
+                "success": False,
+                "error": "An unexpected error occurred"
+            }, status=500)
+    
+    return JsonResponse({"error": "Method not allowed"}, status=405)
+
+
+@login_required
+def sms_contact_search_api(request):
+    """API endpoint for searching contacts by phone number"""
+    try:
+        from .native_sms_service import native_sms_service
+        
+        phone_number = request.GET.get("phone", "").strip()
+        
+        if not phone_number:
+            return JsonResponse({
+                "success": False,
+                "error": "Phone number is required"
+            }, status=400)
+        
+        # Normalize and search for contact
+        normalized_phone = native_sms_service.normalize_phone_number(phone_number)
+        contact = native_sms_service._find_contact_by_phone(normalized_phone)
+        
+        if contact:
+            contact_name = native_sms_service._get_contact_name(contact)
+            contact_type = "person" if hasattr(contact, 'person_details') and contact.person_details else "church"
+            
+            return JsonResponse({
+                "success": True,
+                "contact_found": True,
+                "contact_name": contact_name,
+                "contact_type": contact_type,
+                "normalized_phone": normalized_phone,
+                "contact_id": contact.id
+            })
+        else:
+            return JsonResponse({
+                "success": True,
+                "contact_found": False,
+                "normalized_phone": normalized_phone
+            })
+            
+    except Exception as e:
+        logger.error(f"Error in sms_contact_search_api: {e}")
+        return JsonResponse({
+            "success": False,
+            "error": "An unexpected error occurred"
+        }, status=500)
+
+
+@login_required
+def sms_history_api(request):
+    """API endpoint for getting SMS history with a contact"""
+    try:
+        from .native_sms_service import native_sms_service
+        
+        phone_number = request.GET.get("phone", "").strip()
+        
+        if not phone_number:
+            return JsonResponse({
+                "success": False,
+                "error": "Phone number is required"
+            }, status=400)
+        
+        # Find contact and get SMS history
+        normalized_phone = native_sms_service.normalize_phone_number(phone_number)
+        contact = native_sms_service._find_contact_by_phone(normalized_phone)
+        
+        if contact:
+            recent_sms = native_sms_service.get_recent_sms_for_contact(contact, limit=20)
+            
+            sms_history = []
+            for sms in recent_sms:
+                sms_history.append({
+                    "id": sms.id,
+                    "direction": sms.direction,
+                    "message": sms.message,
+                    "date_sent": sms.date_sent.isoformat() if sms.date_sent else None,
+                    "sender": sms.sender,
+                    "user": sms.user.get_full_name() if sms.user else None,
+                })
+            
+            return JsonResponse({
+                "success": True,
+                "contact_found": True,
+                "contact_name": native_sms_service._get_contact_name(contact),
+                "sms_history": sms_history
+            })
+        else:
+            return JsonResponse({
+                "success": True,
+                "contact_found": False,
+                "sms_history": []
+            })
+            
+    except Exception as e:
+        logger.error(f"Error in sms_history_api: {e}")
+        return JsonResponse({
+            "success": False,
+            "error": "An unexpected error occurred"
+        }, status=500)

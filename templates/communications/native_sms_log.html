@@ -1,0 +1,467 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SMS Logging - Mobilize CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-sms me-2"></i> SMS Logging</h1>
+    <div>
+        <a href="{% url 'communications:communication_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Communications
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-xl-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-mobile-alt me-2"></i>
+                    Log SMS Messages
+                </h5>
+                <p class="text-muted mb-0 mt-2">
+                    Manually log SMS messages sent or received through your phone's native messaging app.
+                    The system will automatically find matching contacts in your database.
+                </p>
+            </div>
+            <div class="card-body">
+                <form id="smsLogForm">
+                    {% csrf_token %}
+                    
+                    <!-- Direction Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Message Direction</label>
+                        <div class="btn-group w-100" role="group" aria-label="Message direction">
+                            <input type="radio" class="btn-check" name="direction" id="inbound" value="inbound" checked>
+                            <label class="btn btn-outline-primary" for="inbound">
+                                <i class="fas fa-arrow-down me-1"></i> Incoming SMS
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="direction" id="outbound" value="outbound">
+                            <label class="btn btn-outline-primary" for="outbound">
+                                <i class="fas fa-arrow-up me-1"></i> Outgoing SMS
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Phone Number Input -->
+                    <div class="mb-3">
+                        <label for="phone_number" class="form-label">Phone Number</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-phone"></i>
+                            </span>
+                            <input 
+                                type="tel" 
+                                class="form-control" 
+                                id="phone_number" 
+                                name="phone_number" 
+                                placeholder="(555) 123-4567 or +1 555 123 4567"
+                                required
+                            >
+                            <button class="btn btn-outline-secondary" type="button" id="searchContactBtn">
+                                <i class="fas fa-search"></i> Find Contact
+                            </button>
+                        </div>
+                        <div class="form-text">
+                            Enter phone number in any format. The system will automatically normalize it.
+                        </div>
+                    </div>
+                    
+                    <!-- Contact Information Display -->
+                    <div id="contactInfo" class="mb-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <i class="fas fa-user-check me-2"></i>
+                            <strong>Contact Found:</strong> <span id="contactName"></span>
+                            <br>
+                            <small class="text-muted">
+                                Phone: <span id="normalizedPhone"></span> | 
+                                Type: <span id="contactType"></span>
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div id="noContactInfo" class="mb-3" style="display: none;">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-user-slash me-2"></i>
+                            <strong>No Contact Found</strong>
+                            <br>
+                            <small class="text-muted">
+                                SMS will be logged but not linked to a contact. 
+                                Phone: <span id="normalizedPhoneNoContact"></span>
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Message Content -->
+                    <div class="mb-3">
+                        <label for="message_body" class="form-label">Message Content</label>
+                        <textarea 
+                            class="form-control" 
+                            id="message_body" 
+                            name="message_body" 
+                            rows="4" 
+                            placeholder="Type or paste the SMS message content here..."
+                            required
+                        ></textarea>
+                        <div class="form-text d-flex justify-content-between">
+                            <span>Copy and paste the message from your phone's messaging app</span>
+                            <span id="charCount">0 characters</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                            <i class="fas fa-save me-2"></i> Log SMS Message
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SMS History Modal -->
+<div class="modal fade" id="smsHistoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-history me-2"></i>
+                    SMS History with <span id="historyContactName"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="smsHistoryContent">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading SMS history...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle me-2"></i>
+                    SMS Logged Successfully
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="successMessage"></div>
+                <div class="mt-3">
+                    <button type="button" class="btn btn-primary" id="logAnotherBtn">
+                        <i class="fas fa-plus me-2"></i> Log Another SMS
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="viewHistoryBtn" style="display: none;">
+                        <i class="fas fa-history me-2"></i> View SMS History
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('smsLogForm');
+    const phoneInput = document.getElementById('phone_number');
+    const messageInput = document.getElementById('message_body');
+    const searchBtn = document.getElementById('searchContactBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const charCount = document.getElementById('charCount');
+    const contactInfo = document.getElementById('contactInfo');
+    const noContactInfo = document.getElementById('noContactInfo');
+    
+    let currentContact = null;
+    let currentNormalizedPhone = null;
+    
+    // Character count for message
+    messageInput.addEventListener('input', function() {
+        const count = this.value.length;
+        charCount.textContent = `${count} characters`;
+        if (count > 160) {
+            charCount.classList.add('text-warning');
+        } else {
+            charCount.classList.remove('text-warning');
+        }
+    });
+    
+    // Search for contact
+    searchBtn.addEventListener('click', function() {
+        const phone = phoneInput.value.trim();
+        if (!phone) {
+            alert('Please enter a phone number first');
+            return;
+        }
+        
+        searchContact(phone);
+    });
+    
+    // Auto-search when phone number changes
+    phoneInput.addEventListener('blur', function() {
+        const phone = this.value.trim();
+        if (phone) {
+            searchContact(phone);
+        }
+    });
+    
+    function searchContact(phone) {
+        // Show loading state
+        searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+        searchBtn.disabled = true;
+        
+        // Hide previous results
+        contactInfo.style.display = 'none';
+        noContactInfo.style.display = 'none';
+        
+        fetch(`/communications/sms/contact-search/?phone=${encodeURIComponent(phone)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentNormalizedPhone = data.normalized_phone;
+                    
+                    if (data.contact_found) {
+                        currentContact = {
+                            id: data.contact_id,
+                            name: data.contact_name,
+                            type: data.contact_type
+                        };
+                        
+                        // Show contact info
+                        document.getElementById('contactName').textContent = data.contact_name;
+                        document.getElementById('normalizedPhone').textContent = data.normalized_phone;
+                        document.getElementById('contactType').textContent = data.contact_type;
+                        contactInfo.style.display = 'block';
+                        
+                        // Update view history button
+                        document.getElementById('viewHistoryBtn').style.display = 'inline-block';
+                    } else {
+                        currentContact = null;
+                        document.getElementById('normalizedPhoneNoContact').textContent = data.normalized_phone;
+                        noContactInfo.style.display = 'block';
+                        
+                        // Hide view history button
+                        document.getElementById('viewHistoryBtn').style.display = 'none';
+                    }
+                } else {
+                    alert('Error searching for contact: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while searching for contact');
+            })
+            .finally(() => {
+                searchBtn.innerHTML = '<i class="fas fa-search"></i> Find Contact';
+                searchBtn.disabled = false;
+            });
+    }
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Logging SMS...';
+        submitBtn.disabled = true;
+        
+        fetch('/communications/sms/log/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccessModal(data);
+                form.reset();
+                currentContact = null;
+                currentNormalizedPhone = null;
+                contactInfo.style.display = 'none';
+                noContactInfo.style.display = 'none';
+                charCount.textContent = '0 characters';
+                charCount.classList.remove('text-warning');
+            } else {
+                alert('Error logging SMS: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while logging SMS');
+        })
+        .finally(() => {
+            submitBtn.innerHTML = '<i class="fas fa-save me-2"></i> Log SMS Message';
+            submitBtn.disabled = false;
+        });
+    });
+    
+    function showSuccessModal(data) {
+        const message = `
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>SMS logged successfully!</strong>
+            </div>
+            <p><strong>Phone:</strong> ${data.normalized_phone}</p>
+            ${data.contact_found ? `<p><strong>Contact:</strong> ${data.contact_name}</p>` : '<p><em>No contact found - SMS logged without contact link</em></p>'}
+            <p><strong>Communication ID:</strong> ${data.communication_id}</p>
+        `;
+        
+        document.getElementById('successMessage').innerHTML = message;
+        
+        // Show/hide view history button
+        if (data.contact_found) {
+            document.getElementById('viewHistoryBtn').style.display = 'inline-block';
+            document.getElementById('viewHistoryBtn').onclick = function() {
+                loadSMSHistory(data.normalized_phone, data.contact_name);
+            };
+        } else {
+            document.getElementById('viewHistoryBtn').style.display = 'none';
+        }
+        
+        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+        successModal.show();
+    }
+    
+    function loadSMSHistory(phone, contactName) {
+        document.getElementById('historyContactName').textContent = contactName;
+        
+        const historyModal = new bootstrap.Modal(document.getElementById('smsHistoryModal'));
+        historyModal.show();
+        
+        fetch(`/communications/sms/history/?phone=${encodeURIComponent(phone)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.contact_found) {
+                    displaySMSHistory(data.sms_history);
+                } else {
+                    document.getElementById('smsHistoryContent').innerHTML = '<p class="text-muted">No SMS history found for this contact.</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('smsHistoryContent').innerHTML = '<p class="text-danger">Error loading SMS history.</p>';
+            });
+    }
+    
+    function displaySMSHistory(history) {
+        if (history.length === 0) {
+            document.getElementById('smsHistoryContent').innerHTML = '<p class="text-muted">No SMS history found.</p>';
+            return;
+        }
+        
+        let html = '<div class="sms-history">';
+        
+        history.forEach(sms => {
+            const date = new Date(sms.date_sent).toLocaleDateString() + ' ' + new Date(sms.date_sent).toLocaleTimeString();
+            const direction = sms.direction === 'inbound' ? 'Incoming' : 'Outgoing';
+            const directionClass = sms.direction === 'inbound' ? 'text-success' : 'text-primary';
+            const directionIcon = sms.direction === 'inbound' ? 'fa-arrow-down' : 'fa-arrow-up';
+            
+            html += `
+                <div class="card mb-2">
+                    <div class="card-body py-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="badge bg-light text-dark ${directionClass}">
+                                    <i class="fas ${directionIcon} me-1"></i> ${direction}
+                                </span>
+                                <small class="text-muted ms-2">${date}</small>
+                                ${sms.user ? `<small class="text-muted ms-2">by ${sms.user}</small>` : ''}
+                            </div>
+                        </div>
+                        <p class="mb-1 mt-2">${sms.message}</p>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        document.getElementById('smsHistoryContent').innerHTML = html;
+    }
+    
+    // Log another SMS button
+    document.getElementById('logAnotherBtn').addEventListener('click', function() {
+        const successModal = bootstrap.Modal.getInstance(document.getElementById('successModal'));
+        successModal.hide();
+        
+        // Focus on phone number input
+        phoneInput.focus();
+    });
+    
+    // View history button in success modal
+    document.getElementById('viewHistoryBtn').addEventListener('click', function() {
+        if (currentContact && currentNormalizedPhone) {
+            loadSMSHistory(currentNormalizedPhone, currentContact.name);
+        }
+    });
+});
+</script>
+
+<style>
+.sms-history .card {
+    border-left: 4px solid #007bff;
+}
+
+.sms-history .card .badge.text-success {
+    border-left-color: #28a745;
+}
+
+.sms-history .card .badge.text-primary {
+    border-left-color: #007bff;
+}
+
+.btn-group .btn-check:checked + .btn-outline-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+#charCount.text-warning {
+    color: #ffc107 !important;
+}
+
+.alert {
+    border-radius: 0.5rem;
+}
+
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+</style>
+{% endblock %}
