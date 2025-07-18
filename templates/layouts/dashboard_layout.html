@@ -60,7 +60,17 @@ Provides consistent layout for metrics, charts, and dashboard widgets
                                 <span class="text-muted me-3">View Mode:</span>
                                 <span class="badge bg-primary">{{ view_mode_display }}</span>
                             </div>
-                            <div class="btn-group" role="group" aria-label="View mode toggle">
+                            <!-- Mobile: vertical buttons -->
+                            <div class="btn-group-vertical d-md-none" role="group" aria-label="View mode toggle">
+                                {% for mode in view_modes %}
+                                    <a href="?view_mode={{ mode.key }}" 
+                                       class="btn btn-sm {% if current_view_mode == mode.key %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                        <i class="{{ mode.icon }} me-1"></i> {{ mode.label }}
+                                    </a>
+                                {% endfor %}
+                            </div>
+                            <!-- Desktop: horizontal buttons -->
+                            <div class="btn-group d-none d-md-flex" role="group" aria-label="View mode toggle">
                                 {% for mode in view_modes %}
                                     <a href="?view_mode={{ mode.key }}" 
                                        class="btn btn-sm {% if current_view_mode == mode.key %}btn-primary{% else %}btn-outline-primary{% endif %}">

@@ -84,15 +84,12 @@ class EmailSignature(models.Model):
         # If this signature is set as default, unset any other default
         # signatures for this user
         if self.is_default:
-            EmailSignature.objects.filter(
-                user=self.user, is_default=True
-            ).exclude(pk=self.pk).update(is_default=False)
+            EmailSignature.objects.filter(user=self.user, is_default=True).exclude(
+                pk=self.pk
+            ).update(is_default=False)
 
         # If this is the user's first signature, make it default
-        if (
-            not self.pk
-            and not EmailSignature.objects.filter(user=self.user).exists()
-        ):
+        if not self.pk and not EmailSignature.objects.filter(user=self.user).exists():
             self.is_default = True
 
         super().save(*args, **kwargs)

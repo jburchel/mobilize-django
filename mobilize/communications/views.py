@@ -1773,66 +1773,72 @@ def send_sms_view(request):
     """
     Handle SMS sending requests
     """
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
-    
+    if request.method != "POST":
+        return JsonResponse(
+            {"success": False, "error": "Method not allowed"}, status=405
+        )
+
     try:
         from .sms_service import sms_service
-        
+
         # Get form data
-        to_number = request.POST.get('to_number')
-        message_body = request.POST.get('message')
-        contact_id = request.POST.get('contact_id')
-        contact_type = request.POST.get('contact_type', 'person')  # 'person' or 'church'
-        
+        to_number = request.POST.get("to_number")
+        message_body = request.POST.get("message")
+        contact_id = request.POST.get("contact_id")
+        contact_type = request.POST.get(
+            "contact_type", "person"
+        )  # 'person' or 'church'
+
         # Validate required fields
         if not to_number or not message_body:
-            return JsonResponse({
-                'success': False,
-                'error': 'Phone number and message are required'
-            }, status=400)
-        
+            return JsonResponse(
+                {"success": False, "error": "Phone number and message are required"},
+                status=400,
+            )
+
         # Get contact object
         contact = None
         if contact_id:
             try:
-                if contact_type == 'person':
+                if contact_type == "person":
                     from mobilize.contacts.models import Person
+
                     person = Person.objects.get(pk=contact_id)
                     contact = person.contact
-                elif contact_type == 'church':
+                elif contact_type == "church":
                     from mobilize.churches.models import Church
+
                     church = Church.objects.get(pk=contact_id)
                     contact = church.contact
             except (Person.DoesNotExist, Church.DoesNotExist):
                 logger.warning(f"Contact not found: {contact_type} {contact_id}")
-        
+
         # Send SMS
         result = sms_service.send_sms(
             to_number=to_number,
             message_body=message_body,
             user=request.user,
-            contact=contact
+            contact=contact,
         )
-        
-        if result['success']:
-            return JsonResponse({
-                'success': True,
-                'message': 'SMS sent successfully',
-                'message_sid': result.get('message_sid')
-            })
+
+        if result["success"]:
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": "SMS sent successfully",
+                    "message_sid": result.get("message_sid"),
+                }
+            )
         else:
-            return JsonResponse({
-                'success': False,
-                'error': result['error']
-            }, status=400)
-            
+            return JsonResponse(
+                {"success": False, "error": result["error"]}, status=400
+            )
+
     except Exception as e:
         logger.error(f"Error in send_sms_view: {e}")
-        return JsonResponse({
-            'success': False,
-            'error': 'An unexpected error occurred'
-        }, status=500)
+        return JsonResponse(
+            {"success": False, "error": "An unexpected error occurred"}, status=500
+        )
 
 
 @require_POST
@@ -1842,27 +1848,28 @@ def sms_webhook(request):
     """
     try:
         from .sms_service import sms_service
-        
+
         # Extract webhook data
-        from_number = request.POST.get('From')
-        body = request.POST.get('Body')
-        message_sid = request.POST.get('MessageSid')
-        
+        from_number = request.POST.get("From")
+        body = request.POST.get("Body")
+        message_sid = request.POST.get("MessageSid")
+
         if not all([from_number, body, message_sid]):
-            return JsonResponse({'error': 'Missing required fields'}, status=400)
-        
+            return JsonResponse({"error": "Missing required fields"}, status=400)
+
         # Process incoming SMS
         result = sms_service.handle_incoming_sms(
-            from_number=from_number,
-            body=body,
-            message_sid=message_sid
+            from_number=from_number, body=body, message_sid=message_sid
         )
-        
+
         # Return TwiML response (empty response acknowledges receipt)
         from django.http import HttpResponse
-        return HttpResponse('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', 
-                          content_type='text/xml')
-        
+
+        return HttpResponse(
+            '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+            content_type="text/xml",
+        )
+
     except Exception as e:
         logger.error(f"Error in sms_webhook: {e}")
-        return JsonResponse({'error': 'Internal server error'}, status=500)
+        return JsonResponse({"error": "Internal server error"}, status=500)
