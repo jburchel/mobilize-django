@@ -25,7 +25,7 @@ DEFAULT_WIDGETS = [
         "description": "People distribution across pipeline stages",
         "enabled": True,
         "order": 2,
-        "size": "two_thirds",
+        "size": "full",
     },
     {
         "id": "task_priorities",
