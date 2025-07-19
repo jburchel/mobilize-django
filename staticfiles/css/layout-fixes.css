@@ -273,6 +273,17 @@
         flex: 0 0 16.66667% !important;
     }
     
+    /* Collapsed sidebar overrides ALL column widths */
+    .sidebar-container.collapsed,
+    .sidebar-container.collapsed.col-md-3,
+    .sidebar-container.collapsed.col-lg-2,
+    .sidebar-container.collapsed.col-xl-2 {
+        width: 100px !important;
+        min-width: 100px !important;
+        max-width: 100px !important;
+        flex: 0 0 100px !important;
+    }
+    
     .main-content.col-md-9 {
         width: 75% !important;
         flex: 0 0 75% !important;
@@ -288,12 +299,17 @@
         flex: 0 0 83.33333% !important;
     }
     
-    /* Collapsed state adjustments */
+    /* Collapsed state adjustments for main content */
+    .sidebar-container.collapsed ~ .main-content,
+    .sidebar-container.collapsed ~ .main-content.col-md-9,
+    .sidebar-container.collapsed ~ .main-content.col-lg-10,
+    .sidebar-container.collapsed ~ .main-content.col-xl-10,
     .sidebar-container.collapsed + .main-content.col-md-11,
     .sidebar-container.collapsed + .main-content.col-lg-11,
     .sidebar-container.collapsed + .main-content.col-xl-11 {
-        width: calc(100% - 100px) !important;
+        width: calc(100% - 130px) !important; /* 100px sidebar + 30px total padding */
         flex: 1 1 auto !important;
+        max-width: calc(100% - 130px) !important;
     }
 }
 
