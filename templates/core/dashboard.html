@@ -271,8 +271,19 @@
 
 {% block content %}
 
+<!-- Debug Info - TODO: Remove this -->
+<div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc; font-family: monospace; font-size: 12px;">
+<strong>DEBUG:</strong><br>
+can_toggle_view = {{ can_toggle_view }}<br>
+user_role = {{ user_role }}<br>
+current_view_mode = {{ current_view_mode }}<br>
+view_mode_display = {{ view_mode_display }}<br>
+user.role = {{ user.role }}<br>
+</div>
+
 <!-- View Mode Toggle for Admins -->
-{% if can_toggle_view %}
+<!-- Temporarily visible for debugging - TODO: restore {% if can_toggle_view %} -->
+{% if True %}
 <div class="row mb-3">
     <div class="col-12">
         <div class="card">
