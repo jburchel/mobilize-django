@@ -24,10 +24,9 @@
 
 <!-- View Mode Toggle -->
 {% if can_toggle_view %}
-<div class="row mb-3">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body py-2">
+<div class="w-100 mb-3">
+    <div class="card">
+        <div class="card-body py-2">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                     <div class="d-flex align-items-center">
                         <i class="fas fa-eye me-2 text-muted"></i>
@@ -74,12 +73,11 @@
                 </div>
             </div>
         </div>
-    </div>
 </div>
 {% endif %}
 
     <!-- Filter Form -->
-    <div class="card mb-4">
+    <div class="card filter-card mb-4 w-100">
         <div class="card-body">
             <form method="get" id="filter-form">
                 <!-- Mobile: stacked layout -->

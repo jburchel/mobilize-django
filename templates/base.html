@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
     <link rel="stylesheet" href="{% static 'css/card-fixes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-fixes.css' %}">
     {% endcompress %}
     
     <style>
@@ -1140,13 +1141,15 @@
                     sidebar.classList.toggle('collapsed');
                     sidebarContainer.classList.toggle('collapsed');
                     
-                    // Adjust main content
+                    // Adjust main content classes properly based on current layout
                     if (sidebar.classList.contains('collapsed')) {
-                        mainContent.classList.remove('col-md-10');
-                        mainContent.classList.add('col-md-11');
+                        // When collapsed, main content should expand
+                        mainContent.classList.remove('col-lg-10', 'col-xl-10', 'col-md-9');
+                        mainContent.classList.add('col-lg-11', 'col-xl-11', 'col-md-11');
                     } else {
-                        mainContent.classList.remove('col-md-11');
-                        mainContent.classList.add('col-md-10');
+                        // When expanded, revert to original sizes
+                        mainContent.classList.remove('col-lg-11', 'col-xl-11', 'col-md-11');
+                        mainContent.classList.add('col-lg-10', 'col-xl-10', 'col-md-9');
                     }
                     
                     // Save collapse state to localStorage
@@ -1163,9 +1166,9 @@
                 sidebar.classList.add('collapsed');
                 sidebarContainer.classList.add('collapsed');
                 
-                // Adjust main content
-                mainContent.classList.remove('col-md-10');
-                mainContent.classList.add('col-md-11');
+                // Adjust main content classes for collapsed state restoration
+                mainContent.classList.remove('col-lg-10', 'col-xl-10', 'col-md-9');
+                mainContent.classList.add('col-lg-11', 'col-xl-11', 'col-md-11');
             }
             
             // Close sidebar when clicking outside on mobile

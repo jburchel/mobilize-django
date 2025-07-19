@@ -1,0 +1,541 @@
+/* 
+ * Layout Fixes for Mobilize CRM
+ * Comprehensive design improvements for full-width layouts and responsive design
+ */
+
+/* === FULL-WIDTH GRID AND LAYOUT FIXES === */
+
+/* Ensure containers use full width */
+.container-fluid {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* Row spacing and layout */
+.row {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* Main content area improvements */
+.main-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 auto !important;
+    padding: 35px 45px 20px 30px !important;
+    background: #f8f9fb;
+    transition: all 0.3s ease;
+}
+
+.content {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* === DASHBOARD GRID IMPROVEMENTS === */
+
+/* Dashboard metrics - 4-column responsive grid */
+.dashboard-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    width: 100%;
+}
+
+/* Dashboard widget rows - proper flex layout */
+.dashboard-widget-row {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    width: 100%;
+}
+
+.dashboard-widget-row .card {
+    flex: 1;
+    min-width: 0; /* Prevents flex items from overflowing */
+}
+
+/* 3-column layout for secondary widgets */
+.widget-row-secondary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    width: 100%;
+}
+
+/* Full-width widgets */
+.widget-full-width {
+    width: 100%;
+    grid-column: 1 / -1;
+}
+
+/* === LIST PAGE GRID IMPROVEMENTS === */
+
+/* Ensure list tables utilize full width */
+.table-responsive {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+}
+
+.table {
+    width: 100% !important;
+    min-width: 100% !important;
+}
+
+/* Card layout improvements for list pages */
+.list-page-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 1.5rem;
+}
+
+/* === CARD GRID SYSTEMS === */
+
+/* General purpose card grid */
+.card-grid {
+    display: grid;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+/* 2-column card grid */
+.card-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* 3-column card grid */
+.card-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* 4-column card grid */
+.card-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+/* Auto-fit responsive card grid */
+.card-grid-auto {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+/* Card improvements */
+.card {
+    width: 100%;
+    height: auto;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* === RESPONSIVE DESIGN IMPROVEMENTS === */
+
+/* Large desktop (1400px+) */
+@media (min-width: 1400px) {
+    .dashboard-metrics-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 2rem;
+    }
+    
+    .widget-row-secondary {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+    }
+    
+    .main-content {
+        padding: 40px 60px 30px 40px !important;
+    }
+}
+
+/* Desktop (992px - 1399px) */
+@media (min-width: 992px) and (max-width: 1399px) {
+    .dashboard-metrics-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+    }
+    
+    .widget-row-secondary {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+    }
+    
+    .card-grid-4 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Medium desktop/tablet (768px - 991px) */
+@media (min-width: 768px) and (max-width: 991px) {
+    .dashboard-metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.25rem;
+    }
+    
+    .widget-row-secondary {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.25rem;
+    }
+    
+    .card-grid-4,
+    .card-grid-3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .main-content {
+        padding: 25px 30px 20px 25px !important;
+    }
+}
+
+/* Mobile (up to 767px) */
+@media (max-width: 767px) {
+    .dashboard-metrics-grid,
+    .widget-row-secondary,
+    .card-grid-4,
+    .card-grid-3,
+    .card-grid-2 {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .dashboard-widget-row {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .main-content {
+        padding: 15px !important;
+    }
+    
+    .content {
+        padding: 0 !important;
+    }
+    
+    /* Mobile table improvements */
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.5rem 0.25rem;
+        white-space: nowrap;
+    }
+}
+
+/* === SIDEBAR LAYOUT FIXES === */
+
+/* Sidebar container improvements */
+.sidebar-container {
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+    padding: 15px !important;
+}
+
+/* Collapsed sidebar adjustments */
+.sidebar-container.collapsed {
+    width: 100px !important;
+    min-width: 100px !important;
+    max-width: 100px !important;
+    flex-basis: 100px !important;
+}
+
+/* Ensure proper Bootstrap column behavior */
+@media (min-width: 768px) {
+    .sidebar-container.col-md-3 {
+        width: 25% !important;
+        flex: 0 0 25% !important;
+    }
+    
+    .sidebar-container.col-lg-2 {
+        width: 16.66667% !important;
+        flex: 0 0 16.66667% !important;
+    }
+    
+    .sidebar-container.col-xl-2 {
+        width: 16.66667% !important;
+        flex: 0 0 16.66667% !important;
+    }
+    
+    .main-content.col-md-9 {
+        width: 75% !important;
+        flex: 0 0 75% !important;
+    }
+    
+    .main-content.col-lg-10 {
+        width: 83.33333% !important;
+        flex: 0 0 83.33333% !important;
+    }
+    
+    .main-content.col-xl-10 {
+        width: 83.33333% !important;
+        flex: 0 0 83.33333% !important;
+    }
+    
+    /* Collapsed state adjustments */
+    .sidebar-container.collapsed + .main-content.col-md-11,
+    .sidebar-container.collapsed + .main-content.col-lg-11,
+    .sidebar-container.collapsed + .main-content.col-xl-11 {
+        width: calc(100% - 100px) !important;
+        flex: 1 1 auto !important;
+    }
+}
+
+/* === PAGE HEADER IMPROVEMENTS === */
+
+.page-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 25px 30px;
+    background: linear-gradient(90deg, #183963 0%, #2a4f7a 50%, #39A949 100%);
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.page-header-content {
+    flex: 1;
+}
+
+.page-header-actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* === UTILITY CLASSES FOR LAYOUT === */
+
+/* Full width utilities */
+.w-100-important {
+    width: 100% !important;
+}
+
+.max-w-100-important {
+    max-width: 100% !important;
+}
+
+.flex-1 {
+    flex: 1 1 auto;
+}
+
+.flex-0 {
+    flex: 0 0 auto;
+}
+
+/* Grid gap utilities */
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 1rem; }
+.gap-4 { gap: 1.5rem; }
+.gap-5 { gap: 3rem; }
+
+/* === FORM AND FILTER IMPROVEMENTS === */
+
+/* Filter cards full width */
+.filter-card,
+.bulk-operations-card {
+    width: 100% !important;
+    margin-bottom: 1.5rem;
+}
+
+/* Form row improvements */
+.form-row-responsive {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: end;
+}
+
+.form-row-responsive > * {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* === BUTTON AND CONTROL IMPROVEMENTS === */
+
+.btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.btn-group .btn {
+    margin: 0;
+}
+
+/* === PAGINATION IMPROVEMENTS === */
+
+.pagination {
+    width: 100%;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+/* === ANIMATION AND TRANSITION IMPROVEMENTS === */
+
+.card,
+.btn,
+.form-control,
+.table {
+    transition: all 0.3s ease;
+}
+
+/* === ACCESSIBILITY IMPROVEMENTS === */
+
+/* Focus indicators */
+.card:focus-within,
+.btn:focus,
+.form-control:focus {
+    outline: 2px solid #183963;
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .card {
+        border: 2px solid #000 !important;
+        box-shadow: none !important;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* === PRINT STYLES === */
+
+@media print {
+    .sidebar-container,
+    .page-header-actions,
+    .btn,
+    .pagination {
+        display: none !important;
+    }
+    
+    .main-content {
+        width: 100% !important;
+        padding: 0 !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+    }
+}
+
+/* === SPECIFIC PAGE FIXES === */
+
+/* Church list and person list tables */
+.church-list-table,
+.person-list-table,
+.task-list-table {
+    width: 100% !important;
+}
+
+/* Dashboard pipeline charts */
+.pipeline-chart-container {
+    width: 100% !important;
+    height: 400px;
+    position: relative;
+}
+
+/* Activity timeline */
+.activity-timeline-container {
+    width: 100% !important;
+    height: 300px;
+}
+
+/* === MOBILE-SPECIFIC IMPROVEMENTS === */
+
+@media (max-width: 767px) {
+    /* Ensure mobile top navigation is properly styled */
+    .mobile-top-nav {
+        width: 100%;
+        background: linear-gradient(90deg, #183963 0%, #39A949 100%);
+    }
+    
+    /* Bottom navigation full width */
+    .bottom-nav {
+        width: 100%;
+        left: 0;
+        right: 0;
+    }
+    
+    /* Mobile cards stack properly */
+    .card {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        width: 100% !important;
+    }
+    
+    /* Mobile form improvements */
+    .form-control,
+    .form-select,
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Mobile table improvements - keep horizontal scroll for complex tables */
+    .table-responsive {
+        border: none;
+        box-shadow: none;
+        width: 100% !important;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .table {
+        font-size: 0.875rem;
+        white-space: nowrap;
+        min-width: 700px; /* Ensure minimum width for readability */
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.5rem 0.25rem;
+        vertical-align: middle;
+    }
+    
+    /* Compact action buttons on mobile */
+    .btn-group .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+    
+    /* Mobile pagination improvements */
+    .pagination {
+        font-size: 0.875rem;
+    }
+    
+    .pagination .page-link {
+        padding: 0.375rem 0.75rem;
+    }
+}

@@ -380,21 +380,19 @@
 
 <!-- Dynamic Dashboard Widgets -->
 {% for widget_row in widget_rows %}
-{% if widget_row|length > 1 %}
-<!-- Multi-widget row for desktop layout -->
-<div class="row mb-4">
-{% endif %}
+    {% if widget_row|length > 1 %}
+        <!-- Multi-widget row using new grid system -->
+        <div class="widget-row-secondary mb-4">
+    {% endif %}
+    
     {% for widget in widget_row %}
         {% if widget_row|length == 1 %}
-        <!-- Single widget row -->
-        <div class="{% if widget.size == 'full' %}col-12{% elif widget.size == 'two_thirds' %}col-lg-8{% elif widget.size == 'half' %}col-lg-6{% elif widget.size == 'one_third' %}col-lg-4{% elif widget.size == 'quarter' %}col-lg-3{% else %}col-12{% endif %} mb-4">
-        {% else %}
-        <!-- Multi-widget row with thirds layout for desktop -->
-        <div class="col-lg-4 mb-4">
+            <!-- Single widget using full width -->
+            <div class="w-100 mb-4">
         {% endif %}
             {% if widget.id == 'metrics_summary' %}
                 <!-- Metrics Summary Widget (4 cards) -->
-                <div class="dashboard-metrics-grid">
+                <div class="dashboard-metrics-grid w-100">
                     <div class="card border-left-primary">
                         <div class="card-header bg-primary text-white">
                             <i class="fas fa-users me-2"></i> People
@@ -496,7 +494,7 @@
                 </div>
             {% elif widget.id == 'pipeline_distribution' %}
                 <!-- Pipeline Distribution Widget -->
-                <div class="card h-100">
+                <div class="card h-100 w-100">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span><i class="fas fa-chart-pie me-2"></i> Pipeline Distribution</span>
                         <div class="d-flex gap-2">
@@ -525,8 +523,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <div class="row">
+                    <div class="card-body pipeline-chart-container">
+                        <div class="row w-100">
                             <!-- People Chart -->
                             <div class="col-md-6" id="peopleChartContainer">
                                 <h6 class="text-center mb-3">People Pipeline</h6>
@@ -595,17 +593,17 @@
                 </div>
             {% elif widget.id == 'activity_timeline' %}
                 <!-- Activity Timeline Widget -->
-                <div class="card">
+                <div class="card w-100 widget-full-width">
                     <div class="card-header">
                         <i class="fas fa-chart-line me-2"></i> Activity Timeline (Last 7 Days)
                     </div>
-                    <div class="card-body">
+                    <div class="card-body activity-timeline-container">
                         <canvas id="activityChart" height="100"></canvas>
                     </div>
                 </div>
             {% elif widget.id == 'pending_tasks' %}
                 <!-- Pending Tasks Widget -->
-                <div class="card">
+                <div class="card w-100 widget-full-width">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span><i class="fas fa-tasks me-2"></i> Pending Tasks</span>
                         <a href="#" class="btn btn-sm btn-primary">
@@ -614,8 +612,8 @@
                     </div>
                     <div class="card-body p-0">
                         {% if pending_tasks %}
-                            <div class="table-responsive">
-                                <table class="table table-hover">
+                            <div class="table-responsive w-100">
+                                <table class="table table-hover w-100">
                                     <thead>
                                         <tr>
                                             <th>Title</th>
@@ -671,14 +669,13 @@
                 </div>
             {% endif %}
         {% if widget_row|length == 1 %}
-        </div>
-        {% else %}
-        </div>
+            </div>
         {% endif %}
     {% endfor %}
-{% if widget_row|length > 1 %}
-</div>
-{% endif %}
+    
+    {% if widget_row|length > 1 %}
+        </div>
+    {% endif %}
 {% endfor %}
 
 {% endblock %}
