@@ -526,7 +526,7 @@
                     <div class="card-body pipeline-chart-container">
                         <div class="row w-100">
                             <!-- People Chart -->
-                            <div class="col-md-6" id="peopleChartContainer">
+                            <div class="col-lg-6 col-12" id="peopleChartContainer">
                                 <h6 class="text-center mb-3">People Pipeline</h6>
                                 <div class="row">
                                     <div class="col-8">
@@ -541,7 +541,7 @@
                             </div>
                             
                             <!-- Churches Chart -->
-                            <div class="col-md-6" id="churchesChartContainer">
+                            <div class="col-lg-6 col-12" id="churchesChartContainer">
                                 <h6 class="text-center mb-3">Churches Pipeline</h6>
                                 <div class="row">
                                     <div class="col-8">
@@ -850,8 +850,8 @@
             const noDataDiv = document.getElementById('noPipelineData');
             
             if (currentFilter === 'both') {
-                peopleContainer.className = 'col-md-6';
-                churchesContainer.className = 'col-md-6';
+                peopleContainer.className = 'col-lg-6 col-12';
+                churchesContainer.className = 'col-lg-6 col-12';
                 peopleContainer.style.display = 'block';
                 churchesContainer.style.display = 'block';
                 noDataDiv.style.display = 'none';
