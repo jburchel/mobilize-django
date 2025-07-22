@@ -3,22 +3,23 @@
 
 {% block title %}Churches{% endblock %}
 
-{% block page_title %}
-    Churches
-    <div class="btn-group" role="group">
-        <a href="{% url 'churches:church_create' %}" class="btn btn-primary btn-sm">
-            <i class="fas fa-plus"></i> Add Church
+{% block page_title %}Churches{% endblock %}
+
+{% block page_actions %}
+    <div class="d-flex gap-2">
+        <a href="{% url 'churches:church_create' %}" class="btn btn-primary btn-sm px-3">
+            <i class="fas fa-plus me-1"></i> Add Church
         </a>
-        <div class="btn-group ms-2">
-            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fas fa-file-export"></i> Export
+        <div class="btn-group">
+            <button type="button" class="btn btn-success btn-sm dropdown-toggle px-3" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-file-export me-1"></i> Export
             </button>
             <ul class="dropdown-menu">
                 <li><a class="dropdown-item" href="{% url 'churches:export_churches' %}?q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}">Export to CSV</a></li>
             </ul>
         </div>
-        <a href="{% url 'churches:import_churches' %}" class="btn btn-outline-secondary btn-sm ms-2">
-            <i class="fas fa-file-import"></i> Import
+        <a href="{% url 'churches:import_churches' %}" class="btn btn-info btn-sm px-3">
+            <i class="fas fa-file-import me-1"></i> Import
         </a>
     </div>
 {% endblock %}
@@ -124,8 +125,8 @@
 
 <!-- Filter Form -->
 <div class="w-100 mb-4">
-    <div class="card filter-card">
-        <div class="card-body">
+    <div class="card border shadow-sm">
+        <div class="card-body bg-light">
                 <form method="get">
                     <!-- Mobile: stacked layout -->
                     <div class="d-md-none">
@@ -164,27 +165,29 @@
                     </div>
                     
                     <!-- Desktop: horizontal layout all on one line -->
-                    <div class="d-none d-md-flex align-items-center gap-3">
-                        <input type="text" name="q" class="form-control" placeholder="Search churches..." value="{{ query }}" autocomplete="off" style="min-width: 200px;">
-                        <select name="pipeline_stage" class="form-select" onchange="this.form.submit()" style="width: auto;">
+                    <div class="d-none d-md-flex align-items-center gap-2 flex-nowrap">
+                        <input type="text" name="q" class="form-control" placeholder="Search churches..." value="{{ query }}" autocomplete="off" style="min-width: 250px; flex: 1;">
+                        <select name="pipeline_stage" class="form-select" onchange="this.form.submit()" style="min-width: 160px; width: auto;">
                             <option value="">All Pipeline Stages</option>
                             {% for value, label in pipeline_stages %}
                                 <option value="{{ value }}" {% if value == pipeline_stage %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
-                        <select name="priority" class="form-select" onchange="this.form.submit()" style="width: auto;">
+                        <select name="priority" class="form-select" onchange="this.form.submit()" style="min-width: 140px; width: auto;">
                             <option value="">All Priorities</option>
                             {% for value, label in priorities %}
                                 <option value="{{ value }}" {% if value == priority %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
-                        <select name="sort" class="form-select" onchange="this.form.submit()" style="width: auto;">
-                            <option value="">Sort By...</option>
+                        <select name="sort" class="form-select" onchange="this.form.submit()" style="min-width: 120px; width: auto;">
+                            <option value="">Name A-Z</option>
                             {% for value, label in sort_options %}
                                 <option value="{{ value }}" {% if value == sort_by %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
-                        <button type="submit" class="btn btn-primary">Filter</button>
+                        <button type="submit" class="btn btn-outline-primary btn-sm px-3">
+                            <i class="fas fa-search"></i> Refresh
+                        </button>
                     </div>
                 </form>
             </div>

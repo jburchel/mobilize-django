@@ -24,6 +24,7 @@
     </div>
 </div>
 <!-- View Mode Toggle for Admins -->
+<!-- DEBUG: can_toggle_view={{ can_toggle_view }}, user_role={{ user_role }} -->
 {% if can_toggle_view %}
 <div class="w-100 mb-3">
     <div class="card">
@@ -291,27 +292,29 @@
             </div>
             
             <!-- Desktop: horizontal layout all on one line -->
-            <div class="d-none d-md-flex align-items-center gap-3">
-                <input type="text" name="q" value="{{ query }}" placeholder="Search people..." class="form-control" style="min-width: 200px;">
-                <select name="priority" class="form-select" style="width: auto;">
+            <div class="d-none d-md-flex align-items-center gap-2 flex-nowrap">
+                <input type="text" name="q" value="{{ query }}" placeholder="Search people..." class="form-control" style="min-width: 250px; flex: 1;">
+                <select name="priority" class="form-select" style="min-width: 140px; width: auto;">
                     <option value="">All Priorities</option>
                     {% for priority_value, priority_label in priorities %}
                     <option value="{{ priority_value }}" {% if priority == priority_value %}selected{% endif %}>{{ priority_label }}</option>
                     {% endfor %}
                 </select>
-                <select name="pipeline_stage" class="form-select" style="width: auto;">
+                <select name="pipeline_stage" class="form-select" style="min-width: 160px; width: auto;">
                     <option value="">All Pipeline Stages</option>
                     {% for stage_value, stage_label in pipeline_stages %}
                     <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
                     {% endfor %}
                 </select>
-                <select name="sort" class="form-select" onchange="this.form.submit()" style="width: auto;">
-                    <option value="">Sort By...</option>
+                <select name="sort" class="form-select" onchange="this.form.submit()" style="min-width: 120px; width: auto;">
+                    <option value="">Name A-Z</option>
                     {% for value, label in sort_options %}
                     <option value="{{ value }}" {% if value == sort_by %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
-                <button type="submit" class="btn btn-outline-primary">Filter</button>
+                <button type="submit" class="btn btn-outline-primary btn-sm px-3">
+                    <i class="fas fa-search"></i> Refresh
+                </button>
             </div>
         </form>
 
