@@ -136,6 +136,15 @@ class TaskListView(LoginRequiredMixin, ListView):
         )
         context["offices"] = Office.objects.filter(is_active=True).order_by("name")
 
+        # Add view mode context (matching other views)
+        from mobilize.core.permissions import get_data_access_manager
+        
+        access_manager = get_data_access_manager(self.request)
+        context["can_toggle_view"] = access_manager.can_view_all_data()
+        context["current_view_mode"] = access_manager.view_mode
+        context["view_mode_display"] = access_manager.get_view_mode_display()
+        context["user_role"] = getattr(self.request.user, "role", "standard_user")
+
         return context
 
 

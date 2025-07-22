@@ -3,18 +3,19 @@
 
 {% block title %}Communications - Mobilize CRM{% endblock %}
 
-{% block page_title %}
-    Communications
-    <div class="btn-group" role="group">
-        <a href="{% url 'communications:gmail_compose' %}" class="btn btn-primary btn-sm">
-            <i class="fas fa-paper-plane me-1"></i>Compose Email
+{% block page_title %}Communications{% endblock %}
+
+{% block page_actions %}
+    <div class="d-flex gap-1 flex-wrap">
+        <a href="{% url 'communications:gmail_compose' %}" class="btn btn-primary btn-sm px-2">
+            <i class="fas fa-paper-plane"></i> Compose
         </a>
-        <a href="{% url 'communications:native_sms_log' %}" class="btn btn-info btn-sm">
-            <i class="fas fa-mobile-alt me-1"></i>Log SMS
+        <a href="{% url 'communications:native_sms_log' %}" class="btn btn-info btn-sm px-2">
+            <i class="fas fa-mobile-alt"></i> SMS
         </a>
-        <div class="btn-group" role="group">
-            <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fas fa-plus-circle me-1"></i>Log Communication
+        <div class="btn-group">
+            <button type="button" class="btn btn-success btn-sm dropdown-toggle px-2" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-plus-circle"></i> Log
             </button>
             <ul class="dropdown-menu">
                 <li><a class="dropdown-item" href="#" onclick="openLogModal('Phone Call')">
@@ -31,9 +32,9 @@
                 </a></li>
             </ul>
         </div>
-        <div class="btn-group" role="group">
-            <button type="button" class="btn btn-outline-info btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fas fa-cog me-1"></i>Tools
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle px-2" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-cog"></i> Tools
             </button>
             <ul class="dropdown-menu">
                 <li><a class="dropdown-item" href="{% url 'communications:native_sms_log' %}">
@@ -341,12 +342,11 @@
     </div>
 
     <!-- Communications List -->
-    <div class="row">
-        <div class="col-12">
-            {% if communications %}
-            <div class="row">
+    <div class="w-100">
+        {% if communications %}
+        <div class="row g-3">
                 {% for communication in communications %}
-                <div class="col-md-6 col-lg-4 mb-4">
+                <div class="col-12 col-md-6 col-lg-4">
                     <div class="card communication-card {{ communication.type }} h-100">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center">
@@ -493,8 +493,7 @@
                     </button>
                 </div>
             </div>
-            {% endif %}
-        </div>
+        {% endif %}
     </div>
 </div>
 

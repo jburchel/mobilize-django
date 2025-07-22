@@ -3,18 +3,19 @@
 
 {% block title %}Settings - Mobilize CRM{% endblock %}
 
-{% block page_title %}
-    Settings
-    <button type="button" class="btn btn-primary btn-sm" id="manual-sync-header-btn">
-        <i class="fas fa-sync-alt"></i> Manual Sync
+{% block page_title %}Settings{% endblock %}
+
+{% block page_actions %}
+    <button type="button" class="btn btn-primary btn-sm px-3" id="manual-sync-header-btn">
+        <i class="fas fa-sync-alt me-1"></i> Manual Sync
     </button>
 {% endblock %}
 
 {% block content %}
 <div class="row">
-    <div class="col-lg-3">
+    <div class="col-lg-6 mb-4">
         <!-- Settings Status Card -->
-        <div class="card">
+        <div class="card h-100">
             <div class="card-header">
                 <h6 class="mb-0">Settings Status</h6>
             </div>
@@ -59,7 +60,7 @@
         </div>
     </div>
     
-    <div class="col-lg-9">
+    <div class="col-lg-6 mb-4">
         <!-- Contact Sync Settings -->
         <div class="card h-100">
             <div class="card-header">
