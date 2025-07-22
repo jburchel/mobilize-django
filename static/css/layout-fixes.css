@@ -371,6 +371,59 @@
 .bulk-operations-card {
     width: 100% !important;
     margin-bottom: 1.5rem;
+    min-height: auto !important;
+}
+
+/* Ensure filter card content is properly sized */
+.filter-card .card-body,
+.bulk-operations-card .card-body {
+    min-height: 60px !important;
+    height: auto !important;
+    padding: 1rem !important;
+}
+
+/* Fix for View Mode toggle cards specifically */
+.card .card-body.py-3,
+.card .card-body.py-2 {
+    min-height: 60px !important;
+    height: auto !important;
+    padding: 1rem !important;
+}
+
+/* Comprehensive card content visibility fixes */
+.card .card-body > div,
+.card .card-body > form {
+    min-height: auto !important;
+    height: auto !important;
+    display: block !important;
+    visibility: visible !important;
+}
+
+/* Bootstrap responsive display fix for card content */
+.card .d-md-none,
+.card .d-none.d-md-flex,
+.card .d-none.d-md-block {
+    min-height: auto !important;
+    height: auto !important;
+}
+
+/* Mobile and desktop layout containers in cards */
+@media (max-width: 767.98px) {
+    .card .d-md-none {
+        display: block !important;
+        min-height: auto !important;
+    }
+}
+
+@media (min-width: 768px) {
+    .card .d-none.d-md-flex {
+        display: flex !important;
+        min-height: auto !important;
+    }
+    .card .d-none.d-md-block {
+        display: block !important;
+        min-height: auto !important;
+    }
 }
 
 /* Form row improvements */

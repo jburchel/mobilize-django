@@ -576,3 +576,25 @@ h6 { font-size: clamp(0.9rem, 1.5vw, 1.125rem); }
     visibility: visible !important;
     opacity: 1 !important;
 }
+
+/* Fix for View Mode and Filter container height issues */
+.card .card-body {
+    min-height: auto !important;
+    height: auto !important;
+    padding: 1rem !important;
+}
+
+/* Specific fixes for View Mode and Search/Filter sections */
+.card .card-body .d-md-none,
+.card .card-body .d-none {
+    min-height: auto !important;
+    height: auto !important;
+}
+
+/* Ensure form elements in cards are properly sized */
+.card .form-control,
+.card .form-select,
+.card .btn {
+    height: auto !important;
+    min-height: 38px !important;
+}
