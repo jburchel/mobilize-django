@@ -310,12 +310,14 @@ user.role = {{ user.role }}<br>
                     <select id="office-selector-mobile" class="form-select form-select-sm">
                         <option value="default" {% if current_view_mode == "default" %}selected{% endif %}>Show All Offices</option>
                         <option value="" disabled>-------------------</option>
-                        {% for office in all_offices %}
-                        <option value="office_{{ office.id }}" 
-                            {% if current_view_mode == 'office_'|add:office.id|stringformat:"s" %}selected{% endif %}>
-                            {{ office.name }}
-                        </option>
-                        {% endfor %}
+                        {% if all_offices %}
+                            {% for office in all_offices %}
+                            <option value="office_{{ office.id }}" 
+                                {% if current_view_mode == 'office_'|add:office.id|stringformat:"s" %}selected{% endif %}>
+                                {{ office.name }}
+                            </option>
+                            {% endfor %}
+                        {% endif %}
                     </select>
                 </div>
                 
@@ -337,12 +339,14 @@ user.role = {{ user.role }}<br>
                     <select id="office-selector" class="form-select form-select-sm ms-2" style="width: auto;">
                         <option value="default" {% if current_view_mode == "default" %}selected{% endif %}>Select Office...</option>
                         <option value="" disabled>-------------------</option>
-                        {% for office in all_offices %}
-                        <option value="office_{{ office.id }}" 
-                            {% if current_view_mode == 'office_'|add:office.id|stringformat:"s" %}selected{% endif %}>
-                            {{ office.name }}
-                        </option>
-                        {% endfor %}
+                        {% if all_offices %}
+                            {% for office in all_offices %}
+                            <option value="office_{{ office.id }}" 
+                                {% if current_view_mode == 'office_'|add:office.id|stringformat:"s" %}selected{% endif %}>
+                                {{ office.name }}
+                            </option>
+                            {% endfor %}
+                        {% endif %}
                     </select>
                 </div>
                 {% else %}
@@ -590,7 +594,7 @@ user.role = {{ user.role }}<br>
                                             <small>{{ comm.sent_at|date:"M d" }}</small>
                                         </div>
                                         <p class="mb-1">{{ comm.content|truncatechars:50 }}</p>
-                                        <small>To: {{ comm.recipient_contact.name }}</small>
+                                        <small>To: {{ comm.recipient_contact.name|default:"Unknown" }}</small>
                                     </li>
                                 {% endfor %}
                             </ul>
@@ -648,7 +652,7 @@ user.role = {{ user.role }}<br>
                                                         <span class="badge bg-info text-dark">Low</span>
                                                     {% endif %}
                                                 </td>
-                                                <td>{{ task.contact.name|default:"N/A" }}</td>
+                                                <td>{% if task.contact %}{{ task.contact.name|default:"N/A" }}{% else %}N/A{% endif %}</td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm" role="group">
                                                         <a href="#" class="btn btn-outline-primary">
@@ -703,35 +707,47 @@ user.role = {{ user.role }}<br>
         
         // Real pipeline data from backend
         const peopleStages = [
-            {% for item in people_pipeline_data %}
-                '{{ item.stage_name }}',
-            {% endfor %}
+            {% if people_pipeline_data %}
+                {% for item in people_pipeline_data %}
+                    '{{ item.stage_name }}',
+                {% endfor %}
+            {% endif %}
         ];
         const peopleData = [
-            {% for item in people_pipeline_data %}
-                {{ item.percentage }},
-            {% endfor %}
+            {% if people_pipeline_data %}
+                {% for item in people_pipeline_data %}
+                    {{ item.percentage }},
+                {% endfor %}
+            {% endif %}
         ];
         const peopleCounts = [
-            {% for item in people_pipeline_data %}
-                {{ item.count }},
-            {% endfor %}
+            {% if people_pipeline_data %}
+                {% for item in people_pipeline_data %}
+                    {{ item.count }},
+                {% endfor %}
+            {% endif %}
         ];
         
         const churchesStages = [
-            {% for item in churches_pipeline_data %}
-                '{{ item.stage_name }}',
-            {% endfor %}
+            {% if churches_pipeline_data %}
+                {% for item in churches_pipeline_data %}
+                    '{{ item.stage_name }}',
+                {% endfor %}
+            {% endif %}
         ];
         const churchesData = [
-            {% for item in churches_pipeline_data %}
-                {{ item.percentage }},
-            {% endfor %}
+            {% if churches_pipeline_data %}
+                {% for item in churches_pipeline_data %}
+                    {{ item.percentage }},
+                {% endfor %}
+            {% endif %}
         ];
         const churchesCounts = [
-            {% for item in churches_pipeline_data %}
-                {{ item.count }},
-            {% endfor %}
+            {% if churches_pipeline_data %}
+                {% for item in churches_pipeline_data %}
+                    {{ item.count }},
+                {% endfor %}
+            {% endif %}
         ];
         
         const chartColors = ['#183963', '#39A949', '#4e73df', '#1cc88a', '#36b9cc', '#7F7F7F'];
@@ -915,16 +931,20 @@ user.role = {{ user.role }}<br>
         if (priorityCanvas) {
             const priorityData = {
                 labels: [
-                    {% for priority in priority_tasks %}
-                        '{{ priority.priority|title|default:"No Priority" }}',
-                    {% endfor %}
+                    {% if priority_tasks %}
+                        {% for priority in priority_tasks %}
+                            '{{ priority.priority|title|default:"No Priority" }}',
+                        {% endfor %}
+                    {% endif %}
                 ],
                 datasets: [{
                     label: 'Tasks',
                     data: [
-                        {% for priority in priority_tasks %}
-                            {{ priority.count }},
-                        {% endfor %}
+                        {% if priority_tasks %}
+                            {% for priority in priority_tasks %}
+                                {{ priority.count }},
+                            {% endfor %}
+                        {% endif %}
                     ],
                     backgroundColor: [
                         '#dc3545', // High - Red
@@ -959,17 +979,21 @@ user.role = {{ user.role }}<br>
         if (activityCanvas) {
             const activityData = {
                 labels: [
-                    {% for activity in activity_timeline %}
-                        '{{ activity.date }}',
-                    {% endfor %}
+                    {% if activity_timeline %}
+                        {% for activity in activity_timeline %}
+                            '{{ activity.date }}',
+                        {% endfor %}
+                    {% endif %}
                 ],
                 datasets: [
                     {
                         label: 'People Added',
                         data: [
-                            {% for activity in activity_timeline %}
-                                {{ activity.people }},
-                            {% endfor %}
+                            {% if activity_timeline %}
+                                {% for activity in activity_timeline %}
+                                    {{ activity.people }},
+                                {% endfor %}
+                            {% endif %}
                         ],
                         borderColor: '#183963',
                         backgroundColor: 'rgba(24, 57, 99, 0.1)',
@@ -978,9 +1002,11 @@ user.role = {{ user.role }}<br>
                     {
                         label: 'Tasks Completed',
                         data: [
-                            {% for activity in activity_timeline %}
-                                {{ activity.tasks }},
-                            {% endfor %}
+                            {% if activity_timeline %}
+                                {% for activity in activity_timeline %}
+                                    {{ activity.tasks }},
+                                {% endfor %}
+                            {% endif %}
                         ],
                         borderColor: '#39A949',
                         backgroundColor: 'rgba(57, 169, 73, 0.1)',
@@ -989,9 +1015,11 @@ user.role = {{ user.role }}<br>
                     {
                         label: 'Communications',
                         data: [
-                            {% for activity in activity_timeline %}
-                                {{ activity.communications }},
-                            {% endfor %}
+                            {% if activity_timeline %}
+                                {% for activity in activity_timeline %}
+                                    {{ activity.communications }},
+                                {% endfor %}
+                            {% endif %}
                         ],
                         borderColor: '#ffc107',
                         backgroundColor: 'rgba(255, 193, 7, 0.1)',
