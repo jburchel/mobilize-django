@@ -390,38 +390,38 @@
     padding: 1rem !important;
 }
 
-/* Comprehensive card content visibility fixes */
-.card .card-body > div,
-.card .card-body > form {
+/* Comprehensive card content visibility fixes - more specific targeting */
+.card .card-body > div:not(.d-none):not(.d-md-none),
+.card .card-body > form:not(.d-none):not(.d-md-none) {
     min-height: auto !important;
     height: auto !important;
-    display: block !important;
     visibility: visible !important;
 }
 
-/* Bootstrap responsive display fix for card content */
+/* Allow Bootstrap responsive display classes to work properly */
 .card .d-md-none,
 .card .d-none.d-md-flex,
 .card .d-none.d-md-block {
     min-height: auto !important;
     height: auto !important;
+    /* Removed display overrides - let Bootstrap handle responsive display */
 }
 
-/* Mobile and desktop layout containers in cards */
+/* Only apply display fixes when Bootstrap classes are active */
 @media (max-width: 767.98px) {
     .card .d-md-none {
-        display: block !important;
+        /* Bootstrap handles display: block at this breakpoint */
         min-height: auto !important;
     }
 }
 
 @media (min-width: 768px) {
     .card .d-none.d-md-flex {
-        display: flex !important;
+        /* Bootstrap handles display: flex at this breakpoint */
         min-height: auto !important;
     }
     .card .d-none.d-md-block {
-        display: block !important;
+        /* Bootstrap handles display: block at this breakpoint */
         min-height: auto !important;
     }
 }

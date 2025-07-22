@@ -23,54 +23,97 @@
     </div>
 </div>
 
-<!-- View Mode Toggle -->
+<!-- View Mode Toggle for Admins -->
 {% if can_toggle_view %}
 <div class="w-100 mb-3">
     <div class="card">
-        <div class="card-body py-2">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="card-body py-3">
+                <!-- Mobile: stacked layout -->
+                <div class="d-md-none">
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-eye me-2 text-muted"></i>
+                            <span class="text-muted me-3">View Mode:</span>
+                            <span class="badge bg-primary">{{ view_mode_display }}</span>
+                        </div>
+                    </div>
+                    
+                    {% if user_role == 'super_admin' %}
+                    <div class="btn-group-vertical w-100 mb-3" role="group" aria-label="View mode toggle">
+                        <a href="?view_mode=default{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
+                           class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-globe me-1"></i> All Offices
+                        </a>
+                        <a href="?view_mode=my_only{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
+                           class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-user me-1"></i> My Tasks Only
+                        </a>
+                    </div>
+                    <select id="office-selector" class="form-select form-select-sm">
+                        <option value="default" {% if current_view_mode == "default" %}selected{% endif %}>Show All Offices</option>
+                        <option value="" disabled>-------------------</option>
+                        {% for office in all_offices %}
+                        <option value="office_{{ office.id }}" 
+                            {% if current_view_mode == 'office_'|add:office.id|stringformat:"s" %}selected{% endif %}>
+                            {{ office.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <div class="btn-group-vertical w-100" role="group" aria-label="View mode toggle">
+                        <a href="?view_mode=default{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
+                           class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-building me-1"></i> My Office
+                        </a>
+                        <a href="?view_mode=my_only{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
+                           class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-user me-1"></i> My Tasks Only
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Desktop: horizontal layout all on one line -->
+                <div class="d-none d-md-flex align-items-center gap-3 flex-wrap">
                     <div class="d-flex align-items-center">
                         <i class="fas fa-eye me-2 text-muted"></i>
                         <span class="text-muted me-3">View Mode:</span>
                         <span class="badge bg-primary">{{ view_mode_display }}</span>
                     </div>
-                    <!-- Mobile: vertical buttons -->
-                    <div class="btn-group-vertical d-md-none" role="group" aria-label="View mode toggle">
-                        <a href="?view_mode=default" 
+                    
+                    {% if user_role == 'super_admin' %}
+                    <div class="btn-group" role="group" aria-label="View mode toggle">
+                        <a href="?view_mode=default{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
                            class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            {% if user_role == 'super_admin' %}
-                                <i class="fas fa-globe me-1"></i> All Offices
-                            {% else %}
-                                <i class="fas fa-building me-1"></i> My Office
-                            {% endif %}
+                            <i class="fas fa-globe me-1"></i> All Offices
                         </a>
-                        <a href="?view_mode=my_only" 
+                        <a href="?view_mode=my_only{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
                            class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            <i class="fas fa-user me-1"></i> My Contacts Only
+                            <i class="fas fa-user me-1"></i> My Tasks Only
                         </a>
                     </div>
-                    <!-- Desktop: horizontal buttons -->
-                    <div class="d-none d-md-flex align-items-center gap-3">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-eye me-2 text-muted"></i>
-                            <span class="text-muted me-3">View Mode:</span>
-                            <span class="badge bg-primary">{{ view_mode_display }}</span>
-                        </div>
-                        <div class="btn-group" role="group" aria-label="View mode toggle">
-                        <a href="?view_mode=default" 
+                    <select id="office-selector" class="form-select form-select-sm" style="width: auto;">
+                        <option value="default" {% if current_view_mode == "default" %}selected{% endif %}>Show All Offices</option>
+                        <option value="" disabled>-------------------</option>
+                        {% for office in all_offices %}
+                        <option value="office_{{ office.id }}" 
+                            {% if current_view_mode == 'office_'|add:office.id|stringformat:"s" %}selected{% endif %}>
+                            {{ office.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <div class="btn-group" role="group" aria-label="View mode toggle">
+                        <a href="?view_mode=default{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
                            class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            {% if user_role == 'super_admin' %}
-                                <i class="fas fa-globe me-1"></i> All Offices
-                            {% else %}
-                                <i class="fas fa-building me-1"></i> My Office
-                            {% endif %}
+                            <i class="fas fa-building me-1"></i> My Office
                         </a>
-                        <a href="?view_mode=my_only" 
+                        <a href="?view_mode=my_only{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
                            class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            <i class="fas fa-user me-1"></i> My Contacts Only
+                            <i class="fas fa-user me-1"></i> My Tasks Only
                         </a>
-                        </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -613,6 +656,18 @@ document.addEventListener('DOMContentLoaded', function() {
             selectAllCheckbox.checked = false;
             selectAllCheckbox.indeterminate = true;
         }
+    }
+    
+    // Office selector for view mode (super admin only)
+    const officeSelector = document.getElementById('office-selector');
+    if (officeSelector) {
+        officeSelector.addEventListener('change', function() {
+            if (this.value) {
+                const currentParams = new URLSearchParams(window.location.search);
+                currentParams.set('view_mode', this.value);
+                window.location.href = '?' + currentParams.toString();
+            }
+        });
     }
 });
 </script>

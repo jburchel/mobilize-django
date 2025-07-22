@@ -135,6 +135,8 @@ class TaskListView(LoginRequiredMixin, ListView):
             "first_name", "last_name", "email"
         )
         context["offices"] = Office.objects.filter(is_active=True).order_by("name")
+        # Add all_offices for super admin office selector (matching churches view)
+        context["all_offices"] = Office.objects.all().order_by("name")
 
         # Add view mode context (matching other views)
         from mobilize.core.permissions import get_data_access_manager
