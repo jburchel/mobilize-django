@@ -587,11 +587,27 @@
 
 /* === SEARCH AND FILTER SECTION FIXES === */
 
+/* Add proper spacing to search/filter containers */
+.card .card-body.py-3 {
+    padding: 2rem !important; /* Increase padding for search/filter cards */
+}
+
+/* Add breathing room to input groups and form controls in search/filter sections */
+.card .card-body .input-group {
+    margin-bottom: 0.5rem;
+}
+
+.card .card-body .form-select,
+.card .card-body .form-control {
+    padding: 0.75rem 1rem; /* Increase padding for form elements */
+    font-size: 1rem;
+}
+
 /* Override global row margin restrictions for search/filter sections */
 .card .card-body .row.mt-4,
 .card .card-body .row.mt-3,
 .card .card-body .row.mt-5 {
-    margin-top: 1.5rem !important; /* mt-4 equivalent */
+    margin-top: 2rem !important; /* Increase from 1.5rem to 2rem */
     margin-left: -0.75rem !important;
     margin-right: -0.75rem !important;
 }
