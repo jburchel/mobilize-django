@@ -617,10 +617,10 @@ document.addEventListener('DOMContentLoaded', function() {
         perPage: 25,
         enableInfiniteScroll: false,  // Disable auto-scroll for manual pagination
         filters: {
-            q: '{{ query }}',
-            priority: '{{ priority }}',
-            pipeline_stage: '{{ pipeline_stage }}',
-            sort: '{{ sort_by }}'
+            q: {{ query|default:"''"|escapejs }},
+            priority: {{ priority|default:"''"|escapejs }},
+            pipeline_stage: {{ pipeline_stage|default:"''"|escapejs }},
+            sort: {{ sort_by|default:"''"|escapejs }}
         }
     });
     
@@ -739,11 +739,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load initial data AFTER pagination controls are set up
     console.log('About to call loadMore()...');
-    churchLoader.loadMore().then(() => {
-        console.log('loadMore() completed successfully');
-    }).catch((error) => {
+    try {
+        churchLoader.loadMore();
+        console.log('loadMore() called successfully');
+    } catch (error) {
         console.error('loadMore() failed:', error);
-    });
+    }
     
     // Bulk operations management
     const selectAll = document.getElementById('select-all');
