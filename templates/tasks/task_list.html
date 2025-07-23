@@ -137,8 +137,8 @@
 <!-- Prominent Search Bar -->
 <div class="card mb-3">
     <div class="card-body py-3">
-        <div class="row align-items-center">
-            <div class="col-md-4">
+        <div class="row">
+            <div class="col-12">
                 <div class="input-group">
                     <span class="input-group-text bg-light">
                         <i class="fas fa-search text-muted"></i>
@@ -148,28 +148,32 @@
                            value="{{ search_query }}" autocomplete="off">
                 </div>
             </div>
-            <div class="col-md-8 mt-2 mt-md-0">
-                <div class="d-flex gap-2">
-                    <select id="quick-status-filter" class="form-select">
-                        <option value="">All Statuses</option>
-                        <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
-                        <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>In Progress</option>
-                        <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
-                    </select>
-                    <select id="quick-priority-filter" class="form-select">
-                        <option value="">All Priorities</option>
-                        <option value="high" {% if current_priority == 'high' %}selected{% endif %}>High</option>
-                        <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
-                        <option value="low" {% if current_priority == 'low' %}selected{% endif %}>Low</option>
-                    </select>
-                    <select id="quick-due-filter" class="form-select">
-                        <option value="">All Dates</option>
-                        <option value="overdue" {% if current_due == 'overdue' %}selected{% endif %}>Overdue</option>
-                        <option value="today" {% if current_due == 'today' %}selected{% endif %}>Today</option>
-                        <option value="week" {% if current_due == 'week' %}selected{% endif %}>This Week</option>
-                        <option value="month" {% if current_due == 'month' %}selected{% endif %}>This Month</option>
-                    </select>
-                </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <select id="quick-status-filter" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select id="quick-priority-filter" class="form-select">
+                    <option value="">All Priorities</option>
+                    <option value="high" {% if current_priority == 'high' %}selected{% endif %}>High</option>
+                    <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
+                    <option value="low" {% if current_priority == 'low' %}selected{% endif %}>Low</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select id="quick-due-filter" class="form-select">
+                    <option value="">All Dates</option>
+                    <option value="overdue" {% if current_due == 'overdue' %}selected{% endif %}>Overdue</option>
+                    <option value="today" {% if current_due == 'today' %}selected{% endif %}>Today</option>
+                    <option value="week" {% if current_due == 'week' %}selected{% endif %}>This Week</option>
+                    <option value="month" {% if current_due == 'month' %}selected{% endif %}>This Month</option>
+                </select>
             </div>
         </div>
     </div>
