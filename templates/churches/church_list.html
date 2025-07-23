@@ -661,7 +661,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <td>${item.primary_contact_name || '-'}</td>
             <td>
                 ${item.phone ? 
-                    `<a href="#" onclick="handlePhoneClick('${item.phone}', ${item.id}, '${(item.primary_contact_name || '').replace(/'/g, "\\\\'")})')" class="text-decoration-none">
+                    `<a href="#" onclick="handlePhoneClick('${item.phone}', ${item.id}, '${(item.primary_contact_name || '').replace(/'/g, "\\\\'")}');" class="text-decoration-none">
                         <i class="fas fa-phone me-1"></i>${item.phone}
                     </a>` : '-'}
             </td>
@@ -708,22 +708,22 @@ document.addEventListener('DOMContentLoaded', function() {
                         <i class="fas fa-comment-alt"></i>
                     </button>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#" onclick="composeChurchEmail('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', '${item.email || ''}')">
+                        <li><a class="dropdown-item" href="#" onclick="composeChurchEmail('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', '${item.email || ''}');">
                             <i class="fas fa-envelope me-2"></i> Compose Email
                         </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', 'phone')">
+                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', 'phone');">
                             <i class="fas fa-phone me-2"></i> Log Phone Call
                         </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', 'text')">
+                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', 'text');">
                             <i class="fas fa-sms me-2"></i> Log Text
                         </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', 'video_call')">
+                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', 'video_call');">
                             <i class="fas fa-video me-2"></i> Log Video Call
                         </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', 'meeting')">
+                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', 'meeting');">
                             <i class="fas fa-users me-2"></i> Log Meeting
                         </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', 'other')">
+                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', 'other');">
                             <i class="fas fa-comment me-2"></i> Log Other
                         </a></li>
                     </ul>
