@@ -23,6 +23,17 @@
 {% endblock %}
 
 {% block content %}
+<!-- DEBUG INFO - REMOVE AFTER TESTING -->
+<div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc; font-family: monospace; font-size: 12px;">
+<strong>DEBUG:</strong><br>
+can_toggle_view = {{ can_toggle_view }}<br>
+user_role = {{ user_role }}<br>
+current_view_mode = {{ current_view_mode }}<br>
+view_mode_display = {{ view_mode_display }}<br>
+user.role = {{ user.role }}<br>
+user.email = {{ user.email }}<br>
+</div>
+
 <!-- View Mode Toggle for Admins -->
 {% if can_toggle_view %}
 <div class="row mb-3">
