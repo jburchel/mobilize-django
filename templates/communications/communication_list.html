@@ -803,6 +803,97 @@ document.addEventListener('DOMContentLoaded', function() {
         cardDiv.innerHTML = this.getRowTemplate(item);
         return cardDiv;
     };
+    
+    // Override renderRows method to work without sentinel for card grid
+    communicationLoader.renderRows = function(items) {
+        const fragment = document.createDocumentFragment();
+        
+        items.forEach(item => {
+            const row = this.createRow(item);
+            fragment.appendChild(row);
+        });
+        
+        // Append directly to container (no sentinel needed for cards)
+        this.tableBody.appendChild(fragment);
+        
+        // Update current count based on items actually rendered
+        this.currentCount += items.length;
+        
+        // Update bulk selection handlers
+        this.updateBulkSelectionHandlers();
+    };
+    
+    // Override resetAndLoad method to work with card container
+    communicationLoader.resetAndLoad = function() {
+        // Clear existing cards
+        this.tableBody.innerHTML = '';
+        
+        // Reset pagination
+        this.currentPage = 1;
+        this.hasMore = true;
+        this.totalCount = 0;
+        this.currentCount = 0;
+        
+        // Load first page
+        this.loadMore();
+    };
+    
+    // Override updateBulkSelectionHandlers for card checkboxes
+    communicationLoader.updateBulkSelectionHandlers = function() {
+        // Re-initialize bulk selection handlers for new checkboxes
+        const newCheckboxes = this.tableBody.querySelectorAll('.communication-checkbox:not([data-initialized])');
+        newCheckboxes.forEach(checkbox => {
+            checkbox.setAttribute('data-initialized', 'true');
+            checkbox.addEventListener('change', () => {
+                if (window.updateBulkOperations) {
+                    window.updateBulkOperations();
+                }
+            });
+        });
+    };
+    
+    // Override updatePaginationDisplay for communications
+    communicationLoader.updatePaginationDisplay = function() {
+        // Update pagination counts in the UI
+        const currentCountSpan = document.getElementById('current-count');
+        const totalCountSpan = document.getElementById('total-count');
+        
+        console.log('Communication Loader: Updating pagination display - current:', this.currentCount, 'total:', this.totalCount);
+        
+        if (currentCountSpan) {
+            currentCountSpan.textContent = this.currentCount;
+        }
+        
+        if (totalCountSpan) {
+            totalCountSpan.textContent = this.totalCount;
+        }
+        
+        // Show no results message if no communications
+        const noResults = document.getElementById('no-results');
+        if (this.totalCount === 0 && this.currentCount === 0) {
+            noResults.style.display = 'block';
+        } else {
+            noResults.style.display = 'none';
+        }
+        
+        // Update load more button visibility (only if infinite scroll is disabled)
+        if (!this.enableInfiniteScroll) {
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            const endReachedSpan = document.getElementById('end-reached');
+            
+            if (loadMoreBtn && endReachedSpan) {
+                if (this.hasMore && this.currentCount > 0) {
+                    loadMoreBtn.style.display = 'inline-block';
+                    endReachedSpan.style.display = 'none';
+                } else {
+                    loadMoreBtn.style.display = 'none';
+                    if (this.currentCount >= this.totalCount && this.totalCount > 0) {
+                        endReachedSpan.style.display = 'inline-block';
+                    }
+                }
+            }
+        }
+    };
 
     // Override the row template for communication card rendering
     communicationLoader.getRowTemplate = function(item) {
@@ -821,7 +912,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const timeSince = diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
 
         return `
-            <div class="card communication-card h-100">
+            <div class="card communication-card ${this.getTypeClass(item.type)} h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
                         <input type="checkbox" name="communication_ids" value="${item.id}" class="form-check-input communication-checkbox me-3">
@@ -856,6 +947,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
         `;
+    };
+    
+    // Add getTypeClass method for styling cards by type
+    communicationLoader.getTypeClass = function(type) {
+        const typeClasses = {
+            'Email': 'email',
+            'email': 'email',
+            'Phone Call': 'phone',
+            'phone': 'phone',
+            'Text Message': 'text',
+            'text': 'text', 
+            'Meeting': 'meeting',
+            'meeting': 'meeting',
+            'Video Call': 'video_call',
+            'video_call': 'video_call'
+        };
+        return typeClasses[type] || '';
     };
     
     // Add getTypeIcon method
