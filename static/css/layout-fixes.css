@@ -399,32 +399,8 @@
 }
 
 /* Allow Bootstrap responsive display classes to work properly */
-.card .d-md-none,
-.card .d-none.d-md-flex,
-.card .d-none.d-md-block {
-    min-height: auto !important;
-    height: auto !important;
-    /* Removed display overrides - let Bootstrap handle responsive display */
-}
-
-/* Only apply display fixes when Bootstrap classes are active */
-@media (max-width: 767.98px) {
-    .card .d-md-none {
-        /* Bootstrap handles display: block at this breakpoint */
-        min-height: auto !important;
-    }
-}
-
-@media (min-width: 768px) {
-    .card .d-none.d-md-flex {
-        /* Bootstrap handles display: flex at this breakpoint */
-        min-height: auto !important;
-    }
-    .card .d-none.d-md-block {
-        /* Bootstrap handles display: block at this breakpoint */
-        min-height: auto !important;
-    }
-}
+/* Removed all custom handling of Bootstrap's responsive display utilities */
+/* Bootstrap handles all display properties for these classes automatically */
 
 /* Form row improvements */
 .form-row-responsive {

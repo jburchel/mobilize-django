@@ -254,33 +254,16 @@
     display: flex !important;
 }
 
-.d-block {
-    display: block !important;
-}
+/* Removed incorrect Bootstrap utility class overrides that were breaking responsive display
+   Bootstrap already provides these classes correctly - we should not redefine them
+   
+   The following were causing issues:
+   - .d-md-block was incorrectly set to display: none by default
+   - .d-md-none was incorrectly set to display: block by default
+   - These broke the responsive behavior of View Mode and Filter sections
+*/
 
-.d-none {
-    display: none !important;
-}
-
-.d-md-block {
-    display: none !important;
-}
-
-@media (min-width: 768px) {
-    .d-md-block {
-        display: block !important;
-    }
-}
-
-.d-md-none {
-    display: block !important;
-}
-
-@media (min-width: 768px) {
-    .d-md-none {
-        display: none !important;
-    }
-}
+/* If we need custom display utilities, use different class names to avoid conflicts */
 
 /* Fix justify-content utilities */
 .justify-content-center {
