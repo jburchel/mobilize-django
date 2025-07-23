@@ -599,9 +599,20 @@ function showMessage(type, message) {
 <script src="{% static 'js/lazy-loading.js' %}?v=1750793997"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing church loader...');
+    
+    // Check if required elements exist
+    const tableBody = document.getElementById('church-table-body');
+    console.log('Table body element:', tableBody);
+    
+    if (!tableBody) {
+        console.error('ERROR: church-table-body element not found!');
+        return;
+    }
+    
     // Initialize lazy loader for church list
     const churchLoader = new LazyLoader({
-        tableBody: document.getElementById('church-table-body'),
+        tableBody: tableBody,
         apiUrl: '{% url "churches:church_list_api" %}',
         perPage: 25,
         enableInfiniteScroll: false,  // Disable auto-scroll for manual pagination
@@ -612,6 +623,9 @@ document.addEventListener('DOMContentLoaded', function() {
             sort: '{{ sort_by }}'
         }
     });
+    
+    console.log('LazyLoader initialized:', churchLoader);
+    console.log('API URL:', '{% url "churches:church_list_api" %}');
     
     // Override the row template for church-specific rendering
     churchLoader.getRowTemplate = function(item) {
@@ -724,7 +738,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Load initial data AFTER pagination controls are set up
-    churchLoader.loadMore();
+    console.log('About to call loadMore()...');
+    churchLoader.loadMore().then(() => {
+        console.log('loadMore() completed successfully');
+    }).catch((error) => {
+        console.error('loadMore() failed:', error);
+    });
     
     // Bulk operations management
     const selectAll = document.getElementById('select-all');
