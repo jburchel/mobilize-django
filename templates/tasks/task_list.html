@@ -13,128 +13,218 @@
 {% endblock %}
 
 {% block content %}
-<!-- Select All Checkbox -->
-<div class="row mb-3">
-    <div class="col-12">
-        <div class="form-check">
-            <input type="checkbox" id="select-all" class="form-check-input">
-            <label class="form-check-label" for="select-all">Select All</label>
-        </div>
-    </div>
-</div>
-
 <!-- View Mode Toggle for Admins -->
 {% if can_toggle_view %}
-<div class="w-100 mb-3">
-    <div class="card">
-        <div class="card-body py-3">
-                <!-- Mobile: stacked layout -->
-                <div class="d-md-none">
-                    <div class="mb-3">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="fas fa-eye me-2 text-muted"></i>
-                            <span class="text-muted me-3">View Mode:</span>
-                            <span class="badge bg-primary">{{ view_mode_display }}</span>
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body py-2">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="fas fa-eye me-2 text-muted"></i>
+                    <span class="text-muted">View Mode:</span>
+                    
+                    {% if user_role == 'super_admin' %}
+                        <!-- Toggle Buttons for Super Admin -->
+                        <div class="btn-group" role="group" aria-label="View mode toggle">
+                            <a href="?view_mode=default{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
+                               class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                <i class="fas fa-globe me-1"></i> All Offices
+                            </a>
+                            <a href="?view_mode=my_only{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
+                               class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                <i class="fas fa-user me-1"></i> My Tasks Only
+                            </a>
                         </div>
-                    </div>
-                    
-                    {% if user_role == 'super_admin' %}
-                    <div class="btn-group-vertical w-100 mb-3" role="group" aria-label="View mode toggle">
-                        <a href="?view_mode=default{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
-                           class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            <i class="fas fa-globe me-1"></i> All Offices
-                        </a>
-                        <a href="?view_mode=my_only{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
-                           class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            <i class="fas fa-user me-1"></i> My Tasks Only
-                        </a>
-                    </div>
-                    <select id="office-selector" class="form-select form-select-sm">
-                        <option value="default" {% if current_view_mode == "default" %}selected{% endif %}>Show All Offices</option>
-                        <option value="" disabled>-------------------</option>
-                        {% for office in all_offices %}
-                        <option value="office_{{ office.id }}" 
-                            {% if current_view_mode == 'office_'|add:office.id|stringformat:"s" %}selected{% endif %}>
-                            {{ office.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
+                        <!-- Office Selector Dropdown -->
+                        <select id="office-selector" class="form-select form-select-sm" style="min-width: 200px;">
+                            <option value="default" {% if current_view_mode == "default" %}selected{% endif %}>Show All Offices</option>
+                            <option value="" disabled>-------------------</option>
+                            {% for office in all_offices %}
+                            <option value="office_{{ office.id }}" 
+                                {% if current_view_mode == 'office_'|add:office.id|stringformat:"s" %}selected{% endif %}>
+                                {{ office.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
                     {% else %}
-                    <div class="btn-group-vertical w-100" role="group" aria-label="View mode toggle">
-                        <a href="?view_mode=default{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
-                           class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            <i class="fas fa-building me-1"></i> My Office
-                        </a>
-                        <a href="?view_mode=my_only{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
-                           class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            <i class="fas fa-user me-1"></i> My Tasks Only
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <!-- Desktop: horizontal layout all on one line -->
-                <div class="d-none d-md-flex align-items-center gap-3 flex-wrap">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-eye me-2 text-muted"></i>
-                        <span class="text-muted me-3">View Mode:</span>
-                        <span class="badge bg-primary">{{ view_mode_display }}</span>
-                    </div>
-                    
-                    {% if user_role == 'super_admin' %}
-                    <div class="btn-group" role="group" aria-label="View mode toggle">
-                        <a href="?view_mode=default{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
-                           class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            <i class="fas fa-globe me-1"></i> All Offices
-                        </a>
-                        <a href="?view_mode=my_only{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
-                           class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            <i class="fas fa-user me-1"></i> My Tasks Only
-                        </a>
-                    </div>
-                    <select id="office-selector" class="form-select form-select-sm" style="width: auto;">
-                        <option value="default" {% if current_view_mode == "default" %}selected{% endif %}>Show All Offices</option>
-                        <option value="" disabled>-------------------</option>
-                        {% for office in all_offices %}
-                        <option value="office_{{ office.id }}" 
-                            {% if current_view_mode == 'office_'|add:office.id|stringformat:"s" %}selected{% endif %}>
-                            {{ office.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                    {% else %}
-                    <div class="btn-group" role="group" aria-label="View mode toggle">
-                        <a href="?view_mode=default{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
-                           class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            <i class="fas fa-building me-1"></i> My Office
-                        </a>
-                        <a href="?view_mode=my_only{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
-                           class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            <i class="fas fa-user me-1"></i> My Tasks Only
-                        </a>
-                    </div>
+                        <!-- Toggle Buttons for Office Admin -->
+                        <div class="btn-group" role="group" aria-label="View mode toggle">
+                            <a href="?view_mode=default{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
+                               class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                <i class="fas fa-building me-1"></i> My Office
+                            </a>
+                            <a href="?view_mode=my_only{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
+                               class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                <i class="fas fa-user me-1"></i> My Tasks Only
+                            </a>
+                        </div>
                     {% endif %}
                 </div>
             </div>
         </div>
+    </div>
 </div>
 {% endif %}
 
-    <!-- Filter Form -->
-    <div class="card filter-card mb-4 w-100">
-        <div class="card-body">
-            <form method="get" id="filter-form">
-                <!-- Mobile: stacked layout -->
+<!-- Bulk Operations Bar -->
+<div class="card mb-3" id="bulk-operations" style="display: none;">
+    <div class="card-body py-2">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <span class="text-muted"><span id="selected-count">0</span> selected</span>
+            
+            <!-- Bulk Delete -->
+            <form method="post" action="{% url 'tasks:bulk_delete' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected tasks?');">
+                {% csrf_token %}
+                <input type="hidden" name="task_ids" id="bulk-delete-ids">
+                <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash"></i> Delete Selected
+                </button>
+            </form>
+            
+            <!-- Bulk Status Update -->
+            <form method="post" action="{% url 'tasks:bulk_update_status' %}" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="task_ids" id="bulk-status-ids">
+                <select name="status" class="form-select form-select-sm" style="width: auto; display: inline;">
+                    <option value="">Change Status...</option>
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                </select>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>
+            </form>
+            
+            <!-- Bulk Priority Update -->
+            <form method="post" action="{% url 'tasks:bulk_update_priority' %}" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="task_ids" id="bulk-priority-ids">
+                <select name="priority" class="form-select form-select-sm" style="width: auto; display: inline;">
+                    <option value="">Change Priority...</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                </select>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>
+            </form>
+            
+            <!-- Bulk User Assignment -->
+            <form method="post" action="{% url 'tasks:bulk_assign_user' %}" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="task_ids" id="bulk-user-ids">
+                <select name="user_id" class="form-select form-select-sm" style="width: auto; display: inline;">
+                    <option value="">Assign to User...</option>
+                    {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Assign</button>
+            </form>
+            
+            <!-- Bulk Complete -->
+            <form method="post" action="{% url 'tasks:bulk_complete' %}" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="task_ids" id="bulk-complete-ids">
+                <button type="submit" class="btn btn-success btn-sm">
+                    <i class="fas fa-check"></i> Complete Selected
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Prominent Search Bar -->
+<div class="card mb-3">
+    <div class="card-body py-3">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" id="main-search-input" class="form-control form-control-lg" 
+                           placeholder="Search tasks by title, description, person, or church..." 
+                           value="{{ search_query }}" autocomplete="off">
+                </div>
+            </div>
+            <div class="col-md-6 mt-2 mt-md-0">
+                <div class="d-flex gap-2">
+                    <select id="quick-status-filter" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                        <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+                    </select>
+                    <select id="quick-priority-filter" class="form-select">
+                        <option value="">All Priorities</option>
+                        <option value="high" {% if current_priority == 'high' %}selected{% endif %}>High</option>
+                        <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
+                        <option value="low" {% if current_priority == 'low' %}selected{% endif %}>Low</option>
+                    </select>
+                    <select id="quick-due-filter" class="form-select">
+                        <option value="">All Dates</option>
+                        <option value="overdue" {% if current_due == 'overdue' %}selected{% endif %}>Overdue</option>
+                        <option value="today" {% if current_due == 'today' %}selected{% endif %}>Today</option>
+                        <option value="week" {% if current_due == 'week' %}selected{% endif %}>This Week</option>
+                        <option value="month" {% if current_due == 'month' %}selected{% endif %}>This Month</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <!-- Advanced Filters Toggle -->
+        <div class="mb-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#advanced-filters" aria-expanded="false">
+                <i class="fas fa-sliders-h me-1"></i> Advanced Filters
+            </button>
+        </div>
+        
+        <!-- Advanced Filters (Collapsible) -->
+        <div class="collapse" id="advanced-filters">
+            <form method="get" class="mb-3" id="filter-form" onsubmit="event.preventDefault(); return false;">
+                <!-- Desktop: Single row layout -->
+                <div class="d-none d-md-flex align-items-center gap-2 flex-nowrap">
+                    <input type="text" name="search" value="{{ search_query }}" placeholder="Search tasks..." class="form-control" id="search-input" style="flex: 1; min-width: 200px;">
+                    <select name="status" class="form-select" id="status-filter" style="width: 140px; flex-shrink: 0;">
+                        <option value="">All Statuses</option>
+                        <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                        <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+                    </select>
+                    <select name="priority" class="form-select" id="priority-filter" style="width: 140px; flex-shrink: 0;">
+                        <option value="">All Priorities</option>
+                        <option value="high" {% if current_priority == 'high' %}selected{% endif %}>High</option>
+                        <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
+                        <option value="low" {% if current_priority == 'low' %}selected{% endif %}>Low</option>
+                    </select>
+                    <select name="assigned_to" class="form-select" id="assigned-filter" style="width: 140px; flex-shrink: 0;">
+                        <option value="">All Tasks</option>
+                        <option value="me" {% if current_assigned == 'me' %}selected{% endif %}>My Tasks</option>
+                        <option value="unassigned" {% if current_assigned == 'unassigned' %}selected{% endif %}>Unassigned</option>
+                    </select>
+                    <select name="due" class="form-select" id="due-filter" style="width: 120px; flex-shrink: 0;">
+                        <option value="">All Dates</option>
+                        <option value="overdue" {% if current_due == 'overdue' %}selected{% endif %}>Overdue</option>
+                        <option value="today" {% if current_due == 'today' %}selected{% endif %}>Today</option>
+                        <option value="week" {% if current_due == 'week' %}selected{% endif %}>This Week</option>
+                        <option value="month" {% if current_due == 'month' %}selected{% endif %}>This Month</option>
+                    </select>
+                    <button type="button" class="btn btn-outline-primary btn-sm" style="flex-shrink: 0;" onclick="location.reload();">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                
+                <!-- Mobile: Stacked layout -->
                 <div class="d-md-none">
                     <div class="row g-3">
                         <div class="col-12">
-                            <label for="search" class="form-label">Search</label>
-                            <input type="text" class="form-control" name="search" id="search" 
-                                placeholder="Search tasks, people, churches..." value="{{ search_query }}" autocomplete="off">
+                            <input type="text" name="search" value="{{ search_query }}" placeholder="Search tasks..." class="form-control" id="search-input-mobile">
                         </div>
                         <div class="col-6">
-                            <label for="status" class="form-label">Status</label>
-                            <select class="form-select" name="status" id="status">
+                            <select name="status" class="form-select" id="status-filter-mobile">
                                 <option value="">All Statuses</option>
                                 <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
                                 <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>In Progress</option>
@@ -142,8 +232,7 @@
                             </select>
                         </div>
                         <div class="col-6">
-                            <label for="priority" class="form-label">Priority</label>
-                            <select class="form-select" name="priority" id="priority">
+                            <select name="priority" class="form-select" id="priority-filter-mobile">
                                 <option value="">All Priorities</option>
                                 <option value="high" {% if current_priority == 'high' %}selected{% endif %}>High</option>
                                 <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
@@ -151,16 +240,14 @@
                             </select>
                         </div>
                         <div class="col-6">
-                            <label for="assigned_to" class="form-label">Assigned To</label>
-                            <select class="form-select" name="assigned_to" id="assigned_to">
+                            <select name="assigned_to" class="form-select" id="assigned-filter-mobile">
                                 <option value="">All Tasks</option>
                                 <option value="me" {% if current_assigned == 'me' %}selected{% endif %}>My Tasks</option>
                                 <option value="unassigned" {% if current_assigned == 'unassigned' %}selected{% endif %}>Unassigned</option>
                             </select>
                         </div>
                         <div class="col-6">
-                            <label for="due" class="form-label">Due Date</label>
-                            <select class="form-select" name="due" id="due">
+                            <select name="due" class="form-select" id="due-filter-mobile">
                                 <option value="">All Dates</option>
                                 <option value="overdue" {% if current_due == 'overdue' %}selected{% endif %}>Overdue</option>
                                 <option value="today" {% if current_due == 'today' %}selected{% endif %}>Today</option>
@@ -168,335 +255,322 @@
                                 <option value="month" {% if current_due == 'month' %}selected{% endif %}>This Month</option>
                             </select>
                         </div>
-                    </div>
-                </div>
-                
-                <!-- Desktop: horizontal layout all on one line -->
-                <div class="d-none d-md-flex align-items-end gap-3">
-                    <div>
-                        <label for="search-desktop" class="form-label">Search</label>
-                        <input type="text" class="form-control" name="search" id="search-desktop" 
-                            placeholder="Search tasks, people, churches..." value="{{ search_query }}" autocomplete="off" style="min-width: 200px;">
-                    </div>
-                    <div>
-                        <label for="status-desktop" class="form-label">Status</label>
-                        <select class="form-select" name="status" id="status-desktop">
-                            <option value="">All Statuses</option>
-                            <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
-                            <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>In Progress</option>
-                            <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="priority-desktop" class="form-label">Priority</label>
-                        <select class="form-select" name="priority" id="priority-desktop">
-                            <option value="">All Priorities</option>
-                            <option value="high" {% if current_priority == 'high' %}selected{% endif %}>High</option>
-                            <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
-                            <option value="low" {% if current_priority == 'low' %}selected{% endif %}>Low</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="assigned_to-desktop" class="form-label">Assigned To</label>
-                        <select class="form-select" name="assigned_to" id="assigned_to-desktop">
-                            <option value="">All Tasks</option>
-                            <option value="me" {% if current_assigned == 'me' %}selected{% endif %}>My Tasks</option>
-                            <option value="unassigned" {% if current_assigned == 'unassigned' %}selected{% endif %}>Unassigned</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="due-desktop" class="form-label">Due Date</label>
-                        <select class="form-select" name="due" id="due-desktop">
-                            <option value="">All Dates</option>
-                            <option value="overdue" {% if current_due == 'overdue' %}selected{% endif %}>Overdue</option>
-                            <option value="today" {% if current_due == 'today' %}selected{% endif %}>Today</option>
-                            <option value="week" {% if current_due == 'week' %}selected{% endif %}>This Week</option>
-                            <option value="month" {% if current_due == 'month' %}selected{% endif %}>This Month</option>
-                        </select>
+                        <div class="col-12">
+                            <button type="button" class="btn btn-outline-primary w-100" onclick="location.reload();">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
                     </div>
                 </div>
             </form>
         </div>
-    </div>
 
-    <!-- Bulk Operations Bar -->
-    <div class="card mb-3" id="bulk-operations" style="display: none;">
-        <div class="card-body py-2">
-            <!-- Mobile: stacked layout -->
-            <div class="d-md-none">
-                <div class="mb-2">
-                    <span class="text-muted"><span id="selected-count">0</span> selected</span>
-                </div>
-                <div class="row g-2">
-                    <div class="col-12">
-                        <form method="post" action="{% url 'tasks:bulk_delete' %}" onsubmit="return confirm('Are you sure you want to delete the selected tasks?');">
-                            {% csrf_token %}
-                            <input type="hidden" name="task_ids" id="bulk-delete-ids-mobile">
-                            <button type="submit" class="btn btn-danger btn-sm w-100">
-                                <i class="fas fa-trash"></i> Delete Selected
-                            </button>
-                        </form>
-                    </div>
-                    <div class="col-6">
-                        <form method="post" action="{% url 'tasks:bulk_update_status' %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="task_ids" id="bulk-status-ids-mobile">
-                            <select name="status" class="form-select form-select-sm">
-                                <option value="">Change Status...</option>
-                                <option value="pending">Pending</option>
-                                <option value="in_progress">In Progress</option>
-                                <option value="completed">Completed</option>
-                            </select>
-                        </form>
-                    </div>
-                    <div class="col-6">
-                        <form method="post" action="{% url 'tasks:bulk_update_priority' %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="task_ids" id="bulk-priority-ids-mobile">
-                            <select name="priority" class="form-select form-select-sm">
-                                <option value="">Change Priority...</option>
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high">High</option>
-                            </select>
-                        </form>
-                    </div>
-                    <div class="col-6">
-                        <form method="post" action="{% url 'tasks:bulk_assign_user' %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="task_ids" id="bulk-user-ids-mobile">
-                            <select name="user_id" class="form-select form-select-sm">
-                                <option value="">Assign to User...</option>
-                                {% for user in users %}
-                                <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
-                                {% endfor %}
-                            </select>
-                        </form>
-                    </div>
-                    <div class="col-6">
-                        <form method="post" action="{% url 'tasks:bulk_complete' %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="task_ids" id="bulk-complete-ids-mobile">
-                            <button type="submit" class="btn btn-success btn-sm w-100">
-                                <i class="fas fa-check"></i> Complete Selected
-                            </button>
-                        </form>
-                    </div>
-                </div>
+        <!-- Task List with Dynamic Loading -->
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th width="40">
+                            <input type="checkbox" id="select-all" class="form-check-input">
+                        </th>
+                        <th>Task</th>
+                        <th>Contact</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Due Date</th>
+                        <th>Assigned To</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="task-table-body">
+                    <!-- Tasks will be loaded dynamically via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- No Results Message -->
+        <div id="no-results" class="text-center text-muted py-4" style="display: none;">
+            No tasks found. <a href="{% url 'tasks:task_create' %}">Create the first task</a>.
+        </div>
+        
+        <!-- Pagination Status and Load More Button -->
+        <div class="d-flex justify-content-between align-items-center mt-3" id="pagination-controls">
+            <div class="text-muted">
+                <span id="showing-text">Showing <span id="current-count">0</span> of <span id="total-count">0</span> tasks</span>
             </div>
-            
-            <!-- Desktop: horizontal layout all on one line -->
-            <div class="d-none d-md-flex align-items-center gap-3 flex-wrap">
-                <span class="text-muted"><span id="selected-count-desktop">0</span> selected</span>
-                
-                <!-- Bulk Delete -->
-                <form method="post" action="{% url 'tasks:bulk_delete' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected tasks?');">
-                    {% csrf_token %}
-                    <input type="hidden" name="task_ids" id="bulk-delete-ids">
-                    <button type="submit" class="btn btn-danger btn-sm">
-                        <i class="fas fa-trash"></i> Delete Selected
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <label for="per-page-select" class="form-label mb-0 text-muted">Show:</label>
+                    <select id="per-page-select" class="form-select form-select-sm" style="width: auto;">
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary" id="load-more-btn" style="display: none;">
+                        Load More <span id="per-page-count">25</span>
                     </button>
-                </form>
-                
-                <!-- Bulk Status Update -->
-                <form method="post" action="{% url 'tasks:bulk_update_status' %}" style="display: inline;">
-                    {% csrf_token %}
-                    <input type="hidden" name="task_ids" id="bulk-status-ids">
-                    <select name="status" class="form-select form-select-sm" style="width: auto; display: inline;">
-                        <option value="">Change Status...</option>
-                        <option value="pending">Pending</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                    </select>
-                    <button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>
-                </form>
-                
-                <!-- Bulk Priority Update -->
-                <form method="post" action="{% url 'tasks:bulk_update_priority' %}" style="display: inline;">
-                    {% csrf_token %}
-                    <input type="hidden" name="task_ids" id="bulk-priority-ids">
-                    <select name="priority" class="form-select form-select-sm" style="width: auto; display: inline;">
-                        <option value="">Change Priority...</option>
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                    </select>
-                    <button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>
-                </form>
-                
-                <!-- Bulk User Assignment -->
-                <form method="post" action="{% url 'tasks:bulk_assign_user' %}" style="display: inline;">
-                    {% csrf_token %}
-                    <input type="hidden" name="task_ids" id="bulk-user-ids">
-                    <select name="user_id" class="form-select form-select-sm" style="width: auto; display: inline;">
-                        <option value="">Assign to User...</option>
-                        {% for user in users %}
-                        <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
-                        {% endfor %}
-                    </select>
-                    <button type="submit" class="btn btn-outline-secondary btn-sm">Assign</button>
-                </form>
-                
-                <!-- Bulk Office Assignment -->
-                <form method="post" action="{% url 'tasks:bulk_assign_office' %}" style="display: inline;">
-                    {% csrf_token %}
-                    <input type="hidden" name="task_ids" id="bulk-office-ids">
-                    <select name="office_id" class="form-select form-select-sm" style="width: auto; display: inline;">
-                        <option value="">Assign to Office...</option>
-                        {% for office in offices %}
-                        <option value="{{ office.id }}">{{ office.name }}</option>
-                        {% endfor %}
-                    </select>
-                    <button type="submit" class="btn btn-outline-secondary btn-sm">Assign</button>
-                </form>
-                
-                <!-- Bulk Complete -->
-                <form method="post" action="{% url 'tasks:bulk_complete' %}" style="display: inline;">
-                    {% csrf_token %}
-                    <input type="hidden" name="task_ids" id="bulk-complete-ids">
-                    <button type="submit" class="btn btn-success btn-sm">
-                        <i class="fas fa-check"></i> Complete Selected
-                    </button>
-                </form>
+                    <span class="text-muted" id="end-reached" style="display: none;">
+                        <i class="fas fa-check-circle text-success"></i> All tasks loaded
+                    </span>
+                </div>
             </div>
         </div>
     </div>
-
-    {% if tasks %}
-        <div class="list-group">
-            {% for task in page_obj %} {# Use page_obj for paginated tasks #}
-                <div id="task-item-{{ task.pk }}" class="list-group-item list-group-item-action flex-column align-items-start {% if task.status == 'completed' %}task-completed{% endif %}">
-                    <div class="d-flex align-items-start">
-                        <!-- Checkbox for bulk operations -->
-                        <input type="checkbox" name="task_ids" value="{{ task.pk }}" class="form-check-input task-checkbox me-3 mt-1">
-                        <div class="flex-grow-1">
-                            <div class="d-flex w-100 justify-content-between align-items-center">
-                        <div>
-                            <a href="{{ task.get_absolute_url }}" class="text-decoration-none">
-                                <h5 class="mb-1 {% if task.status == 'completed' %}text-decoration-line-through{% endif %}">{{ task.title }}</h5>
-                            </a>
-                            <small class="task-status-display">Status: {{ task.get_status_display }}</small> | 
-                            <small>Priority: {{ task.get_priority_display }}</small>
-                            {% if task.is_recurring_template %}
-                                <small> | <i class="fas fa-sync-alt text-info"></i> Recurring Template</small>
-                            {% elif task.parent_task %}
-                                <small> | <i class="fas fa-link text-muted"></i> Recurring Instance</small>
-                            {% endif %}
-                            {% if task.status == 'completed' and task.completed_at %}
-                                <small class="text-muted task-completed-at-display"> | Completed: {{ task.completed_at|date:"Y-m-d" }}</small>
-                            {% else %}
-                                <small> | Due: {{ task.due_date|date:"Y-m-d"|default:"N/A" }}</small>
-                            {% endif %}
-                        </div>
-                        <div>
-                            {% if task.status != 'completed' %}
-                            <button class="btn btn-sm btn-outline-success mark-complete-btn" data-task-id="{{ task.pk }}">
-                                <i class="fas fa-check"></i> Complete
-                            </button>
-                            {% endif %}
-                            <a href="{% url 'tasks:task_update' task.pk %}" class="btn btn-sm btn-outline-secondary ms-1"><i class="fas fa-edit"></i></a>
-                            <a href="{% url 'tasks:task_delete' task.pk %}" class="btn btn-sm btn-outline-danger ms-1"><i class="fas fa-trash"></i></a>
-                        </div>
-                    </div>
-                    <p class="mb-1 mt-1">{{ task.description|truncatewords:20|default:"" }}</p>
-                    
-                    {# Display person/church/contact prominently #}
-                    {% if task.person %}
-                        <div class="mb-1">
-                            <small class="text-info"><i class="fas fa-user"></i> <strong>Person:</strong> 
-                                <a href="{% url 'contacts:person_detail' task.person.pk %}" class="text-info">
-                                    {{ task.person.contact.first_name }} {{ task.person.contact.last_name }}
-                                </a>
-                            </small>
-                        </div>
-                    {% elif task.church and task.church.pk %}
-                        <div class="mb-1">
-                            <small class="text-info"><i class="fas fa-church"></i> <strong>Church:</strong> 
-                                <a href="{% url 'churches:church_detail' task.church.pk %}" class="text-info">
-                                    {{ task.church.name }}
-                                </a>
-                            </small>
-                        </div>
-                    {% elif task.contact %}
-                        <div class="mb-1">
-                            <small class="text-info">
-                                <i class="fas fa-{% if task.contact.type == 'person' %}user{% else %}church{% endif %}"></i> 
-                                <strong>Contact:</strong> 
-                                {% if task.contact.type == 'person' and task.contact.person and task.contact.person.pk %}
-                                    <a href="{% url 'contacts:person_detail' task.contact.person.pk %}" class="text-info">
-                                        {{ task.contact.first_name }} {{ task.contact.last_name }}
-                                    </a>
-                                {% elif task.contact.type == 'church' and task.contact.church and task.contact.church.pk %}
-                                    <a href="{% url 'churches:church_detail' task.contact.church.pk %}" class="text-info">
-                                        {{ task.contact.church_name }}
-                                    </a>
-                                {% else %}
-                                    {{ task.contact.first_name|default:"" }} {{ task.contact.last_name|default:"" }}{{ task.contact.church_name|default:"" }}
-                                {% endif %}
-                            </small>
-                        </div>
-                    {% endif %}
-                    
-                    {% if task.assigned_to %}<small class="d-block text-muted">Assigned to: {{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</small>{% endif %}
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-
-        {% include "partials/_pagination.html" %}
-
-    {% else %}
-        <div class="alert alert-info" role="alert">
-            No tasks found.
-            {% if request.GET %}
-                Try adjusting your filters or <a href="{% url 'tasks:task_list' %}" class="alert-link">clear filters</a>.
-            {% else %}
-                <a href="{% url 'tasks:task_create' %}" class="alert-link">Create a new task?</a>
-            {% endif %}
-        </div>
-    {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/lazy-loading.js' %}?v=1750793997"></script>
 <script>
-// Dynamic filtering functionality
 document.addEventListener('DOMContentLoaded', function() {
-    const filterForm = document.getElementById('filter-form');
-    const searchInput = document.getElementById('search');
-    const searchInputDesktop = document.getElementById('search-desktop');
-    let searchTimer;
+    // Initialize lazy loader for task list
+    const taskLoader = new LazyLoader({
+        tableBody: document.getElementById('task-table-body'),
+        apiUrl: '{% url "tasks:task_list_api" %}',
+        perPage: 25,
+        enableInfiniteScroll: false,  // Disable auto-scroll for manual pagination
+        filters: {
+            search: '{{ search_query }}',
+            status: '{{ current_status }}',
+            priority: '{{ current_priority }}',
+            assigned_to: '{{ current_assigned }}',
+            due: '{{ current_due }}'
+        }
+    });
     
-    // Add dynamic search for mobile
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimer);
-            searchTimer = setTimeout(function() {
-                filterForm.submit();
-            }, 300); // 300ms delay
+    // Override the row template for task-specific rendering
+    taskLoader.getRowTemplate = function(item) {
+        return `
+            <td>
+                <input type="checkbox" name="task_ids" value="${item.id}" class="form-check-input task-checkbox">
+            </td>
+            <td>
+                <a href="${item.detail_url}" class="text-decoration-none">
+                    <strong class="${item.status === 'completed' ? 'text-decoration-line-through' : ''}">${item.title}</strong>
+                </a>
+                ${item.description ? `<br><small class="text-muted">${item.description.substring(0, 80)}${item.description.length > 80 ? '...' : ''}</small>` : ''}
+                ${item.is_recurring_template ? '<br><small class="text-info"><i class="fas fa-sync-alt me-1"></i>Recurring Template</small>' : ''}
+                ${item.parent_task ? '<br><small class="text-muted"><i class="fas fa-link me-1"></i>Recurring Instance</small>' : ''}
+            </td>
+            <td>
+                ${item.contact_name ? 
+                    `<a href="${item.contact_url}" class="text-decoration-none">
+                        <i class="${item.contact_icon} me-1"></i>${item.contact_name}
+                    </a>` : '-'}
+            </td>
+            <td>${this.getStatusBadge(item.status, item.status_display)}</td>
+            <td>${this.getPriorityBadge(item.priority, item.priority_display)}</td>
+            <td>
+                ${item.status === 'completed' && item.completed_at ? 
+                    `<small class="text-success">Completed: ${item.completed_at_formatted}</small>` :
+                    `${item.due_date ? item.due_date_formatted : '<span class="text-muted">No due date</span>'}`}
+            </td>
+            <td>${item.assigned_to_name || '-'}</td>
+            <td>${this.getActionButtons(item)}</td>
+        `;
+    };
+    
+    // Override getStatusBadge for task-specific status badges
+    taskLoader.getStatusBadge = function(status, statusDisplay) {
+        const badges = {
+            'pending': '<span class="badge bg-warning text-dark">Pending</span>',
+            'in_progress': '<span class="badge bg-primary">In Progress</span>',
+            'completed': '<span class="badge bg-success">Completed</span>'
+        };
+        return badges[status] || `<span class="badge bg-secondary">${statusDisplay || status}</span>`;
+    };
+    
+    // Override getPriorityBadge for task-specific priority badges
+    taskLoader.getPriorityBadge = function(priority, priorityDisplay) {
+        const badges = {
+            'low': '<span class="badge bg-light text-dark">Low</span>',
+            'medium': '<span class="badge bg-info">Medium</span>',
+            'high': '<span class="badge bg-danger">High</span>'
+        };
+        return badges[priority] || `<span class="badge bg-secondary">${priorityDisplay || priority}</span>`;
+    };
+    
+    // Override getActionButtons for task-specific actions
+    taskLoader.getActionButtons = function(item) {
+        return `
+            <div class="btn-group">
+                ${item.status !== 'completed' ? 
+                    `<button class="btn btn-sm btn-outline-success mark-complete-btn" data-task-id="${item.id}">
+                        <i class="fas fa-check"></i>
+                    </button>` : ''}
+                <a href="${item.edit_url}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-edit"></i>
+                </a>
+                <a href="${item.detail_url}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-eye"></i>
+                </a>
+                <a href="${item.delete_url}" class="btn btn-sm btn-outline-danger">
+                    <i class="fas fa-trash"></i>
+                </a>
+            </div>
+        `;
+    };
+    
+    // Set up pagination controls
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    const perPageSelect = document.getElementById('per-page-select');
+    const perPageCount = document.getElementById('per-page-count');
+    
+    // Load more button click handler
+    if (!taskLoader.enableInfiniteScroll) {
+        loadMoreBtn.addEventListener('click', () => {
+            taskLoader.loadMore();
         });
     }
     
-    // Add dynamic search for desktop
-    if (searchInputDesktop) {
-        searchInputDesktop.addEventListener('input', function() {
-            clearTimeout(searchTimer);
-            searchTimer = setTimeout(function() {
-                filterForm.submit();
-            }, 300); // 300ms delay
+    // Per-page selector change handler
+    perPageSelect.addEventListener('change', (e) => {
+        const newPerPage = parseInt(e.target.value);
+        taskLoader.perPage = newPerPage;
+        perPageCount.textContent = newPerPage;
+        taskLoader.resetAndLoad();
+    });
+    
+    // Load initial data
+    taskLoader.loadMore();
+    
+    // Bulk operations management
+    const selectAll = document.getElementById('select-all');
+    const bulkOpsBar = document.getElementById('bulk-operations');
+    const selectedCount = document.getElementById('selected-count');
+    
+    window.updateBulkOperations = function() {
+        const checkboxes = document.querySelectorAll('.task-checkbox');
+        const selected = document.querySelectorAll('.task-checkbox:checked');
+        const count = selected.length;
+        
+        selectedCount.textContent = count;
+        bulkOpsBar.style.display = count > 0 ? 'block' : 'none';
+        
+        // Update all hidden inputs for bulk operations
+        const ids = Array.from(selected).map(cb => cb.value).join(',');
+        document.getElementById('bulk-delete-ids').value = ids;
+        document.getElementById('bulk-status-ids').value = ids;
+        document.getElementById('bulk-priority-ids').value = ids;
+        document.getElementById('bulk-user-ids').value = ids;
+        document.getElementById('bulk-complete-ids').value = ids;
+        
+        // Update select all checkbox state
+        const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+        const noneChecked = Array.from(checkboxes).every(cb => !cb.checked);
+        
+        selectAll.checked = allChecked;
+        selectAll.indeterminate = !allChecked && !noneChecked;
+    };
+    
+    // Select all functionality
+    selectAll.addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.task-checkbox');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+        updateBulkOperations();
+    });
+    
+    // Dynamic Search Functionality
+    const mainSearchInput = document.getElementById('main-search-input');
+    const quickStatusFilter = document.getElementById('quick-status-filter');
+    const quickPriorityFilter = document.getElementById('quick-priority-filter');
+    const quickDueFilter = document.getElementById('quick-due-filter');
+    
+    // Debounce function for dynamic search
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    // Update filters and reload data
+    function updateFilters() {
+        const searchQuery = mainSearchInput ? mainSearchInput.value : '';
+        const status = quickStatusFilter ? quickStatusFilter.value : '';
+        const priority = quickPriorityFilter ? quickPriorityFilter.value : '';
+        const due = quickDueFilter ? quickDueFilter.value : '';
+        
+        taskLoader.updateFilters({
+            search: searchQuery,
+            status: status,
+            priority: priority,
+            due: due
+        });
+        
+        // Reset and reload data with new filters
+        taskLoader.resetAndLoad();
+    }
+    
+    // Add event listeners for dynamic search
+    if (mainSearchInput) {
+        mainSearchInput.addEventListener('input', debounce(updateFilters, 300));
+        mainSearchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateFilters();
+            }
         });
     }
     
-    // Auto-submit form when filters change
-    const filterSelects = filterForm.querySelectorAll('select');
-    filterSelects.forEach(select => {
+    if (quickStatusFilter) {
+        quickStatusFilter.addEventListener('change', updateFilters);
+    }
+    
+    if (quickPriorityFilter) {
+        quickPriorityFilter.addEventListener('change', updateFilters);
+    }
+    
+    if (quickDueFilter) {
+        quickDueFilter.addEventListener('change', updateFilters);
+    }
+    
+    // Office selector for view mode (super admin only)
+    const officeSelector = document.getElementById('office-selector');
+    if (officeSelector) {
+        officeSelector.addEventListener('change', function() {
+            if (this.value) {
+                const currentParams = new URLSearchParams(window.location.search);
+                currentParams.set('view_mode', this.value);
+                window.location.href = '?' + currentParams.toString();
+            }
+        });
+    }
+    
+    // Handle bulk operation form submissions
+    document.querySelectorAll('form select[name="status"]').forEach(select => {
         select.addEventListener('change', function() {
-            filterForm.submit();
+            if (this.value) {
+                this.closest('form').submit();
+            }
+        });
+    });
+    
+    document.querySelectorAll('form select[name="priority"]').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.closest('form').submit();
+            }
+        });
+    });
+    
+    document.querySelectorAll('form select[name="user_id"]').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.closest('form').submit();
+            }
         });
     });
 });
 
+// Task completion functionality
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -514,12 +588,13 @@ function getCookie(name) {
 const csrftoken = getCookie('csrftoken');
 
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.mark-complete-btn').forEach(button => {
-        button.addEventListener('click', function(event) {
-            event.preventDefault();
-            const taskId = this.dataset.taskId;
+    // Handle task completion buttons (delegated event handling for dynamic content)
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('mark-complete-btn') || e.target.closest('.mark-complete-btn')) {
+            e.preventDefault();
+            const button = e.target.classList.contains('mark-complete-btn') ? e.target : e.target.closest('.mark-complete-btn');
+            const taskId = button.dataset.taskId;
             const url = `/tasks/${taskId}/complete/`;
-            const taskItem = document.getElementById(`task-item-${taskId}`);
 
             fetch(url, {
                 method: 'POST',
@@ -531,30 +606,21 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    if (taskItem) {
-                        taskItem.classList.add('task-completed');
-                        const titleEl = taskItem.querySelector('h5');
-                        if (titleEl) titleEl.classList.add('text-decoration-line-through');
+                    // Update the UI
+                    const row = button.closest('tr');
+                    if (row) {
+                        const titleLink = row.querySelector('td:nth-child(2) a strong');
+                        if (titleLink) titleLink.classList.add('text-decoration-line-through');
                         
-                        const statusEl = taskItem.querySelector('.task-status-display');
-                        if(statusEl) statusEl.textContent = `Status: ${data.status}`;
-
-                        const completedAtEl = taskItem.querySelector('.task-completed-at-display');
-                        if(completedAtEl && data.completed_at_formatted) {
-                            completedAtEl.textContent = ` | Completed: ${data.completed_at_formatted}`;
-                            completedAtEl.classList.remove('d-none'); // Ensure it's visible
-                        } else if (completedAtEl) {
-                             // If it exists but no date, create or update it
-                            let smallCompletedText = taskItem.querySelector('.task-completed-at-display');
-                            if (!smallCompletedText) { // If it doesn't exist, find where to insert or append
-                                const statusPriorityContainer = taskItem.querySelector('.task-status-display').parentNode;
-                                if(statusPriorityContainer && data.completed_at_formatted) {
-                                   statusPriorityContainer.insertAdjacentHTML('beforeend', `<small class="text-muted task-completed-at-display"> | Completed: ${data.completed_at_formatted}</small>`);
-                                }
-                            }
+                        const statusCell = row.querySelector('td:nth-child(4)');
+                        if (statusCell) statusCell.innerHTML = '<span class="badge bg-success">Completed</span>';
+                        
+                        const dueDateCell = row.querySelector('td:nth-child(6)');
+                        if (dueDateCell && data.completed_at_formatted) {
+                            dueDateCell.innerHTML = `<small class="text-success">Completed: ${data.completed_at_formatted}</small>`;
                         }
                     }
-                    this.remove(); // Remove the button
+                    button.remove(); // Remove the complete button
                 } else {
                     alert('Failed to mark task as complete: ' + (data.message || 'Unknown error'));
                 }
@@ -563,112 +629,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error marking task complete:', error);
                 alert('An error occurred while marking the task as complete.');
             });
-        });
-    });
-});
-
-// Bulk operations functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const selectAllCheckbox = document.getElementById('select-all');
-    const taskCheckboxes = document.querySelectorAll('.task-checkbox');
-    const bulkOperationsBar = document.getElementById('bulk-operations');
-    const selectedCountSpan = document.getElementById('selected-count');
-    
-    // Handle select all functionality
-    if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', function() {
-            const isChecked = this.checked;
-            taskCheckboxes.forEach(checkbox => {
-                checkbox.checked = isChecked;
-            });
-            updateBulkOperations();
-        });
-    }
-    
-    // Handle individual checkbox changes
-    taskCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            updateBulkOperations();
-            updateSelectAllState();
-        });
+        }
     });
     
-    function updateBulkOperations() {
-        const checkedBoxes = document.querySelectorAll('.task-checkbox:checked');
-        const count = checkedBoxes.length;
-        
-        if (count > 0) {
-            bulkOperationsBar.style.display = 'block';
-            selectedCountSpan.textContent = count;
-            
-            // Update desktop count
-            const desktopCount = document.getElementById('selected-count-desktop');
-            if (desktopCount) {
-                desktopCount.textContent = count;
-            }
-            
-            // Update all hidden task_ids inputs
-            const taskIds = Array.from(checkedBoxes).map(cb => cb.value).join(',');
-            
-            // Desktop inputs
-            const deleteIds = document.getElementById('bulk-delete-ids');
-            const statusIds = document.getElementById('bulk-status-ids');
-            const priorityIds = document.getElementById('bulk-priority-ids');
-            const userIds = document.getElementById('bulk-user-ids');
-            const officeIds = document.getElementById('bulk-office-ids');
-            const completeIds = document.getElementById('bulk-complete-ids');
-            
-            if (deleteIds) deleteIds.value = taskIds;
-            if (statusIds) statusIds.value = taskIds;
-            if (priorityIds) priorityIds.value = taskIds;
-            if (userIds) userIds.value = taskIds;
-            if (officeIds) officeIds.value = taskIds;
-            if (completeIds) completeIds.value = taskIds;
-            
-            // Mobile inputs
-            const deleteIdsMobile = document.getElementById('bulk-delete-ids-mobile');
-            const statusIdsMobile = document.getElementById('bulk-status-ids-mobile');
-            const priorityIdsMobile = document.getElementById('bulk-priority-ids-mobile');
-            const userIdsMobile = document.getElementById('bulk-user-ids-mobile');
-            const completeIdsMobile = document.getElementById('bulk-complete-ids-mobile');
-            
-            if (deleteIdsMobile) deleteIdsMobile.value = taskIds;
-            if (statusIdsMobile) statusIdsMobile.value = taskIds;
-            if (priorityIdsMobile) priorityIdsMobile.value = taskIds;
-            if (userIdsMobile) userIdsMobile.value = taskIds;
-            if (completeIdsMobile) completeIdsMobile.value = taskIds;
-        } else {
-            bulkOperationsBar.style.display = 'none';
+    // Handle checkbox changes for bulk operations (delegated event handling)
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('task-checkbox')) {
+            updateBulkOperations();
         }
-    }
-    
-    function updateSelectAllState() {
-        const checkedCount = document.querySelectorAll('.task-checkbox:checked').length;
-        const totalCount = taskCheckboxes.length;
-        
-        if (checkedCount === 0) {
-            selectAllCheckbox.checked = false;
-            selectAllCheckbox.indeterminate = false;
-        } else if (checkedCount === totalCount) {
-            selectAllCheckbox.checked = true;
-            selectAllCheckbox.indeterminate = false;
-        } else {
-            selectAllCheckbox.checked = false;
-            selectAllCheckbox.indeterminate = true;
-        }
-    }
-    
-    // Office selector for view mode (super admin only)
-    const officeSelector = document.getElementById('office-selector');
-    if (officeSelector) {
-        officeSelector.addEventListener('change', function() {
-            if (this.value) {
-                const currentParams = new URLSearchParams(window.location.search);
-                currentParams.set('view_mode', this.value);
-                window.location.href = '?' + currentParams.toString();
-            }
-        });
-    }
+    });
 });
 </script>
 {% endblock %}

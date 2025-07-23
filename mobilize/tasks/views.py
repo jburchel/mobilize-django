@@ -937,3 +937,194 @@ def bulk_complete_tasks(request):
         messages.error(request, f"Error completing tasks: {str(e)}")
 
     return redirect("tasks:task_list")
+
+
+@login_required
+def task_list_api(request):
+    """
+    JSON API endpoint for lazy loading task list data.
+    Uses DataAccessManager for proper filtering.
+    """
+    import logging
+    from django.urls import reverse
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        # Use DataAccessManager for proper role-based task filtering
+        from mobilize.core.permissions import get_data_access_manager
+
+        access_manager = get_data_access_manager(request)
+        tasks = access_manager.get_tasks_queryset()
+        
+        # Get query parameters
+        search_query = request.GET.get("search", "")
+        status_filter = request.GET.get("status", "")
+        priority_filter = request.GET.get("priority", "")
+        assigned_filter = request.GET.get("assigned_to", "")
+        due_filter = request.GET.get("due", "")
+        page = int(request.GET.get("page", 1))
+        per_page = int(request.GET.get("per_page", 25))
+
+        # Apply filters from GET parameters
+        if status_filter:
+            tasks = tasks.filter(status=status_filter)
+
+        if priority_filter:
+            tasks = tasks.filter(priority=priority_filter)
+
+        if assigned_filter:
+            if assigned_filter == "me":
+                tasks = tasks.filter(assigned_to=request.user)
+            elif assigned_filter == "unassigned":
+                tasks = tasks.filter(assigned_to__isnull=True)
+
+        if due_filter:
+            from datetime import date, timedelta
+
+            today = date.today()
+            if due_filter == "overdue":
+                tasks = tasks.filter(
+                    due_date__lt=today, status__in=["pending", "in_progress"]
+                )
+            elif due_filter == "today":
+                tasks = tasks.filter(due_date=today)
+            elif due_filter == "week":
+                tasks = tasks.filter(
+                    due_date__gte=today, due_date__lte=today + timedelta(days=7)
+                )
+            elif due_filter == "month":
+                tasks = tasks.filter(
+                    due_date__gte=today, due_date__lte=today + timedelta(days=30)
+                )
+
+        # General search
+        if search_query:
+            from django.db.models import Q
+
+            tasks = tasks.filter(
+                Q(title__icontains=search_query)
+                | Q(description__icontains=search_query)
+                | Q(person__contact__first_name__icontains=search_query)
+                | Q(person__contact__last_name__icontains=search_query)
+                | Q(church__contact__church_name__icontains=search_query)
+                | Q(church__name__icontains=search_query)
+            )
+
+        # Apply sorting: incomplete tasks first, then completed tasks
+        tasks = tasks.annotate(
+            is_completed_val=models.Case(
+                models.When(status="completed", then=models.Value(1)),
+                default=models.Value(0),
+                output_field=models.IntegerField(),
+            )
+        ).order_by(
+            "is_completed_val",
+            models.F("due_date").asc(nulls_last=True),
+            "priority",
+            models.F("completed_at").desc(nulls_last=True),
+        )
+
+        # Get total count
+        total_count = tasks.count()
+
+        # Calculate pagination indices
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+
+        # Get the page of results
+        tasks_to_process = list(tasks[start_idx:end_idx])
+        has_next = end_idx < total_count
+        has_previous = page > 1
+
+        # Build JSON response
+        results = []
+
+        for task in tasks_to_process:
+            try:
+                # Get contact information
+                contact_name = ""
+                contact_url = ""
+                contact_icon = "fas fa-user"
+                
+                if task.person:
+                    contact_name = f"{task.person.contact.first_name} {task.person.contact.last_name}".strip()
+                    contact_url = reverse("contacts:person_detail", args=[task.person.pk])
+                    contact_icon = "fas fa-user"
+                elif task.church:
+                    contact_name = task.church.name
+                    contact_url = reverse("churches:church_detail", args=[task.church.pk])
+                    contact_icon = "fas fa-church"
+                elif task.contact:
+                    if task.contact.type == "person" and hasattr(task.contact, 'person'):
+                        contact_name = f"{task.contact.first_name} {task.contact.last_name}".strip()
+                        if task.contact.person:
+                            contact_url = reverse("contacts:person_detail", args=[task.contact.person.pk])
+                        contact_icon = "fas fa-user"
+                    elif task.contact.type == "church" and hasattr(task.contact, 'church'):
+                        contact_name = task.contact.church_name or ""
+                        if task.contact.church:
+                            contact_url = reverse("churches:church_detail", args=[task.contact.church.pk])
+                        contact_icon = "fas fa-church"
+
+                # Format dates
+                due_date_formatted = ""
+                completed_at_formatted = ""
+                if task.due_date:
+                    due_date_formatted = task.due_date.strftime("%Y-%m-%d")
+                if task.completed_at:
+                    completed_at_formatted = task.completed_at.strftime("%Y-%m-%d")
+
+                result_item = {
+                    "id": task.pk,
+                    "title": task.title,
+                    "description": task.description or "",
+                    "status": task.status,
+                    "status_display": task.get_status_display(),
+                    "priority": task.priority,
+                    "priority_display": task.get_priority_display(),
+                    "due_date": due_date_formatted,
+                    "due_date_formatted": due_date_formatted,
+                    "completed_at": completed_at_formatted,
+                    "completed_at_formatted": completed_at_formatted,
+                    "assigned_to_name": task.assigned_to.get_full_name() if task.assigned_to else "",
+                    "contact_name": contact_name,
+                    "contact_url": contact_url,
+                    "contact_icon": contact_icon,
+                    "is_recurring_template": task.is_recurring_template,
+                    "parent_task": task.parent_task_id is not None,
+                    "detail_url": reverse("tasks:task_detail", args=[task.pk]),
+                    "edit_url": reverse("tasks:task_update", args=[task.pk]),
+                    "delete_url": reverse("tasks:task_delete", args=[task.pk]),
+                }
+
+                results.append(result_item)
+
+            except Exception as e:
+                logger.error(f"Task API: Error processing task {task.pk}: {e}")
+                continue
+
+        return JsonResponse(
+            {
+                "results": results,
+                "page": page,
+                "per_page": per_page,
+                "total": total_count,
+                "has_next": has_next,
+                "has_previous": has_previous,
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Task API: General error: {e}")
+        return JsonResponse(
+            {
+                "results": [],
+                "page": page,
+                "per_page": per_page,
+                "total": 0,
+                "has_next": False,
+                "has_previous": False,
+                "error": str(e),
+            }
+        )
