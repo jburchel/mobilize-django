@@ -2077,3 +2077,134 @@ def sms_history_api(request):
             "success": False,
             "error": "An unexpected error occurred"
         }, status=500)
+
+
+@login_required
+def communication_list_api(request):
+    """
+    JSON API endpoint for lazy loading communication list data.
+    Supports search by people, church, subject, type, etc.
+    """
+    import logging
+    from django.urls import reverse
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        # Start with all communications
+        queryset = Communication.objects.all()
+        
+        # Get query parameters
+        search_query = request.GET.get("search", "")
+        type_filter = request.GET.get("type", "")
+        direction_filter = request.GET.get("direction", "")
+        status_filter = request.GET.get("status", "")
+        page = int(request.GET.get("page", 1))
+        per_page = int(request.GET.get("per_page", 25))
+
+        # Apply filters from GET parameters
+        if type_filter:
+            queryset = queryset.filter(type=type_filter)
+
+        if direction_filter:
+            queryset = queryset.filter(direction=direction_filter)
+
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        # General search across people, church, subject, type
+        if search_query:
+            from django.db.models import Q
+
+            search_conditions = Q(
+                # Search in basic communication fields
+                Q(subject__icontains=search_query)
+                | Q(sender__icontains=search_query)
+                | Q(message__icontains=search_query)
+                | Q(content__icontains=search_query)
+                | Q(type__icontains=search_query)
+                |
+                # Search in person contact fields
+                Q(person__contact__first_name__icontains=search_query)
+                | Q(person__contact__last_name__icontains=search_query)
+                | Q(person__contact__email__icontains=search_query)
+                |
+                # Search in church contact fields
+                Q(church__contact__church_name__icontains=search_query)
+                | Q(church__contact__email__icontains=search_query)
+                | Q(church__name__icontains=search_query)
+            )
+
+            queryset = queryset.filter(search_conditions)
+
+        # Apply sorting: most recent first
+        queryset = queryset.order_by('-date', '-created_at')
+
+        # Get total count
+        total_count = queryset.count()
+
+        # Apply pagination
+        start = (page - 1) * per_page
+        end = start + per_page
+        communications = queryset[start:end]
+
+        # Format results
+        results = []
+        for comm in communications:
+            # Get contact info
+            contact_name = None
+            contact_url = None
+            contact_icon = "fas fa-user"
+            
+            if comm.person:
+                contact_name = f"{comm.person.contact.first_name} {comm.person.contact.last_name}".strip()
+                contact_url = reverse('contacts:person_detail', args=[comm.person.id])
+                contact_icon = "fas fa-user"
+            elif comm.church:
+                contact_name = comm.church.name or comm.church.contact.church_name
+                contact_url = reverse('churches:church_detail', args=[comm.church.id])
+                contact_icon = "fas fa-church"
+
+            # Format date
+            date_formatted = comm.date.strftime("%b %d, %Y at %I:%M %p") if comm.date else "No date"
+
+            results.append({
+                'id': comm.id,
+                'type': comm.type,
+                'subject': comm.subject or 'No subject',
+                'sender': comm.sender or '',
+                'message': comm.message or comm.content or '',
+                'direction': comm.direction,
+                'date': date_formatted,
+                'contact_name': contact_name,
+                'contact_url': contact_url,
+                'contact_icon': contact_icon,
+                'detail_url': reverse('communications:communication_detail', args=[comm.id]),
+                'edit_url': reverse('communications:communication_update', args=[comm.id]),
+                'delete_url': reverse('communications:communication_delete', args=[comm.id]),
+            })
+
+        # Calculate pagination info
+        has_next = end < total_count
+        has_previous = page > 1
+
+        return JsonResponse({
+            'results': results,
+            'page': page,
+            'per_page': per_page,
+            'total': total_count,
+            'has_next': has_next,
+            'has_previous': has_previous,
+        })
+
+    except Exception as e:
+        logger.error(f"Communication API error: {e}")
+        return JsonResponse({
+            "results": [],
+            "page": page,
+            "per_page": per_page,
+            "total": 0,
+            "has_next": False,
+            "has_previous": False,
+            "error": str(e),
+        })

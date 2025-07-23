@@ -58,6 +58,7 @@ urlpatterns = [
     ),
     # Communications
     path("", views.CommunicationListView.as_view(), name="communication_list"),
+    path("api/list/", views.communication_list_api, name="communication_list_api"),
     path(
         "create/", views.CommunicationCreateView.as_view(), name="communication_create"
     ),
