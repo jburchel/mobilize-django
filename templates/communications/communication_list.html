@@ -1028,6 +1028,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const directionFilter = document.getElementById('quick-direction-filter');  
         const statusFilter = document.getElementById('quick-status-filter');
         
+        console.log('DEBUG: updateFilters called');
+        console.log('DEBUG: searchInput value:', searchInput ? searchInput.value : 'not found');
+        console.log('DEBUG: communicationLoader:', communicationLoader);
+        
         communicationLoader.updateFilters({
             search: searchInput ? searchInput.value : '',
             type: typeFilter ? typeFilter.value : '',
@@ -1040,7 +1044,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add event listeners for search and filters
     const mainSearchInput = document.getElementById('main-search-input');
+    console.log('DEBUG: mainSearchInput element:', mainSearchInput);
     if (mainSearchInput) {
+        console.log('DEBUG: Setting up event listeners for search');
         // Debounce function for dynamic search
         function debounce(func, wait) {
             let timeout;
@@ -1054,13 +1060,19 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
         
-        mainSearchInput.addEventListener('input', debounce(updateFilters, 300));
+        mainSearchInput.addEventListener('input', debounce(function() {
+            console.log('DEBUG: Input event triggered');
+            updateFilters();
+        }, 300));
         mainSearchInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
+                console.log('DEBUG: Enter key pressed');
                 e.preventDefault();
                 updateFilters();
             }
         });
+    } else {
+        console.log('DEBUG: mainSearchInput element not found!');
     }
     
     // Add event listeners to filter dropdowns
