@@ -661,13 +661,13 @@ document.addEventListener('DOMContentLoaded', function() {
             <td>${item.primary_contact_name || '-'}</td>
             <td>
                 ${item.phone ? 
-                    `<a href="#" onclick="handlePhoneClick('${item.phone}', ${item.id}, '${(item.primary_contact_name || '').replace(/'/g, "\\\\'")}');" class="text-decoration-none">
+                    `<a href="#" data-phone="${item.phone}" data-church-id="${item.id}" data-contact-name="${item.primary_contact_name || ''}" class="phone-click text-decoration-none">
                         <i class="fas fa-phone me-1"></i>${item.phone}
                     </a>` : '-'}
             </td>
             <td>
                 ${item.email ? 
-                    `<a href="#" onclick="openEmailCompose('${(item.email || '').replace(/'/g, '\\\\\\'').replace(/"/g, '\\\\\"')}', '${(item.primary_contact_name || '').replace(/'/g, '\\\\\\'').replace(/"/g, '\\\\\"')}', ${item.id})" class="text-decoration-none">
+                    `<a href="#" data-email="${item.email}" data-church-id="${item.id}" data-contact-name="${item.primary_contact_name || ''}" class="email-click text-decoration-none">
                         <i class="fas fa-envelope me-1"></i>${item.email}
                     </a>` : '-'}
             </td>
@@ -708,22 +708,22 @@ document.addEventListener('DOMContentLoaded', function() {
                         <i class="fas fa-comment-alt"></i>
                     </button>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#" onclick="composeChurchEmail('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', '${item.email || ''}');">
+                        <li><a class="dropdown-item compose-email-btn" href="#" data-church-id="${item.id}" data-church-name="${item.name || ''}" data-email="${item.email || ''}">
                             <i class="fas fa-envelope me-2"></i> Compose Email
                         </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', 'phone');">
+                        <li><a class="dropdown-item log-communication-btn" href="#" data-church-id="${item.id}" data-church-name="${item.name || ''}" data-comm-type="phone">
                             <i class="fas fa-phone me-2"></i> Log Phone Call
                         </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', 'text');">
+                        <li><a class="dropdown-item log-communication-btn" href="#" data-church-id="${item.id}" data-church-name="${item.name || ''}" data-comm-type="text">
                             <i class="fas fa-sms me-2"></i> Log Text
                         </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', 'video_call');">
+                        <li><a class="dropdown-item log-communication-btn" href="#" data-church-id="${item.id}" data-church-name="${item.name || ''}" data-comm-type="video_call">
                             <i class="fas fa-video me-2"></i> Log Video Call
                         </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', 'meeting');">
+                        <li><a class="dropdown-item log-communication-btn" href="#" data-church-id="${item.id}" data-church-name="${item.name || ''}" data-comm-type="meeting">
                             <i class="fas fa-users me-2"></i> Log Meeting
                         </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${(item.name || '').replace(/'/g, "\\\\'")}', 'other');">
+                        <li><a class="dropdown-item log-communication-btn" href="#" data-church-id="${item.id}" data-church-name="${item.name || ''}" data-comm-type="other">
                             <i class="fas fa-comment me-2"></i> Log Other
                         </a></li>
                     </ul>
@@ -886,6 +886,57 @@ document.addEventListener('DOMContentLoaded', function() {
     if (quickPipelineFilter) {
         quickPipelineFilter.addEventListener('change', updateFilters);
     }
+    
+    // Add event listeners for data-attribute based handlers (safer than onclick)
+    document.addEventListener('click', function(e) {
+        // Phone click handler
+        if (e.target.closest('.phone-click')) {
+            e.preventDefault();
+            const link = e.target.closest('.phone-click');
+            const phone = link.dataset.phone;
+            const churchId = link.dataset.churchId;
+            const contactName = link.dataset.contactName;
+            if (window.handlePhoneClick) {
+                window.handlePhoneClick(phone, churchId, contactName);
+            }
+        }
+        
+        // Email click handler
+        if (e.target.closest('.email-click')) {
+            e.preventDefault();
+            const link = e.target.closest('.email-click');
+            const email = link.dataset.email;
+            const churchId = link.dataset.churchId;
+            const contactName = link.dataset.contactName;
+            if (window.openEmailCompose) {
+                window.openEmailCompose(email, contactName, churchId);
+            }
+        }
+        
+        // Compose email button handler
+        if (e.target.closest('.compose-email-btn')) {
+            e.preventDefault();
+            const btn = e.target.closest('.compose-email-btn');
+            const churchId = btn.dataset.churchId;
+            const churchName = btn.dataset.churchName;
+            const email = btn.dataset.email;
+            if (window.composeChurchEmail) {
+                window.composeChurchEmail(churchId, churchName, email);
+            }
+        }
+        
+        // Log communication button handler
+        if (e.target.closest('.log-communication-btn')) {
+            e.preventDefault();
+            const btn = e.target.closest('.log-communication-btn');
+            const churchId = btn.dataset.churchId;
+            const churchName = btn.dataset.churchName;
+            const commType = btn.dataset.commType;
+            if (window.logChurchCommunication) {
+                window.logChurchCommunication(churchId, churchName, commType);
+            }
+        }
+    });
 });
 </script>
 {% endblock %}
