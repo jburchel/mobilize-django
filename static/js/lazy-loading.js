@@ -16,6 +16,15 @@ class LazyLoader {
         this.enableInfiniteScroll = options.enableInfiniteScroll !== false; // Default true
         this.searchParams = new URLSearchParams(window.location.search);
         
+        // Apply initial filters if provided
+        if (options.filters) {
+            Object.keys(options.filters).forEach(key => {
+                if (options.filters[key]) {
+                    this.searchParams.set(key, options.filters[key]);
+                }
+            });
+        }
+        
         // Create loading indicator
         this.loadingIndicator = this.createLoadingIndicator();
         
