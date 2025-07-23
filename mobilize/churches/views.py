@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.db import models
 from django.views.decorators.http import require_POST
+from django.urls import reverse
 import csv
 from datetime import datetime
 
@@ -877,3 +878,189 @@ def bulk_assign_church_office(request):
         messages.error(request, f"Error assigning churches: {str(e)}")
 
     return redirect("churches:church_list")
+
+
+@login_required
+def church_list_api(request):
+    """
+    JSON API endpoint for lazy loading church list data.
+    Uses DataAccessManager for proper filtering.
+    """
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    # Get data access manager for view mode handling
+    access_manager = get_data_access_manager(request)
+
+    # Get query parameters
+    query = request.GET.get("q", "")
+    priority = request.GET.get("priority", "")
+    pipeline_stage = request.GET.get("pipeline_stage", "")
+    sort_by = request.GET.get("sort", "name")  # Default sort by name
+    page = int(request.GET.get("page", 1))
+    per_page = int(request.GET.get("per_page", 25))
+
+    # Use DataAccessManager for proper filtering
+    try:
+        churches = access_manager.get_churches_queryset().select_related(
+            "contact", "contact__office", "contact__user"
+        )
+        initial_count = churches.count()
+
+    except Exception as e:
+        logger.error(f"Church API: Basic queryset setup failed: {e}")
+        return JsonResponse(
+            {
+                "results": [],
+                "page": page,
+                "per_page": per_page,
+                "total": 0,
+                "has_next": False,
+                "has_previous": False,
+                "error": str(e),
+            }
+        )
+
+    # Apply filters if provided
+    if query:
+        churches = churches.filter(
+            Q(name__icontains=query)
+            | Q(contact__church_name__icontains=query)
+            | Q(location__icontains=query)
+            | Q(denomination__icontains=query)
+            | Q(contact__email__icontains=query)
+            | Q(contact__phone__icontains=query)
+        )
+
+    if pipeline_stage:
+        # Filter by pipeline stage through the pipeline system
+        from mobilize.pipeline.models import PipelineContact, PipelineStage
+
+        try:
+            # Get church contacts that have the specified pipeline stage
+            stage_objects = PipelineStage.objects.filter(
+                name__iexact=pipeline_stage.title()
+            )
+            if stage_objects.exists():
+                pipeline_contacts = PipelineContact.objects.filter(
+                    current_stage__in=stage_objects, contact_type="church"
+                ).values_list("contact_id", flat=True)
+                churches = churches.filter(contact_id__in=pipeline_contacts)
+            else:
+                # If no matching stage found, also check church_pipeline field
+                churches = churches.filter(church_pipeline=pipeline_stage)
+        except Exception:
+            # Fallback to church_pipeline field
+            churches = churches.filter(church_pipeline=pipeline_stage)
+
+    if priority:
+        churches = churches.filter(contact__priority=priority)
+
+    # Apply sorting
+    sort_options = {
+        "name": "name",
+        "denomination": "denomination",
+        "location": "location",
+        "priority": "contact__priority",
+        "assigned_to": "contact__user__first_name",
+        "created": "contact__created_at",
+        "-name": "-name",
+        "-denomination": "-denomination",
+        "-location": "-location",
+        "-priority": "-contact__priority",
+        "-assigned_to": "-contact__user__first_name",
+        "-created": "-contact__created_at",
+    }
+
+    # Apply sorting with fallback ordering for consistent pagination
+    if sort_by in sort_options:
+        churches = churches.order_by(sort_options[sort_by], "pk")
+    else:
+        churches = churches.order_by("name", "pk")  # Default sort
+
+    # Get total count
+    try:
+        total_count = churches.count()
+    except Exception as e:
+        logger.error(f"Church API: Failed to get total count: {e}")
+        total_count = 0
+
+    # Calculate pagination indices
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+
+    # Get the page of results
+    try:
+        churches_to_process = list(churches[start_idx:end_idx])
+        has_next = end_idx < total_count
+        has_previous = page > 1
+
+    except Exception as e:
+        logger.error(f"Church API: Pagination slice failed: {e}")
+        churches_to_process = []
+        has_next = False
+        has_previous = False
+
+    # Build JSON response
+    results = []
+
+    for church in churches_to_process:
+        try:
+            # Get primary contact information
+            primary_contact = church.get_primary_contact()
+            primary_contact_name = ""
+            primary_contact_phone = ""
+            primary_contact_email = ""
+            
+            if primary_contact:
+                primary_contact_name = f"{primary_contact.contact.first_name} {primary_contact.contact.last_name}".strip()
+                primary_contact_phone = primary_contact.contact.phone or ""
+                primary_contact_email = primary_contact.contact.email or ""
+
+            # Get pipeline stage
+            pipeline_stage_code = church.contact.get_pipeline_stage_code()
+            pipeline_stage_display = ""
+            if pipeline_stage_code == 'promotion':
+                pipeline_stage_display = "Promotion"
+            elif pipeline_stage_code == 'information':
+                pipeline_stage_display = "Information"
+            elif pipeline_stage_code == 'invitation':
+                pipeline_stage_display = "Invitation"
+            elif pipeline_stage_code == 'confirmation':
+                pipeline_stage_display = "Confirmation"
+            elif pipeline_stage_code == 'automation':
+                pipeline_stage_display = "Automation"
+            elif pipeline_stage_code == 'en42':
+                pipeline_stage_display = "EN42"
+
+            result_item = {
+                "id": church.contact.id,
+                "name": church.name or church.contact.church_name or "",
+                "primary_contact_name": primary_contact_name,
+                "phone": primary_contact_phone,
+                "email": primary_contact_email,
+                "pipeline_stage": pipeline_stage_code,
+                "pipeline_stage_display": pipeline_stage_display,
+                "assigned_to": church.contact.user.get_full_name() if church.contact.user else "",
+                "detail_url": reverse("churches:church_detail", args=[church.pk]),
+                "edit_url": reverse("churches:church_edit", args=[church.pk]),
+                "delete_url": reverse("churches:church_delete", args=[church.pk]),
+            }
+
+            results.append(result_item)
+
+        except Exception as e:
+            logger.error(f"Church API: Error processing church {church.pk}: {e}")
+            continue
+
+    return JsonResponse(
+        {
+            "results": results,
+            "page": page,
+            "per_page": per_page,
+            "total": total_count,
+            "has_next": has_next,
+            "has_previous": has_previous,
+        }
+    )

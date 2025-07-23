@@ -5,6 +5,7 @@ app_name = "churches"
 
 urlpatterns = [
     path("", views.church_list, name="church_list"),
+    path("api/list/", views.church_list_api, name="church_list_api"),
     path("create/", views.church_create, name="church_create"),
     path("<int:pk>/", views.church_detail, name="church_detail"),
     path("<int:pk>/edit/", views.church_edit, name="church_edit"),

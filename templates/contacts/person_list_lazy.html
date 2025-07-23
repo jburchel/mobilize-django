@@ -29,15 +29,12 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body py-2">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-eye me-2 text-muted"></i>
-                        <span class="text-muted me-3">View Mode:</span>
-                        <span class="badge bg-primary">{{ view_mode_display }}</span>
-                    </div>
+                <div class="d-flex align-items-center gap-3">
+                    <i class="fas fa-eye me-2 text-muted"></i>
+                    <span class="text-muted">View Mode:</span>
+                    
                     {% if user_role == 'super_admin' %}
-                    <div class="d-flex align-items-center gap-3">
-                        <!-- Toggle Buttons - Always Visible for Testing -->
+                        <!-- Toggle Buttons for Super Admin -->
                         <div class="btn-group" role="group" aria-label="View mode toggle">
                             <a href="?view_mode=default{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
                                class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
@@ -64,19 +61,18 @@
                             </option>
                             {% endfor %}
                         </select>
-                    </div>
                     {% else %}
-                    <!-- Office Admin Toggle Buttons -->
-                    <div class="btn-group" role="group" aria-label="View mode toggle">
-                        <a href="?view_mode=default{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
-                           class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            <i class="fas fa-building me-1"></i> My Office
-                        </a>
-                        <a href="?view_mode=my_only{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
-                           class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            <i class="fas fa-user me-1"></i> My Contacts Only
-                        </a>
-                    </div>
+                        <!-- Toggle Buttons for Office Admin -->
+                        <div class="btn-group" role="group" aria-label="View mode toggle">
+                            <a href="?view_mode=default{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
+                               class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                <i class="fas fa-building me-1"></i> My Office
+                            </a>
+                            <a href="?view_mode=my_only{% if query %}&q={{ query }}{% endif %}{% if priority %}&priority={{ priority }}{% endif %}{% if pipeline_stage %}&pipeline_stage={{ pipeline_stage }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
+                               class="btn btn-sm {% if current_view_mode == 'my_only' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                <i class="fas fa-user me-1"></i> My Contacts Only
+                            </a>
+                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -142,10 +138,52 @@
     </div>
 </div>
 
+<!-- Prominent Search Bar -->
+<div class="card mb-3">
+    <div class="card-body py-3">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="input-group">
+                    <span class="input-group-text bg-light">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" id="main-search-input" class="form-control form-control-lg" 
+                           placeholder="Search people by name, email, phone, or notes..." 
+                           value="{{ query }}" autocomplete="off">
+                </div>
+            </div>
+            <div class="col-md-4 mt-2 mt-md-0">
+                <div class="d-flex gap-2">
+                    <select id="quick-priority-filter" class="form-select">
+                        <option value="">All Priorities</option>
+                        {% for priority_value, priority_label in priorities %}
+                        <option value="{{ priority_value }}" {% if priority == priority_value %}selected{% endif %}>{{ priority_label }}</option>
+                        {% endfor %}
+                    </select>
+                    <select id="quick-pipeline-filter" class="form-select">
+                        <option value="">All Stages</option>
+                        {% for stage_value, stage_label in pipeline_stages %}
+                        <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body">
-        <!-- Search and Filter -->
-        <form method="get" class="mb-3" id="filter-form" onsubmit="event.preventDefault(); return false;">
+        <!-- Advanced Filters Toggle -->
+        <div class="mb-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#advanced-filters" aria-expanded="false">
+                <i class="fas fa-sliders-h me-1"></i> Advanced Filters
+            </button>
+        </div>
+        
+        <!-- Advanced Filters (Collapsible) -->
+        <div class="collapse" id="advanced-filters">
+            <form method="get" class="mb-3" id="filter-form" onsubmit="event.preventDefault(); return false;">
             
             <!-- Desktop: Single row layout -->
             <div class="d-none d-md-flex align-items-center gap-2 flex-nowrap">
@@ -211,6 +249,7 @@
                 </div>
             </div>
         </form>
+        </div>
 
         <!-- Data Table with Lazy Loading -->
         <div class="table-responsive">
@@ -439,16 +478,55 @@ document.addEventListener('DOMContentLoaded', function() {
         personLoader.resetAndLoad();
     }
     
-    // Add event listeners for both desktop and mobile filters
-    const allSearchInputs = [document.getElementById('search-input'), document.getElementById('search-input-mobile')].filter(Boolean);
-    const allPriorityFilters = [document.getElementById('priority-filter'), document.getElementById('priority-filter-mobile')].filter(Boolean);
-    const allPipelineFilters = [document.getElementById('pipeline-stage-filter'), document.getElementById('pipeline-stage-filter-mobile')].filter(Boolean);
+    // Add event listeners for all search inputs and filters
+    const mainSearchInput = document.getElementById('main-search-input');
+    const quickPriorityFilter = document.getElementById('quick-priority-filter');
+    const quickPipelineFilter = document.getElementById('quick-pipeline-filter');
+    
+    const allSearchInputs = [
+        mainSearchInput,
+        document.getElementById('search-input'), 
+        document.getElementById('search-input-mobile')
+    ].filter(Boolean);
+    
+    const allPriorityFilters = [
+        quickPriorityFilter,
+        document.getElementById('priority-filter'), 
+        document.getElementById('priority-filter-mobile')
+    ].filter(Boolean);
+    
+    const allPipelineFilters = [
+        quickPipelineFilter,
+        document.getElementById('pipeline-stage-filter'), 
+        document.getElementById('pipeline-stage-filter-mobile')
+    ].filter(Boolean);
+    
     const allSortFilters = [document.getElementById('sort-filter'), document.getElementById('sort-filter-mobile')].filter(Boolean);
+    
+    // Debounce function for dynamic search
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
     
     // Add event listeners to all search inputs
     allSearchInputs.forEach(input => {
         if (input) {
-            input.addEventListener('input', updateFilters);
+            if (input.id === 'main-search-input') {
+                // Main search input: Dynamic search with debounce
+                input.addEventListener('input', debounce(updateFilters, 300));
+            } else {
+                // Advanced search inputs: Immediate search
+                input.addEventListener('input', updateFilters);
+            }
+            
             input.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault(); // Prevent form submission

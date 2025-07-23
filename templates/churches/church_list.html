@@ -83,8 +83,51 @@
     </div>
 </div>
 
+<!-- Prominent Search Bar -->
+<div class="card mb-3">
+    <div class="card-body py-3">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="input-group">
+                    <span class="input-group-text bg-light">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" id="main-search-input" class="form-control form-control-lg" 
+                           placeholder="Search churches by name, location, denomination, email, or phone..." 
+                           value="{{ query }}" autocomplete="off">
+                </div>
+            </div>
+            <div class="col-md-4 mt-2 mt-md-0">
+                <div class="d-flex gap-2">
+                    <select id="quick-priority-filter" class="form-select">
+                        <option value="">All Priorities</option>
+                        <option value="low" {% if priority == 'low' %}selected{% endif %}>Low</option>
+                        <option value="medium" {% if priority == 'medium' %}selected{% endif %}>Medium</option>
+                        <option value="high" {% if priority == 'high' %}selected{% endif %}>High</option>
+                    </select>
+                    <select id="quick-pipeline-filter" class="form-select">
+                        <option value="">All Stages</option>
+                        {% for stage_value, stage_label in pipeline_stages %}
+                        <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body">
+        <!-- Advanced Filters Toggle -->
+        <div class="mb-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#advanced-filters" aria-expanded="false">
+                <i class="fas fa-sliders-h me-1"></i> Advanced Filters
+            </button>
+        </div>
+        
+        <!-- Advanced Filters (Collapsible) -->
+        <div class="collapse" id="advanced-filters">
         <!-- Search and Filter -->
         <form method="get" class="mb-3">
             
@@ -152,8 +195,8 @@
                 </div>
             </div>
         </form>
+        </div>
 
-{% if page_obj %}
 <div class="w-100">
     <div class="table-responsive w-100">
         <table class="table table-hover church-list-table w-100">
@@ -171,190 +214,45 @@
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
-                {% for church in page_obj %}
-                    <tr>
-                        <td>
-                            <input type="checkbox" name="contact_ids" value="{{ church.contact.id }}" class="form-check-input contact-checkbox">
-                        </td>
-                        <td><a href="{% url 'churches:church_detail' church.pk %}">{{ church.name|default:church.contact.church_name }}</a></td>
-                        <td>
-                            {% with primary_contact=church.get_primary_contact %}
-                                {% if primary_contact %}
-                                    {{ primary_contact.contact.first_name }} {{ primary_contact.contact.last_name }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            {% endwith %}
-                        </td>
-                        <td>
-                            {% with primary_contact=church.get_primary_contact %}
-                                {% if primary_contact and primary_contact.contact.phone %}
-                                    <a href="#" onclick="handlePhoneClick('{{ primary_contact.contact.phone }}', {{ primary_contact.contact.id }}, '{{ primary_contact.person.name|escapejs }}')" class="text-decoration-none">
-                                        <i class="fas fa-phone me-1"></i>{{ primary_contact.contact.phone }}
-                                    </a>
-                                {% else %}
-                                    -
-                                {% endif %}
-                            {% endwith %}
-                        </td>
-                        <td>
-                            {% with primary_contact=church.get_primary_contact %}
-                                {% if primary_contact and primary_contact.contact.email %}
-                                    <a href="#" onclick="openEmailCompose('{{ primary_contact.contact.email|escapejs }}', '{{ primary_contact.contact.first_name|escapejs }} {{ primary_contact.contact.last_name|escapejs }}', {{ primary_contact.contact.id }})" class="text-decoration-none">
-                                        <i class="fas fa-envelope me-1"></i>{{ primary_contact.contact.email }}
-                                    </a>
-                                {% else %}
-                                    -
-                                {% endif %}
-                            {% endwith %}
-                        </td>
-                        <td>
-                            {% with stage_code=church.contact.get_pipeline_stage_code %}
-                                {% if stage_code == 'promotion' %}
-                                    <span class="badge bg-primary">Promotion</span>
-                                {% elif stage_code == 'information' %}
-                                    <span class="badge bg-info text-dark">Information</span>
-                                {% elif stage_code == 'invitation' %}
-                                    <span class="badge bg-warning text-dark">Invitation</span>
-                                {% elif stage_code == 'confirmation' %}
-                                    <span class="badge bg-success">Confirmation</span>
-                                {% elif stage_code == 'automation' %}
-                                    <span class="badge bg-secondary">Automation</span>
-                                {% elif stage_code == 'en42' %}
-                                    <span class="badge bg-dark">EN42</span>
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            {% endwith %}
-                        </td>
-                        <td>
-                            {% if church.contact.user %}
-                                {{ church.contact.user.full_name|default:church.contact.user.email }}
-                            {% else %}
-                                <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="btn-group">
-                                <a href="{% url 'churches:church_edit' church.pk %}" class="btn btn-sm btn-outline-secondary">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="{% url 'churches:church_detail' church.pk %}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <!-- Communications Dropdown -->
-                                <div class="btn-group">
-                                    <button type="button" class="btn btn-sm btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="fas fa-comment-alt"></i>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="#" onclick="composeChurchEmail('{{ church.contact.id }}', '{{ church.name|default:church.contact.church_name }}', '{{ church.contact.email }}')">
-                                            <i class="fas fa-envelope me-2"></i> Compose Email
-                                        </a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('{{ church.contact.id }}', '{{ church.name|default:church.contact.church_name }}', 'phone')">
-                                            <i class="fas fa-phone me-2"></i> Log Phone Call
-                                        </a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('{{ church.contact.id }}', '{{ church.name|default:church.contact.church_name }}', 'text')">
-                                            <i class="fas fa-sms me-2"></i> Log Text
-                                        </a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('{{ church.contact.id }}', '{{ church.name|default:church.contact.church_name }}', 'video_call')">
-                                            <i class="fas fa-video me-2"></i> Log Video Call
-                                        </a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('{{ church.contact.id }}', '{{ church.name|default:church.contact.church_name }}', 'meeting')">
-                                            <i class="fas fa-users me-2"></i> Log Meeting
-                                        </a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('{{ church.contact.id }}', '{{ church.name|default:church.contact.church_name }}', 'other')">
-                                            <i class="fas fa-comment me-2"></i> Log Other
-                                        </a></li>
-                                    </ul>
-                                </div>
-                                <a href="{% url 'churches:church_delete' church.pk %}" class="btn btn-sm btn-outline-danger">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                {% endfor %}
+            <tbody id="church-table-body">
+                Initial rows will be loaded by JavaScript using lazy loading
+                {% endcomment %}
             </tbody>
         </table>
     </div>
     
-    <!-- Pagination -->
-    {% if page_obj.has_other_pages %}
-        <nav aria-label="Page navigation" class="mt-4 w-100">
-            <ul class="pagination justify-content-center">
-                {% if page_obj.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page=1&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}&sort={{ sort_by }}&sort={{ sort_by }}" aria-label="First">
-                            <span aria-hidden="true">&laquo;&laquo;</span>
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}&sort={{ sort_by }}" aria-label="Previous">
-                            <span aria-hidden="true">&laquo;</span>
-                        </a>
-                    </li>
-                {% else %}
-                    <li class="page-item disabled">
-                        <a class="page-link" href="#" aria-label="First">
-                            <span aria-hidden="true">&laquo;&laquo;</span>
-                        </a>
-                    </li>
-                    <li class="page-item disabled">
-                        <a class="page-link" href="#" aria-label="Previous">
-                            <span aria-hidden="true">&laquo;</span>
-                        </a>
-                    </li>
-                {% endif %}
-                
-                {% for i in page_obj.paginator.page_range %}
-                    {% if page_obj.number == i %}
-                        <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
-                    {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ i }}&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}&sort={{ sort_by }}">{{ i }}</a>
-                        </li>
-                    {% endif %}
-                {% endfor %}
-                
-                {% if page_obj.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}&sort={{ sort_by }}" aria-label="Next">
-                            <span aria-hidden="true">&raquo;</span>
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&q={{ query }}&pipeline_stage={{ pipeline_stage }}&priority={{ priority }}&sort={{ sort_by }}" aria-label="Last">
-                            <span aria-hidden="true">&raquo;&raquo;</span>
-                        </a>
-                    </li>
-                {% else %}
-                    <li class="page-item disabled">
-                        <a class="page-link" href="#" aria-label="Next">
-                            <span aria-hidden="true">&raquo;</span>
-                        </a>
-                    </li>
-                    <li class="page-item disabled">
-                        <a class="page-link" href="#" aria-label="Last">
-                            <span aria-hidden="true">&raquo;&raquo;</span>
-                        </a>
-                    </li>
-                {% endif %}
-            </ul>
-        </nav>
-    {% endif %}
+    <!-- No Results Message -->
+    <div id="no-results" class="text-center text-muted py-4" style="display: none;">
+        No churches found. <a href="{% url 'churches:church_create' %}">Add the first church</a>.
+    </div>
+    
+    <!-- Pagination Status and Load More Button -->
+    <div class="d-flex justify-content-between align-items-center mt-3" id="pagination-controls">
+        <div class="text-muted">
+            <span id="showing-text">Showing <span id="current-count">0</span> of <span id="total-count">0</span> churches</span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <label for="per-page-select" class="form-label mb-0 text-muted">Show:</label>
+                <select id="per-page-select" class="form-select form-select-sm" style="width: auto;">
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <div>
+                <button type="button" class="btn btn-primary" id="load-more-btn" style="display: none;">
+                    Load More <span id="per-page-count">25</span>
+                </button>
+                <span class="text-muted" id="end-reached" style="display: none;">
+                    <i class="fas fa-check-circle text-success"></i> All churches loaded
+                </span>
+            </div>
+        </div>
+    </div>
 </div>
     </div>
 </div>
-{% else %}
-<div class="w-100">
-    <div class="alert alert-info">
-        <h4 class="alert-heading">No churches found!</h4>
-        <p>No churches match your search criteria. Try adjusting your filters or <a href="{% url 'churches:church_create' %}" class="alert-link">add a new church</a>.</p>
-    </div>
-</div>
-{% endif %}
 
 
 <script>
@@ -440,6 +338,75 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    
+    // Dynamic Search Functionality
+    const mainSearchInput = document.getElementById('main-search-input');
+    const quickPriorityFilter = document.getElementById('quick-priority-filter');
+    const quickPipelineFilter = document.getElementById('quick-pipeline-filter');
+    
+    // Debounce function for dynamic search
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    // Update page with new filters
+    function updateFilters() {
+        const searchQuery = mainSearchInput ? mainSearchInput.value : '';
+        const priority = quickPriorityFilter ? quickPriorityFilter.value : '';
+        const pipelineStage = quickPipelineFilter ? quickPipelineFilter.value : '';
+        
+        // Build URL with current filters
+        const params = new URLSearchParams(window.location.search);
+        
+        if (searchQuery) {
+            params.set('q', searchQuery);
+        } else {
+            params.delete('q');
+        }
+        
+        if (priority) {
+            params.set('priority', priority);
+        } else {
+            params.delete('priority');
+        }
+        
+        if (pipelineStage) {
+            params.set('pipeline_stage', pipelineStage);
+        } else {
+            params.delete('pipeline_stage');
+        }
+        
+        // Navigate to new URL with filters
+        const newUrl = window.location.pathname + '?' + params.toString();
+        window.location.href = newUrl;
+    }
+    
+    // Add event listeners for dynamic search
+    if (mainSearchInput) {
+        mainSearchInput.addEventListener('input', debounce(updateFilters, 500));
+        mainSearchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateFilters();
+            }
+        });
+    }
+    
+    if (quickPriorityFilter) {
+        quickPriorityFilter.addEventListener('change', updateFilters);
+    }
+    
+    if (quickPipelineFilter) {
+        quickPipelineFilter.addEventListener('change', updateFilters);
+    }
 });
 
 // Handle email click - open Gmail compose in app
@@ -624,5 +591,253 @@ function showMessage(type, message) {
         }
     }, 5000);
 }
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/lazy-loading.js' %}?v=1750793997"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize lazy loader for church list
+    const churchLoader = new LazyLoader({
+        tableBody: document.getElementById('church-table-body'),
+        apiUrl: '{% url "churches:church_list_api" %}',
+        perPage: 25,
+        enableInfiniteScroll: false,  // Disable auto-scroll for manual pagination
+        filters: {
+            q: '{{ query }}',
+            priority: '{{ priority }}',
+            pipeline_stage: '{{ pipeline_stage }}',
+            sort: '{{ sort_by }}'
+        }
+    });
+    
+    // Override the row template for church-specific rendering
+    churchLoader.getRowTemplate = function(item) {
+        const pipelineStageHtml = this.getPipelineBadge(item.pipeline_stage);
+        return `
+            <td>
+                <input type="checkbox" name="contact_ids" value="${item.id}" class="form-check-input contact-checkbox">
+            </td>
+            <td>
+                <a href="${item.detail_url}">${item.name}</a>
+            </td>
+            <td>${item.primary_contact_name || '-'}</td>
+            <td>
+                ${item.phone ? 
+                    `<a href="#" onclick="handlePhoneClick('${item.phone}', ${item.id}, '${item.primary_contact_name.replace(/'/g, "\\\\'")})')" class="text-decoration-none">
+                        <i class="fas fa-phone me-1"></i>${item.phone}
+                    </a>` : '-'}
+            </td>
+            <td>
+                ${item.email ? 
+                    `<a href="#" onclick="openEmailCompose('${item.email.replace(/'/g, '\\\\\\'').replace(/"/g, '\\\\\"')}', '${item.primary_contact_name.replace(/'/g, '\\\\\\'').replace(/"/g, '\\\\\"')}', ${item.id})" class="text-decoration-none">
+                        <i class="fas fa-envelope me-1"></i>${item.email}
+                    </a>` : '-'}
+            </td>
+            <td>${pipelineStageHtml}</td>
+            <td>${item.assigned_to || '-'}</td>
+            <td>${this.getActionButtons(item)}</td>
+        `;
+    };
+    
+    // Override getPipelineBadge for church-specific pipeline stages
+    churchLoader.getPipelineBadge = function(stage) {
+        if (!stage) return '<span class="text-muted">-</span>';
+        
+        const badges = {
+            'promotion': '<span class="badge bg-primary">Promotion</span>',
+            'information': '<span class="badge bg-info text-dark">Information</span>',
+            'invitation': '<span class="badge bg-warning text-dark">Invitation</span>',
+            'confirmation': '<span class="badge bg-success">Confirmation</span>',
+            'automation': '<span class="badge bg-secondary">Automation</span>',
+            'en42': '<span class="badge bg-dark">EN42</span>'
+        };
+        
+        return badges[stage] || '<span class="text-muted">-</span>';
+    };
+    
+    // Override getActionButtons for church-specific actions
+    churchLoader.getActionButtons = function(item) {
+        return `
+            <div class="btn-group">
+                <a href="${item.edit_url}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-edit"></i>
+                </a>
+                <a href="${item.detail_url}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-eye"></i>
+                </a>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-comment-alt"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="composeChurchEmail('${item.id}', '${item.name.replace(/'/g, "\\\\'")}', '${item.email}')">
+                            <i class="fas fa-envelope me-2"></i> Compose Email
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${item.name.replace(/'/g, "\\\\'")}', 'phone')">
+                            <i class="fas fa-phone me-2"></i> Log Phone Call
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${item.name.replace(/'/g, "\\\\'")}', 'text')">
+                            <i class="fas fa-sms me-2"></i> Log Text
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${item.name.replace(/'/g, "\\\\'")}', 'video_call')">
+                            <i class="fas fa-video me-2"></i> Log Video Call
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${item.name.replace(/'/g, "\\\\'")}', 'meeting')">
+                            <i class="fas fa-users me-2"></i> Log Meeting
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="logChurchCommunication('${item.id}', '${item.name.replace(/'/g, "\\\\'")}', 'other')">
+                            <i class="fas fa-comment me-2"></i> Log Other
+                        </a></li>
+                    </ul>
+                </div>
+                <a href="${item.delete_url}" class="btn btn-sm btn-outline-danger">
+                    <i class="fas fa-trash"></i>
+                </a>
+            </div>
+        `;
+    };
+    
+    // Set up pagination controls FIRST
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    const currentCountSpan = document.getElementById('current-count');
+    const totalCountSpan = document.getElementById('total-count');
+    const endReachedSpan = document.getElementById('end-reached');
+    const perPageSelect = document.getElementById('per-page-select');
+    const perPageCount = document.getElementById('per-page-count');
+    
+    // Load more button click handler (only if infinite scroll is disabled)
+    if (!churchLoader.enableInfiniteScroll) {
+        loadMoreBtn.addEventListener('click', () => {
+            churchLoader.loadMore();
+        });
+    }
+    
+    // Per-page selector change handler
+    perPageSelect.addEventListener('change', (e) => {
+        const newPerPage = parseInt(e.target.value);
+        churchLoader.perPage = newPerPage;
+        perPageCount.textContent = newPerPage;
+        churchLoader.resetAndLoad();
+    });
+    
+    // Load initial data AFTER pagination controls are set up
+    churchLoader.loadMore();
+    
+    // Bulk operations management
+    const selectAll = document.getElementById('select-all');
+    const bulkOpsBar = document.getElementById('bulk-operations');
+    const selectedCount = document.getElementById('selected-count');
+    
+    window.updateBulkOperations = function() {
+        const checkboxes = document.querySelectorAll('.contact-checkbox');
+        const selected = document.querySelectorAll('.contact-checkbox:checked');
+        const count = selected.length;
+        
+        selectedCount.textContent = count;
+        bulkOpsBar.style.display = count > 0 ? 'block' : 'none';
+        
+        // Update hidden inputs for bulk operations
+        const ids = Array.from(selected).map(cb => cb.value).join(',');
+        document.getElementById('bulk-delete-ids').value = ids;
+        document.getElementById('bulk-priority-ids').value = ids;
+        document.getElementById('bulk-user-ids').value = ids;
+        document.getElementById('bulk-office-ids').value = ids;
+        
+        // Update select all checkbox state
+        const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+        const noneChecked = Array.from(checkboxes).every(cb => !cb.checked);
+        
+        selectAll.checked = allChecked;
+        selectAll.indeterminate = !allChecked && !noneChecked;
+    };
+    
+    // Select all functionality
+    selectAll.addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.contact-checkbox');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+        updateBulkOperations();
+    });
+    
+    // Handle bulk operation form submissions
+    document.querySelectorAll('form select[name="priority"]').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.closest('form').submit();
+            }
+        });
+    });
+    
+    document.querySelectorAll('form select[name="user_id"]').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.closest('form').submit();
+            }
+        });
+    });
+    
+    document.querySelectorAll('form select[name="office_id"]').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.closest('form').submit();
+            }
+        });
+    });
+    
+    // Dynamic Search Functionality
+    const mainSearchInput = document.getElementById('main-search-input');
+    const quickPriorityFilter = document.getElementById('quick-priority-filter');
+    const quickPipelineFilter = document.getElementById('quick-pipeline-filter');
+    
+    // Debounce function for dynamic search
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    // Update filters and reload data
+    function updateFilters() {
+        const searchQuery = mainSearchInput ? mainSearchInput.value : '';
+        const priority = quickPriorityFilter ? quickPriorityFilter.value : '';
+        const pipelineStage = quickPipelineFilter ? quickPipelineFilter.value : '';
+        
+        churchLoader.updateFilters({
+            q: searchQuery,
+            priority: priority,
+            pipeline_stage: pipelineStage,
+            sort: '{{ sort_by }}'
+        });
+        
+        // Reset and reload data with new filters
+        churchLoader.resetAndLoad();
+    }
+    
+    // Add event listeners for dynamic search
+    if (mainSearchInput) {
+        mainSearchInput.addEventListener('input', debounce(updateFilters, 300));
+        mainSearchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateFilters();
+            }
+        });
+    }
+    
+    if (quickPriorityFilter) {
+        quickPriorityFilter.addEventListener('change', updateFilters);
+    }
+    
+    if (quickPipelineFilter) {
+        quickPipelineFilter.addEventListener('change', updateFilters);
+    }
+});
 </script>
 {% endblock %}
