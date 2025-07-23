@@ -214,7 +214,7 @@
                         <select name="pipeline_stage" class="form-select" id="pipeline-stage-filter-mobile">
                             <option value="">All Pipeline Stages</option>
                             {% for stage_value, stage_label in pipeline_stages %}
-                            <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %>selected{% endif %}>{{ stage_label }}</option>
+                            <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
                             {% endfor %}
                         </select>
                     </div>
