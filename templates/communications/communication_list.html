@@ -178,7 +178,7 @@
                     <span class="input-group-text bg-light">
                         <i class="fas fa-search text-muted"></i>
                     </span>
-                    <input type="text" id="search" class="form-control form-control-lg" 
+                    <input type="text" id="main-search-input" class="form-control form-control-lg" 
                            placeholder="Search by people, church, subject, type..." 
                            value="{{ request.GET.search }}" autocomplete="off">
                 </div>
@@ -186,7 +186,7 @@
         </div>
         <div class="row mt-4">
             <div class="col-md-4">
-                <select id="type-filter" class="form-select">
+                <select id="quick-type-filter" class="form-select">
                     <option value="">All Types</option>
                     {% for type_value, type_label in type_choices %}
                     <option value="{{ type_value }}" {% if request.GET.type == type_value %}selected{% endif %}>{{ type_label }}</option>
@@ -194,7 +194,7 @@
                 </select>
             </div>
             <div class="col-md-4">
-                <select id="direction-filter" class="form-select">
+                <select id="quick-direction-filter" class="form-select">
                     <option value="">All Directions</option>
                     {% for direction_value, direction_label in direction_choices %}
                     <option value="{{ direction_value }}" {% if request.GET.direction == direction_value %}selected{% endif %}>{{ direction_label }}</option>
@@ -202,7 +202,7 @@
                 </select>
             </div>
             <div class="col-md-4">
-                <select id="status-filter" class="form-select">
+                <select id="quick-status-filter" class="form-select">
                     <option value="">All Status</option>
                     {% for status_value, status_label in status_choices %}
                     <option value="{{ status_value }}" {% if request.GET.status == status_value %}selected{% endif %}>{{ status_label }}</option>
@@ -213,159 +213,53 @@
     </div>
 </div>
 
-    <!-- Communications List -->
-    <div class="w-100">
-        {% if communications %}
-        <div class="row g-3">
-                {% for communication in communications %}
-                <div class="col-12 col-md-6 col-lg-4">
-                    <div class="card communication-card {{ communication.type }} h-100">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                <!-- Checkbox for bulk operations -->
-                                <input type="checkbox" name="communication_ids" value="{{ communication.pk }}" class="form-check-input communication-checkbox me-3">
-                                {% if communication.type == 'Email' or communication.type == 'email' %}
-                                    <i class="fas fa-envelope text-primary me-2"></i>
-                                {% elif communication.type == 'Phone Call' or communication.type == 'phone' %}
-                                    <i class="fas fa-phone text-success me-2"></i>
-                                {% elif communication.type == 'Text Message' or communication.type == 'text' %}
-                                    <i class="fas fa-sms text-info me-2"></i>
-                                {% elif communication.type == 'Meeting' or communication.type == 'meeting' %}
-                                    <i class="fas fa-users text-warning me-2"></i>
-                                {% elif communication.type == 'Video Call' or communication.type == 'video_call' %}
-                                    <i class="fas fa-video text-danger me-2"></i>
-                                {% else %}
-                                    <i class="fas fa-sticky-note text-secondary me-2"></i>
-                                {% endif %}
-                                <span class="badge direction-badge {{ communication.direction }}">
-                                    {{ communication.direction|title }}
-                                </span>
-                            </div>
-                            <small class="text-muted">
-                                {% if communication.date_sent %}
-                                    {{ communication.date_sent|date:"M d, Y" }}
-                                {% elif communication.date %}
-                                    {{ communication.date|date:"M d, Y" }}
-                                {% else %}
-                                    {{ communication.created_at|date:"M d, Y" }}
-                                {% endif %}
-                            </small>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="card-title mb-2">{{ communication.subject|default:"No Subject"|truncatechars:40 }}</h6>
-                            
-                            <div class="mb-2">
-                                {% if communication.sender %}
-                                <small class="text-muted">
-                                    <i class="fas fa-user me-1"></i>{{ communication.sender|truncatechars:25 }}
-                                </small>
-                                {% endif %}
-                            </div>
-                            
-                            {% if communication.message %}
-                            <p class="card-text text-muted small">
-                                {{ communication.message|truncatechars:100 }}
-                            </p>
-                            {% endif %}
-                            
-                            {% if communication.person %}
-                            <div class="mb-2">
-                                <span class="badge bg-light text-dark">
-                                    <i class="fas fa-user me-1"></i>{{ communication.person.contact.first_name }} {{ communication.person.contact.last_name }}
-                                </span>
-                            </div>
-                            {% endif %}
-                            
-                            {% if communication.church %}
-                            <div class="mb-2">
-                                <span class="badge bg-light text-dark">
-                                    <i class="fas fa-church me-1"></i>{{ communication.church.contact.name }}
-                                </span>
-                            </div>
-                            {% endif %}
-                            
-                            {% if communication.email_status %}
-                            <div class="mb-2">
-                                <span class="badge status-badge 
-                                    {% if communication.email_status == 'sent' %}bg-success
-                                    {% elif communication.email_status == 'delivered' %}bg-info
-                                    {% elif communication.email_status == 'failed' %}bg-danger
-                                    {% else %}bg-secondary{% endif %}">
-                                    {{ communication.email_status|title }}
-                                </span>
-                            </div>
-                            {% endif %}
-                            
-                            {% if communication.type == 'Video Call' and communication.google_meet_link %}
-                            <div class="mb-2">
-                                <a href="{{ communication.google_meet_link }}" target="_blank" class="btn btn-sm btn-success">
-                                    <i class="fas fa-video me-1"></i>Join Meet
-                                </a>
-                            </div>
-                            {% endif %}
-                        </div>
-                        <div class="card-footer bg-transparent">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <small class="text-muted">
-                                    {% if communication.date_sent %}
-                                        {{ communication.date_sent|timesince }} ago
-                                    {% elif communication.date %}
-                                        {{ communication.date|timesince }} ago
-                                    {% else %}
-                                        {{ communication.created_at|timesince }} ago
-                                    {% endif %}
-                                </small>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{% url 'communications:communication_detail' communication.pk %}" 
-                                       class="btn btn-outline-primary btn-sm" title="View Details">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    {% if communication.type == 'Email' and communication.direction == 'inbound' %}
-                                    <a href="{% url 'communications:gmail_compose' %}?reply_to={{ communication.pk }}" 
-                                       class="btn btn-outline-success btn-sm" title="Reply">
-                                        <i class="fas fa-reply"></i>
-                                    </a>
-                                    {% endif %}
-                                    <a href="{% url 'communications:communication_update' communication.pk %}" 
-                                       class="btn btn-outline-info btn-sm" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="{% url 'communications:communication_delete' communication.pk %}" 
-                                       class="btn btn-outline-danger btn-sm" title="Delete">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
+<!-- Communications List -->
+<div class="w-100">
+    <div class="row g-3" id="communications-container">
+        <!-- Communications will be loaded dynamically by LazyLoader -->
+    </div>
+    
+    <!-- No Results Message -->
+    <div id="no-results" class="text-center text-muted py-4" style="display: none;">
+        <i class="fas fa-envelope fa-4x text-muted mb-4"></i>
+        <h4 class="text-muted">No Communications Found</h4>
+        <p class="text-muted mb-4">Start by composing your first email or sync your Gmail account.</p>
+        <div class="d-flex justify-content-center gap-2">
+            <a href="{% url 'communications:gmail_compose' %}" class="btn btn-primary">
+                <i class="fas fa-paper-plane me-2"></i>Compose Email
+            </a>
+            <a href="{% url 'communications:native_sms_log' %}" class="btn btn-info">
+                <i class="fas fa-mobile-alt me-2"></i>Log SMS
+            </a>
+            <button class="btn btn-outline-info" onclick="syncGmail()">
+                <i class="fas fa-sync me-2"></i>Sync Gmail
+            </button>
+        </div>
+    </div>
+    
+    <!-- Pagination Status and Load More Button -->
+    <div class="d-flex justify-content-between align-items-center mt-3" id="pagination-controls">
+        <div class="text-muted">
+            <span id="showing-text">Showing <span id="current-count">0</span> of <span id="total-count">0</span> communications</span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <label for="per-page-select" class="form-label mb-0 text-muted">Show:</label>
+                <select id="per-page-select" class="form-select form-select-sm" style="width: auto;">
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
             </div>
-
-            <!-- Pagination -->
-            {% if is_paginated %}
-                {% include 'partials/_pagination.html' with page_obj=page_obj %}
-            {% endif %}
-
-            {% else %}
-            <!-- Empty State -->
-            <div class="text-center py-5">
-                <i class="fas fa-envelope fa-4x text-muted mb-4"></i>
-                <h4 class="text-muted">No Communications Found</h4>
-                <p class="text-muted mb-4">Start by composing your first email or sync your Gmail account.</p>
-                <div class="d-flex justify-content-center gap-2">
-                    <a href="{% url 'communications:gmail_compose' %}" class="btn btn-primary">
-                        <i class="fas fa-paper-plane me-2"></i>Compose Email
-                    </a>
-                    <a href="{% url 'communications:native_sms_log' %}" class="btn btn-info">
-                        <i class="fas fa-mobile-alt me-2"></i>Log SMS
-                    </a>
-                    <button class="btn btn-outline-info" onclick="syncGmail()">
-                        <i class="fas fa-sync me-2"></i>Sync Gmail
-                    </button>
-                </div>
+            <div>
+                <button type="button" class="btn btn-primary" id="load-more-btn" style="display: none;">
+                    Load More <span id="per-page-count">25</span>
+                </button>
+                <span class="text-muted" id="end-reached" style="display: none;">
+                    <i class="fas fa-check-circle text-success"></i> All communications loaded
+                </span>
             </div>
-        {% endif %}
+        </div>
     </div>
 </div>
 
@@ -574,30 +468,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Auto-submit form when filter dropdowns change
-    const typeSelect = document.getElementById('type');
-    const directionSelect = document.getElementById('direction');
-    const dateFromInput = document.getElementById('date_from');
-    
-    if (typeSelect) {
-        typeSelect.addEventListener('change', function() {
-            this.closest('form').submit();
-        });
-    }
-    
-    if (directionSelect) {
-        directionSelect.addEventListener('change', function() {
-            this.closest('form').submit();
-        });
-    }
-    
-    if (dateFromInput) {
-        dateFromInput.addEventListener('change', function() {
-            this.closest('form').submit();
-        });
-    }
-    
-    // Auto-submit search form on input with delay (removed duplicate - handled below)
+    // Legacy form-based search removed - now using LazyLoader dynamic search
     
     // Load contacts for dropdowns
     loadContactsForDropdowns();
@@ -783,37 +654,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Add dynamic search functionality
-    const searchInput = document.getElementById('search');
-    if (searchInput) {
-        const searchForm = searchInput.closest('form');
-        let searchTimer;
-        
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimer);
-            searchTimer = setTimeout(function() {
-                searchForm.submit();
-            }, 750); // Increased delay for better UX
-        });
-    }
-    
-    // Auto-submit form when filters change (moved into searchInput check)
-    if (searchInput) {
-        const filterSelects = searchForm.querySelectorAll('select');
-        filterSelects.forEach(select => {
-            select.addEventListener('change', function() {
-                searchForm.submit();
-            });
-        });
-        
-        // Auto-submit when date changes
-        const dateInput = document.getElementById('date_from');
-        if (dateInput) {
-            dateInput.addEventListener('change', function() {
-                searchForm.submit();
-            });
-        }
-    }
+    // Dynamic search handled by LazyLoader implementation below
 });
 
 // Handle form submission
@@ -926,9 +767,20 @@ function saveCommunication(formData) {
 
 // Initialize LazyLoader for communications
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing communication loader...');
+    
+    // Check if required elements exist
+    const communicationsContainer = document.getElementById('communications-container');
+    console.log('Communications container element:', communicationsContainer);
+    
+    if (!communicationsContainer) {
+        console.error('ERROR: communications-container element not found!');
+        return;
+    }
+    
     // Initialize lazy loader for communications (keeping cards format)
     const communicationLoader = new LazyLoader({
-        tableBody: document.querySelector('.row.g-3'), // Target the card container
+        tableBody: communicationsContainer, // Target the card container
         apiUrl: '{% url "communications:communication_list_api" %}',
         perPage: 25,
         enableInfiniteScroll: false,
@@ -940,6 +792,9 @@ document.addEventListener('DOMContentLoaded', function() {
             sort: '{{ request.GET.sort|default:"" }}'
         }
     });
+    
+    console.log('LazyLoader initialized:', communicationLoader);
+    console.log('API URL:', '{% url "communications:communication_list_api" %}');
     
     // Override createRow method to work with card divs instead of table rows
     communicationLoader.createRow = function(item) {
@@ -1060,10 +915,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Dynamic search functionality
     function updateFilters() {
-        const searchInput = document.getElementById('search');
-        const typeFilter = document.getElementById('type-filter');
-        const directionFilter = document.getElementById('direction-filter');  
-        const statusFilter = document.getElementById('status-filter');
+        const searchInput = document.getElementById('main-search-input');
+        const typeFilter = document.getElementById('quick-type-filter');
+        const directionFilter = document.getElementById('quick-direction-filter');  
+        const statusFilter = document.getElementById('quick-status-filter');
         
         communicationLoader.updateFilters({
             search: searchInput ? searchInput.value : '',
@@ -1076,8 +931,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Add event listeners for search and filters
-    const searchInput = document.getElementById('search');
-    if (searchInput) {
+    const mainSearchInput = document.getElementById('main-search-input');
+    if (mainSearchInput) {
         // Debounce function for dynamic search
         function debounce(func, wait) {
             let timeout;
@@ -1091,19 +946,54 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
         
-        searchInput.addEventListener('input', debounce(updateFilters, 300));
+        mainSearchInput.addEventListener('input', debounce(updateFilters, 300));
+        mainSearchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateFilters();
+            }
+        });
     }
     
     // Add event listeners to filter dropdowns
-    ['type-filter', 'direction-filter', 'status-filter'].forEach(filterId => {
+    ['quick-type-filter', 'quick-direction-filter', 'quick-status-filter'].forEach(filterId => {
         const filter = document.getElementById(filterId);
         if (filter) {
             filter.addEventListener('change', updateFilters);
         }
     });
     
+    // Set up pagination controls
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    const currentCountSpan = document.getElementById('current-count');
+    const totalCountSpan = document.getElementById('total-count');
+    const endReachedSpan = document.getElementById('end-reached');
+    const perPageSelect = document.getElementById('per-page-select');
+    const perPageCount = document.getElementById('per-page-count');
+    
+    // Load more button click handler (only if infinite scroll is disabled)
+    if (!communicationLoader.enableInfiniteScroll) {
+        loadMoreBtn.addEventListener('click', () => {
+            communicationLoader.loadMore();
+        });
+    }
+    
+    // Per-page selector change handler
+    perPageSelect.addEventListener('change', (e) => {
+        const newPerPage = parseInt(e.target.value);
+        communicationLoader.perPage = newPerPage;
+        perPageCount.textContent = newPerPage;
+        communicationLoader.resetAndLoad();
+    });
+    
     // Load initial data
-    communicationLoader.loadMore();
+    console.log('About to call loadMore()...');
+    try {
+        communicationLoader.loadMore();
+        console.log('loadMore() called successfully');
+    } catch (error) {
+        console.error('loadMore() failed:', error);
+    }
 });
 </script>
 {% endblock %}
