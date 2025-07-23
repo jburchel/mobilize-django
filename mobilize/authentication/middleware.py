@@ -36,17 +36,28 @@ class CustomAuthMiddleware(MiddlewareMixin):
                     self.is_staff = False
                     self.is_superuser = False
                     # Add missing attributes for CRM decorators
-                    # Set role based on email - j.burchel@crossoverglobal.net is super admin
-                    if email == "j.burchel@crossoverglobal.net":
-                        self.role = "super_admin"
-                        self.is_staff = True
-                        self.is_superuser = True
-                    else:
-                        self.role = "standard_user"  # Default for other users
-                    self.first_name = ""
-                    self.last_name = ""
-                    self.preferences = {}
-                    self.person = None
+                    # Query the database for the actual user role
+                    try:
+                        from mobilize.authentication.models import User
+                        db_user = User.objects.get(id=user_id)
+                        self.role = db_user.role
+                        self.first_name = db_user.first_name
+                        self.last_name = db_user.last_name
+                        self.preferences = db_user.preferences or {}
+                        self.person = db_user.person
+                        # Set staff/superuser based on role
+                        if self.role == "super_admin":
+                            self.is_staff = True
+                            self.is_superuser = True
+                        elif self.role == "office_admin":
+                            self.is_staff = True
+                    except User.DoesNotExist:
+                        # Fallback to standard_user if user not found in database
+                        self.role = "standard_user"
+                        self.first_name = ""
+                        self.last_name = ""
+                        self.preferences = {}
+                        self.person = None
 
                 def get_username(self):
                     return self.email
