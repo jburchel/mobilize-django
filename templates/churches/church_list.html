@@ -627,6 +627,27 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('LazyLoader initialized:', churchLoader);
     console.log('API URL:', '{% url "churches:church_list_api" %}');
     
+    // Add debugging to see if data is received
+    const originalLoadMore = churchLoader.loadMore.bind(churchLoader);
+    churchLoader.loadMore = async function() {
+        console.log('DEBUG: loadMore called');
+        try {
+            const result = await originalLoadMore();
+            console.log('DEBUG: loadMore completed successfully');
+            return result;
+        } catch (error) {
+            console.error('DEBUG: loadMore failed:', error);
+            throw error;
+        }
+    };
+    
+    // Override renderRows to add debugging
+    const originalRenderRows = churchLoader.renderRows.bind(churchLoader);
+    churchLoader.renderRows = function(items) {
+        console.log('DEBUG: renderRows called with', items.length, 'items');
+        return originalRenderRows(items);
+    };
+    
     // Override the row template for church-specific rendering
     churchLoader.getRowTemplate = function(item) {
         const pipelineStageHtml = this.getPipelineBadge(item.pipeline_stage);
@@ -739,6 +760,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load initial data AFTER pagination controls are set up
     console.log('About to call loadMore()...');
+    console.log('ChurchLoader state before loadMore:', {
+        isLoading: churchLoader.isLoading,
+        hasMore: churchLoader.hasMore,
+        currentPage: churchLoader.currentPage,
+        apiUrl: churchLoader.apiUrl
+    });
     try {
         churchLoader.loadMore();
         console.log('loadMore() called successfully');
