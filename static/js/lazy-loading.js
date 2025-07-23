@@ -21,6 +21,8 @@ class LazyLoader {
             Object.keys(options.filters).forEach(key => {
                 if (options.filters[key]) {
                     this.searchParams.set(key, options.filters[key]);
+                } else {
+                    this.searchParams.delete(key);
                 }
             });
         }
