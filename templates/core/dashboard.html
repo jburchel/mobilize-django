@@ -205,6 +205,12 @@
     margin-bottom: 2rem;
 }
 
+/* Ensure View Mode card matches width of other cards */
+.row .card {
+    width: 100%;
+    max-width: 100%;
+}
+
 .dashboard-metrics-grid .card {
     height: 100%;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -274,7 +280,7 @@
 
 <!-- View Mode Toggle for Admins -->
 {% if can_toggle_view %}
-<div class="row mb-3">
+<div class="row mb-4">
     <div class="col-12">
         <div class="card">
             <div class="card-body py-2">
