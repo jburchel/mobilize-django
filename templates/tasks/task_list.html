@@ -19,15 +19,15 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body py-2">
-                <div class="d-flex align-items-center gap-3 flex-wrap">
-                    <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 flex-nowrap" style="overflow-x: auto;">
+                    <div class="d-flex align-items-center gap-2" style="flex-shrink: 0;">
                         <i class="fas fa-eye text-muted"></i>
                         <span class="text-muted">View Mode:</span>
                     </div>
                     
                     {% if user_role == 'super_admin' %}
                         <!-- Toggle Buttons for Super Admin -->
-                        <div class="btn-group" role="group" aria-label="View mode toggle">
+                        <div class="btn-group" role="group" aria-label="View mode toggle" style="flex-shrink: 0;">
                             <a href="?view_mode=default{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
                                class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                                 <i class="fas fa-globe me-1"></i> All Offices
@@ -38,8 +38,8 @@
                             </a>
                         </div>
                         <!-- Office Selector Dropdown -->
-                        <select id="office-selector" class="form-select form-select-sm" style="min-width: 150px; max-width: 180px;">
-                            <option value="default" {% if current_view_mode == "default" %}selected{% endif %}>Show All Offices</option>
+                        <select id="office-selector" class="form-select form-select-sm" style="width: 140px; flex-shrink: 0;">
+                            <option value="default" {% if current_view_mode == "default" %}selected{% endif %}>All Offices</option>
                             <option value="" disabled>-------------------</option>
                             {% for office in all_offices %}
                             <option value="office_{{ office.id }}" 
@@ -50,7 +50,7 @@
                         </select>
                     {% else %}
                         <!-- Toggle Buttons for Office Admin -->
-                        <div class="btn-group" role="group" aria-label="View mode toggle">
+                        <div class="btn-group" role="group" aria-label="View mode toggle" style="flex-shrink: 0;">
                             <a href="?view_mode=default{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned %}&assigned_to={{ current_assigned }}{% endif %}{% if current_due %}&due={{ current_due }}{% endif %}" 
                                class="btn btn-sm {% if current_view_mode == 'default' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                                 <i class="fas fa-building me-1"></i> My Office
