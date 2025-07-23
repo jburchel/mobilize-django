@@ -215,7 +215,7 @@
 
 <!-- Communications List -->
 <div class="w-100">
-    <div class="row g-3" id="communications-container">
+    <div class="row g-3" id="communications-container" style="display: flex; flex-wrap: wrap;">
         <!-- Communications will be loaded dynamically by LazyLoader -->
     </div>
     
@@ -800,7 +800,19 @@ document.addEventListener('DOMContentLoaded', function() {
     communicationLoader.createRow = function(item) {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'col-12 col-md-6 col-lg-4';
+        
+        // Force responsive width based on screen size
+        const screenWidth = window.innerWidth;
+        if (screenWidth >= 992) { // lg screens
+            cardDiv.style.cssText = 'flex: 0 0 auto; width: 33.333333%;';
+        } else if (screenWidth >= 768) { // md screens  
+            cardDiv.style.cssText = 'flex: 0 0 auto; width: 50%;';
+        } else { // sm screens
+            cardDiv.style.cssText = 'flex: 0 0 auto; width: 100%;';
+        }
+        
         cardDiv.innerHTML = this.getRowTemplate(item);
+        console.log('DEBUG: Created card div with classes:', cardDiv.className, 'width:', cardDiv.style.width);
         return cardDiv;
     };
     
