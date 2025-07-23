@@ -172,38 +172,42 @@
 <!-- Prominent Search Bar -->
 <div class="card mb-3">
     <div class="card-body py-3">
-        <div class="row align-items-center">
-            <div class="col-md-4">
+        <div class="row">
+            <div class="col-12">
                 <div class="input-group">
                     <span class="input-group-text bg-light">
                         <i class="fas fa-search text-muted"></i>
                     </span>
-                    <input type="text" id="main-search-input" class="form-control form-control-lg" 
+                    <input type="text" id="search" class="form-control form-control-lg" 
                            placeholder="Search by people, church, subject, type..." 
                            value="{{ request.GET.search }}" autocomplete="off">
                 </div>
             </div>
-            <div class="col-md-8 mt-2 mt-md-0">
-                <div class="d-flex gap-2">
-                    <select id="quick-type-filter" class="form-select">
-                        <option value="">All Types</option>
-                        {% for type_value, type_label in type_choices %}
-                        <option value="{{ type_value }}" {% if request.GET.type == type_value %}selected{% endif %}>{{ type_label }}</option>
-                        {% endfor %}
-                    </select>
-                    <select id="quick-direction-filter" class="form-select">
-                        <option value="">All Directions</option>
-                        {% for direction_value, direction_label in direction_choices %}
-                        <option value="{{ direction_value }}" {% if request.GET.direction == direction_value %}selected{% endif %}>{{ direction_label }}</option>
-                        {% endfor %}
-                    </select>
-                    <select id="quick-status-filter" class="form-select">
-                        <option value="">All Status</option>
-                        {% for status_value, status_label in status_choices %}
-                        <option value="{{ status_value }}" {% if request.GET.status == status_value %}selected{% endif %}>{{ status_label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-4">
+                <select id="type-filter" class="form-select">
+                    <option value="">All Types</option>
+                    {% for type_value, type_label in type_choices %}
+                    <option value="{{ type_value }}" {% if request.GET.type == type_value %}selected{% endif %}>{{ type_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select id="direction-filter" class="form-select">
+                    <option value="">All Directions</option>
+                    {% for direction_value, direction_label in direction_choices %}
+                    <option value="{{ direction_value }}" {% if request.GET.direction == direction_value %}selected{% endif %}>{{ direction_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select id="status-filter" class="form-select">
+                    <option value="">All Status</option>
+                    {% for status_value, status_label in status_choices %}
+                    <option value="{{ status_value }}" {% if request.GET.status == status_value %}selected{% endif %}>{{ status_label }}</option>
+                    {% endfor %}
+                </select>
             </div>
         </div>
     </div>
@@ -929,10 +933,10 @@ document.addEventListener('DOMContentLoaded', function() {
         perPage: 25,
         enableInfiniteScroll: false,
         filters: {
-            q: '{{ request.GET.q|default:"" }}',
+            search: '{{ request.GET.search|default:"" }}',
             type: '{{ request.GET.type|default:"" }}',
-            person: '{{ request.GET.person|default:"" }}',
-            church: '{{ request.GET.church|default:"" }}',
+            direction: '{{ request.GET.direction|default:"" }}',
+            status: '{{ request.GET.status|default:"" }}',
             sort: '{{ request.GET.sort|default:"" }}'
         }
     });
@@ -1040,14 +1044,14 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateFilters() {
         const searchInput = document.getElementById('search');
         const typeFilter = document.getElementById('type-filter');
-        const personFilter = document.getElementById('person-filter');  
-        const churchFilter = document.getElementById('church-filter');
+        const directionFilter = document.getElementById('direction-filter');  
+        const statusFilter = document.getElementById('status-filter');
         
         communicationLoader.updateFilters({
-            q: searchInput ? searchInput.value : '',
+            search: searchInput ? searchInput.value : '',
             type: typeFilter ? typeFilter.value : '',
-            person: personFilter ? personFilter.value : '',
-            church: churchFilter ? churchFilter.value : '',
+            direction: directionFilter ? directionFilter.value : '',
+            status: statusFilter ? statusFilter.value : '',
             sort: ''
         });
         communicationLoader.resetAndLoad();
@@ -1073,7 +1077,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Add event listeners to filter dropdowns
-    ['type-filter', 'person-filter', 'church-filter'].forEach(filterId => {
+    ['type-filter', 'direction-filter', 'status-filter'].forEach(filterId => {
         const filter = document.getElementById(filterId);
         if (filter) {
             filter.addEventListener('change', updateFilters);
