@@ -617,10 +617,10 @@ document.addEventListener('DOMContentLoaded', function() {
         perPage: 25,
         enableInfiniteScroll: false,  // Disable auto-scroll for manual pagination
         filters: {
-            q: {{ query|default:"''"|escapejs }},
-            priority: {{ priority|default:"''"|escapejs }},
-            pipeline_stage: {{ pipeline_stage|default:"''"|escapejs }},
-            sort: {{ sort_by|default:"''"|escapejs }}
+            q: '{{ query|default:""|escapejs }}',
+            priority: '{{ priority|default:""|escapejs }}',
+            pipeline_stage: '{{ pipeline_stage|default:""|escapejs }}',
+            sort: '{{ sort_by|default:""|escapejs }}'
         }
     });
     
