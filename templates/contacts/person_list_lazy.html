@@ -180,38 +180,68 @@ user.email = {{ user.email }}<br>
     <div class="card-body">
         <!-- Search and Filter -->
         <form method="get" class="mb-3" id="filter-form" onsubmit="event.preventDefault(); return false;">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <input type="text" name="q" value="{{ query }}" placeholder="Search people..." class="form-control" id="search-input">
-                </div>
-                <div class="col-md-3">
-                    <select name="priority" class="form-select" id="priority-filter">
-                        <option value="">All Priorities</option>
-                        {% for priority_value, priority_label in priorities %}
-                        <option value="{{ priority_value }}" {% if priority == priority_value %}selected{% endif %}>{{ priority_label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <select name="pipeline_stage" class="form-select" id="pipeline-stage-filter">
-                        <option value="">All Pipeline Stages</option>
-                        {% for stage_value, stage_label in pipeline_stages %}
-                        <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <select name="sort" class="form-select" id="sort-filter">
-                        <option value="">Sort By...</option>
-                        {% for value, label in sort_options %}
-                        <option value="{{ value }}" {% if value == sort_by %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button type="button" class="btn btn-outline-primary w-100" onclick="location.reload();">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
+            
+            <!-- Desktop: Single row layout -->
+            <div class="d-none d-md-flex align-items-center gap-2 flex-nowrap">
+                <input type="text" name="q" value="{{ query }}" placeholder="Search people..." class="form-control" id="search-input" style="flex: 1; min-width: 200px;">
+                <select name="priority" class="form-select" id="priority-filter" style="width: 140px; flex-shrink: 0;">
+                    <option value="">All Priorities</option>
+                    {% for priority_value, priority_label in priorities %}
+                    <option value="{{ priority_value }}" {% if priority == priority_value %}selected{% endif %}>{{ priority_label }}</option>
+                    {% endfor %}
+                </select>
+                <select name="pipeline_stage" class="form-select" id="pipeline-stage-filter" style="width: 180px; flex-shrink: 0;">
+                    <option value="">All Pipeline Stages</option>
+                    {% for stage_value, stage_label in pipeline_stages %}
+                    <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
+                    {% endfor %}
+                </select>
+                <select name="sort" class="form-select" id="sort-filter" style="width: 120px; flex-shrink: 0;">
+                    <option value="">Sort By...</option>
+                    {% for value, label in sort_options %}
+                    <option value="{{ value }}" {% if value == sort_by %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="btn btn-outline-primary btn-sm" style="flex-shrink: 0;" onclick="location.reload();">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+            
+            <!-- Mobile: Stacked layout -->
+            <div class="d-md-none">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <input type="text" name="q" value="{{ query }}" placeholder="Search people..." class="form-control" id="search-input-mobile">
+                    </div>
+                    <div class="col-6">
+                        <select name="priority" class="form-select" id="priority-filter-mobile">
+                            <option value="">All Priorities</option>
+                            {% for priority_value, priority_label in priorities %}
+                            <option value="{{ priority_value }}" {% if priority == priority_value %}selected{% endif %}>{{ priority_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <select name="pipeline_stage" class="form-select" id="pipeline-stage-filter-mobile">
+                            <option value="">All Pipeline Stages</option>
+                            {% for stage_value, stage_label in pipeline_stages %}
+                            <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %>selected{% endif %}>{{ stage_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <select name="sort" class="form-select" id="sort-filter-mobile">
+                            <option value="">Sort By...</option>
+                            {% for value, label in sort_options %}
+                            <option value="{{ value }}" {% if value == sort_by %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <button type="button" class="btn btn-outline-primary w-100" onclick="location.reload();">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
                 </div>
             </div>
         </form>
@@ -411,33 +441,63 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Handle filter changes for live search
-    const searchInput = document.getElementById('search-input');
-    const priorityFilter = document.getElementById('priority-filter');
-    const pipelineFilter = document.getElementById('pipeline-stage-filter');
-    const sortFilter = document.getElementById('sort-filter');
+    // Handle filter changes for live search - support both desktop and mobile
+    function getActiveFilterValues() {
+        // Get the currently visible/active filter elements
+        const searchInput = document.querySelector('#search-input:not([style*="display: none"]), #search-input-mobile:not([style*="display: none"])') || 
+                           document.getElementById('search-input') || document.getElementById('search-input-mobile');
+        const priorityFilter = document.querySelector('#priority-filter:not([style*="display: none"]), #priority-filter-mobile:not([style*="display: none"])') || 
+                              document.getElementById('priority-filter') || document.getElementById('priority-filter-mobile');
+        const pipelineFilter = document.querySelector('#pipeline-stage-filter:not([style*="display: none"]), #pipeline-stage-filter-mobile:not([style*="display: none"])') || 
+                              document.getElementById('pipeline-stage-filter') || document.getElementById('pipeline-stage-filter-mobile');
+        const sortFilter = document.querySelector('#sort-filter:not([style*="display: none"]), #sort-filter-mobile:not([style*="display: none"])') || 
+                          document.getElementById('sort-filter') || document.getElementById('sort-filter-mobile');
+        
+        return {
+            searchInput,
+            priorityFilter,
+            pipelineFilter,
+            sortFilter
+        };
+    }
     
     function updateFilters() {
+        const filters = getActiveFilterValues();
         personLoader.updateFilters({
-            q: searchInput.value,
-            priority: priorityFilter.value,
-            pipeline_stage: pipelineFilter.value,
-            sort: sortFilter.value
+            q: filters.searchInput ? filters.searchInput.value : '',
+            priority: filters.priorityFilter ? filters.priorityFilter.value : '',
+            pipeline_stage: filters.pipelineFilter ? filters.pipelineFilter.value : '',
+            sort: filters.sortFilter ? filters.sortFilter.value : ''
         });
         // Reset and reload data with new filters
         personLoader.resetAndLoad();
     }
     
-    // Add event listeners for filters
-    if (searchInput) {
-        searchInput.addEventListener('input', updateFilters);
-        searchInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault(); // Prevent form submission
-                updateFilters(); // Trigger search immediately
-            }
-        });
-    }
+    // Add event listeners for both desktop and mobile filters
+    const allSearchInputs = [document.getElementById('search-input'), document.getElementById('search-input-mobile')].filter(Boolean);
+    const allPriorityFilters = [document.getElementById('priority-filter'), document.getElementById('priority-filter-mobile')].filter(Boolean);
+    const allPipelineFilters = [document.getElementById('pipeline-stage-filter'), document.getElementById('pipeline-stage-filter-mobile')].filter(Boolean);
+    const allSortFilters = [document.getElementById('sort-filter'), document.getElementById('sort-filter-mobile')].filter(Boolean);
+    
+    // Add event listeners to all search inputs
+    allSearchInputs.forEach(input => {
+        if (input) {
+            input.addEventListener('input', updateFilters);
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // Prevent form submission
+                    updateFilters(); // Trigger search immediately
+                }
+            });
+        }
+    });
+    
+    // Add event listeners to all filter dropdowns
+    [...allPriorityFilters, ...allPipelineFilters, ...allSortFilters].forEach(filter => {
+        if (filter) {
+            filter.addEventListener('change', updateFilters);
+        }
+    });
     
     // Prevent form submission entirely
     const filterForm = document.getElementById('filter-form');
@@ -446,15 +506,6 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             updateFilters();
         });
-    }
-    if (priorityFilter) {
-        priorityFilter.addEventListener('change', updateFilters);
-    }
-    if (pipelineFilter) {
-        pipelineFilter.addEventListener('change', updateFilters);
-    }
-    if (sortFilter) {
-        sortFilter.addEventListener('change', updateFilters);
     }
     
     // Simple debounce function for search input
