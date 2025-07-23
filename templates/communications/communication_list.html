@@ -172,42 +172,44 @@
 <!-- Prominent Search Bar -->
 <div class="card mb-3">
     <div class="card-body py-3">
-        <div class="row">
-            <div class="col-12">
+        <div class="row align-items-center">
+            <div class="col-md-5">
                 <div class="input-group">
                     <span class="input-group-text bg-light">
                         <i class="fas fa-search text-muted"></i>
                     </span>
-                    <input type="text" id="search" class="form-control form-control-lg" 
+                    <input type="text" id="search" class="form-control" 
                            placeholder="Search by people, church, subject, type..." 
                            value="{{ request.GET.search }}" autocomplete="off">
                 </div>
             </div>
-        </div>
-        <div class="row mt-3">
-            <div class="col-md-4">
-                <select id="type-filter" class="form-select">
-                    <option value="">All Types</option>
-                    {% for type_value, type_label in type_choices %}
-                    <option value="{{ type_value }}" {% if request.GET.type == type_value %}selected{% endif %}>{{ type_label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-4">
-                <select id="direction-filter" class="form-select">
-                    <option value="">All Directions</option>
-                    {% for direction_value, direction_label in direction_choices %}
-                    <option value="{{ direction_value }}" {% if request.GET.direction == direction_value %}selected{% endif %}>{{ direction_label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-4">
-                <select id="status-filter" class="form-select">
-                    <option value="">All Status</option>
-                    {% for status_value, status_label in status_choices %}
-                    <option value="{{ status_value }}" {% if request.GET.status == status_value %}selected{% endif %}>{{ status_label }}</option>
-                    {% endfor %}
-                </select>
+            <div class="col-md-7">
+                <div class="row">
+                    <div class="col-md-4">
+                        <select id="type-filter" class="form-select">
+                            <option value="">All Types</option>
+                            {% for type_value, type_label in type_choices %}
+                            <option value="{{ type_value }}" {% if request.GET.type == type_value %}selected{% endif %}>{{ type_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select id="direction-filter" class="form-select">
+                            <option value="">All Directions</option>
+                            {% for direction_value, direction_label in direction_choices %}
+                            <option value="{{ direction_value }}" {% if request.GET.direction == direction_value %}selected{% endif %}>{{ direction_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select id="status-filter" class="form-select">
+                            <option value="">All Status</option>
+                            {% for status_value, status_label in status_choices %}
+                            <option value="{{ status_value }}" {% if request.GET.status == status_value %}selected{% endif %}>{{ status_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -941,43 +943,61 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Override createRow method to work with card divs instead of table rows
+    communicationLoader.createRow = function(item) {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'col-12 col-md-6 col-lg-4';
+        cardDiv.innerHTML = this.getRowTemplate(item);
+        return cardDiv;
+    };
+
     // Override the row template for communication card rendering
     communicationLoader.getRowTemplate = function(item) {
+        // Format date
+        const date = new Date(item.date || item.created_at);
+        const dateDisplay = date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+        });
+        
+        // Calculate time ago
+        const now = new Date();
+        const diffTime = Math.abs(now - date);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const timeSince = diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+
         return `
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="card communication-card ${item.type} h-100">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <div class="d-flex align-items-center">
-                            <input type="checkbox" name="communication_ids" value="${item.id}" class="form-check-input communication-checkbox me-3">
-                            ${this.getTypeIcon(item.type)}
-                            <span class="badge direction-badge ${item.direction}">
-                                ${item.direction_display || item.direction}
-                            </span>
-                        </div>
-                        <small class="text-muted">${item.date_display}</small>
+            <div class="card communication-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <input type="checkbox" name="communication_ids" value="${item.id}" class="form-check-input communication-checkbox me-3">
+                        ${this.getTypeIcon(item.type)}
+                        <span class="badge direction-badge ${item.direction}">
+                            ${item.direction || 'Unknown'}
+                        </span>
                     </div>
-                    <div class="card-body">
-                        <h6 class="card-title mb-2">${item.subject || 'No Subject'}</h6>
-                        ${item.sender ? `<div class="mb-2"><small class="text-muted"><i class="fas fa-user me-1"></i>${item.sender}</small></div>` : ''}
-                        ${item.message ? `<p class="card-text text-muted small">${item.message}</p>` : ''}
-                        ${item.person_name ? `<div class="mb-2"><span class="badge bg-light text-dark"><i class="fas fa-user me-1"></i>${item.person_name}</span></div>` : ''}
-                        ${item.church_name ? `<div class="mb-2"><span class="badge bg-light text-dark"><i class="fas fa-church me-1"></i>${item.church_name}</span></div>` : ''}
-                    </div>
-                    <div class="card-footer bg-transparent">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">${item.time_since}</small>
-                            <div class="btn-group btn-group-sm" role="group">
-                                <a href="${item.detail_url}" class="btn btn-outline-primary btn-sm" title="View Details">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                ${item.can_reply ? `<a href="${item.reply_url}" class="btn btn-outline-success btn-sm" title="Reply"><i class="fas fa-reply"></i></a>` : ''}
-                                <a href="${item.edit_url}" class="btn btn-outline-info btn-sm" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="${item.delete_url}" class="btn btn-outline-danger btn-sm" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </div>
+                    <small class="text-muted">${dateDisplay}</small>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-title mb-2">${item.subject || 'No Subject'}</h6>
+                    ${item.sender ? `<div class="mb-2"><small class="text-muted"><i class="fas fa-user me-1"></i>${item.sender}</small></div>` : ''}
+                    ${item.message ? `<p class="card-text text-muted small">${item.message.substring(0, 100)}${item.message.length > 100 ? '...' : ''}</p>` : ''}
+                    ${item.contact_name ? `<div class="mb-2"><span class="badge bg-light text-dark"><i class="${item.contact_icon} me-1"></i>${item.contact_name}</span></div>` : ''}
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">${timeSince}</small>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="${item.detail_url}" class="btn btn-outline-primary btn-sm" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="${item.edit_url}" class="btn btn-outline-info btn-sm" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="${item.delete_url}" class="btn btn-outline-danger btn-sm" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
