@@ -68,16 +68,34 @@
         flex-wrap: wrap !important;
     }
     
-    #communications-container > .col-lg-4 {
-        flex: 0 0 auto;
-        width: 33.333333% !important;
+    /* Force 3 columns on desktop (1200px+) */
+    @media (min-width: 1200px) {
+        #communications-container > .col-lg-4,
+        #communications-container > .col-md-6 {
+            flex: 0 0 auto;
+            width: 33.333333% !important;
+        }
     }
     
-    #communications-container > .col-md-6 {
-        flex: 0 0 auto;
-        width: 50% !important;
+    /* 3 columns on large screens (992px+) */
+    @media (min-width: 992px) and (max-width: 1199.98px) {
+        #communications-container > .col-lg-4,
+        #communications-container > .col-md-6 {
+            flex: 0 0 auto;
+            width: 33.333333% !important;
+        }
     }
     
+    /* 2 columns on medium screens (768px-991px) */
+    @media (min-width: 768px) and (max-width: 991.98px) {
+        #communications-container > .col-lg-4,
+        #communications-container > .col-md-6 {
+            flex: 0 0 auto;
+            width: 50% !important;
+        }
+    }
+    
+    /* 1 column on small screens (below 768px) */
     @media (max-width: 767.98px) {
         #communications-container > .col-lg-4,
         #communications-container > .col-md-6 {
@@ -931,19 +949,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Override the row template for communication card rendering
     communicationLoader.getRowTemplate = function(item) {
-        // Format date
-        const date = new Date(item.date || item.created_at);
-        const dateDisplay = date.toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            year: 'numeric' 
-        });
+        // Format date with better error handling
+        let date, dateDisplay, timeSince;
         
-        // Calculate time ago
-        const now = new Date();
-        const diffTime = Math.abs(now - date);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        const timeSince = diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+        try {
+            // Try multiple date field formats
+            const dateString = item.date || item.created_at || item.timestamp;
+            date = new Date(dateString);
+            
+            // Check if date is valid
+            if (isNaN(date.getTime())) {
+                throw new Error('Invalid date');
+            }
+            
+            dateDisplay = date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
+            
+            // Calculate time ago
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            timeSince = diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+            
+        } catch (error) {
+            console.warn('Date parsing failed for item:', item, error);
+            dateDisplay = 'Unknown Date';
+            timeSince = 'Recently';
+        }
 
         return `
             <div class="card communication-card ${this.getTypeClass(item.type)} h-100">
