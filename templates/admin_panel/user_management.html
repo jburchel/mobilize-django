@@ -19,93 +19,126 @@
 
 {% block content %}
 
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title">Total Users</h6>
-                            <h3 class="mb-0">{{ stats.total_users }}</h3>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-users fa-2x opacity-50"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title">Active Users</h6>
-                            <h3 class="mb-0">{{ stats.active_users }}</h3>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-user-check fa-2x opacity-50"></i>
+    <!-- User Management Statistics - Single Container with 6-Column Grid -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Total Users -->
+                <div class="col-2">
+                    <div class="stat-container bg-primary-subtle border border-primary-subtle rounded p-3">
+                        <div class="row g-2">
+                            <!-- Top Row: Icon and Label -->
+                            <div class="col-3 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-users text-primary fa-lg"></i>
+                            </div>
+                            <div class="col-9 d-flex align-items-center">
+                                <h6 class="mb-0 text-primary fw-bold small">Total Users</h6>
+                            </div>
+                            <!-- Bottom Row: Statistic -->
+                            <div class="col-3"></div>
+                            <div class="col-9">
+                                <h4 class="mb-0 text-primary fw-bold">{{ stats.total_users }}</h4>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title">Super Admins</h6>
-                            <h3 class="mb-0">{{ stats.super_admins }}</h3>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-crown fa-2x opacity-50"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title">Office Admins</h6>
-                            <h3 class="mb-0">{{ stats.office_admins }}</h3>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-user-tie fa-2x opacity-50"></i>
+
+                <!-- Active Users -->
+                <div class="col-2">
+                    <div class="stat-container bg-success-subtle border border-success-subtle rounded p-3">
+                        <div class="row g-2">
+                            <!-- Top Row: Icon and Label -->
+                            <div class="col-3 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-user-check text-success fa-lg"></i>
+                            </div>
+                            <div class="col-9 d-flex align-items-center">
+                                <h6 class="mb-0 text-success fw-bold small">Active Users</h6>
+                            </div>
+                            <!-- Bottom Row: Statistic -->
+                            <div class="col-3"></div>
+                            <div class="col-9">
+                                <h4 class="mb-0 text-success fw-bold">{{ stats.active_users }}</h4>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-            <div class="card bg-secondary text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title">Standard Users</h6>
-                            <h3 class="mb-0">{{ stats.standard_users }}</h3>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-user fa-2x opacity-50"></i>
+
+                <!-- Super Admins -->
+                <div class="col-2">
+                    <div class="stat-container bg-warning-subtle border border-warning-subtle rounded p-3">
+                        <div class="row g-2">
+                            <!-- Top Row: Icon and Label -->
+                            <div class="col-3 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-crown text-warning fa-lg"></i>
+                            </div>
+                            <div class="col-9 d-flex align-items-center">
+                                <h6 class="mb-0 text-warning fw-bold small">Super Admins</h6>
+                            </div>
+                            <!-- Bottom Row: Statistic -->
+                            <div class="col-3"></div>
+                            <div class="col-9">
+                                <h4 class="mb-0 text-warning fw-bold">{{ stats.super_admins }}</h4>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-            <div class="card bg-dark text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title">Limited Users</h6>
-                            <h3 class="mb-0">{{ stats.limited_users }}</h3>
+
+                <!-- Office Admins -->
+                <div class="col-2">
+                    <div class="stat-container bg-info-subtle border border-info-subtle rounded p-3">
+                        <div class="row g-2">
+                            <!-- Top Row: Icon and Label -->
+                            <div class="col-3 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-user-tie text-info fa-lg"></i>
+                            </div>
+                            <div class="col-9 d-flex align-items-center">
+                                <h6 class="mb-0 text-info fw-bold small">Office Admins</h6>
+                            </div>
+                            <!-- Bottom Row: Statistic -->
+                            <div class="col-3"></div>
+                            <div class="col-9">
+                                <h4 class="mb-0 text-info fw-bold">{{ stats.office_admins }}</h4>
+                            </div>
                         </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-user-lock fa-2x opacity-50"></i>
+                    </div>
+                </div>
+
+                <!-- Standard Users -->
+                <div class="col-2">
+                    <div class="stat-container bg-secondary-subtle border border-secondary-subtle rounded p-3">
+                        <div class="row g-2">
+                            <!-- Top Row: Icon and Label -->
+                            <div class="col-3 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-user text-secondary fa-lg"></i>
+                            </div>
+                            <div class="col-9 d-flex align-items-center">
+                                <h6 class="mb-0 text-secondary fw-bold small">Standard Users</h6>
+                            </div>
+                            <!-- Bottom Row: Statistic -->
+                            <div class="col-3"></div>
+                            <div class="col-9">
+                                <h4 class="mb-0 text-secondary fw-bold">{{ stats.standard_users }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Limited Users -->
+                <div class="col-2">
+                    <div class="stat-container bg-dark-subtle border border-dark-subtle rounded p-3">
+                        <div class="row g-2">
+                            <!-- Top Row: Icon and Label -->
+                            <div class="col-3 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-user-lock text-dark fa-lg"></i>
+                            </div>
+                            <div class="col-9 d-flex align-items-center">
+                                <h6 class="mb-0 text-dark fw-bold small">Limited Users</h6>
+                            </div>
+                            <!-- Bottom Row: Statistic -->
+                            <div class="col-3"></div>
+                            <div class="col-9">
+                                <h4 class="mb-0 text-dark fw-bold">{{ stats.limited_users }}</h4>
+                            </div>
                         </div>
                     </div>
                 </div>
