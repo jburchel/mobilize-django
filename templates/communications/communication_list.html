@@ -62,6 +62,29 @@
 {% block extra_css %}
 <!-- <link rel="stylesheet" href="{% static 'core/css/dashboard.css' %}"> -->
 <style>
+    /* Communications container grid fix */
+    #communications-container {
+        display: flex !important;
+        flex-wrap: wrap !important;
+    }
+    
+    #communications-container > .col-lg-4 {
+        flex: 0 0 auto;
+        width: 33.333333% !important;
+    }
+    
+    #communications-container > .col-md-6 {
+        flex: 0 0 auto;
+        width: 50% !important;
+    }
+    
+    @media (max-width: 767.98px) {
+        #communications-container > .col-lg-4,
+        #communications-container > .col-md-6 {
+            width: 100% !important;
+        }
+    }
+    
     .communication-card {
         transition: transform 0.2s ease-in-out;
         border-left: 4px solid transparent;
@@ -223,7 +246,7 @@
 
 <!-- Communications List -->
 <div class="w-100">
-    <div class="row g-3" id="communications-container" style="display: flex; flex-wrap: wrap;">
+    <div class="row g-3" id="communications-container">
         <!-- Communications will be loaded dynamically by LazyLoader -->
     </div>
     
@@ -807,20 +830,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Override createRow method to work with card divs instead of table rows
     communicationLoader.createRow = function(item) {
         const cardDiv = document.createElement('div');
-        cardDiv.className = 'col-12 col-md-6 col-lg-4';
+        cardDiv.className = 'col-12 col-md-6 col-lg-4 mb-3';
         
-        // Force responsive width based on screen size
-        const screenWidth = window.innerWidth;
-        if (screenWidth >= 992) { // lg screens
-            cardDiv.style.cssText = 'flex: 0 0 auto; width: 33.333333%;';
-        } else if (screenWidth >= 768) { // md screens  
-            cardDiv.style.cssText = 'flex: 0 0 auto; width: 50%;';
-        } else { // sm screens
-            cardDiv.style.cssText = 'flex: 0 0 auto; width: 100%;';
-        }
-        
+        // Let Bootstrap handle responsive widths - remove conflicting inline styles
         cardDiv.innerHTML = this.getRowTemplate(item);
-        console.log('DEBUG: Created card div with classes:', cardDiv.className, 'width:', cardDiv.style.width);
+        console.log('DEBUG: Created card div with classes:', cardDiv.className);
         return cardDiv;
     };
     
