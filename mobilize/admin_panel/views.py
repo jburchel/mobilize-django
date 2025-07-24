@@ -43,6 +43,43 @@ class OfficeListView(LoginRequiredMixin, ListView):
         # Other users can only see offices they're assigned to
         return Office.objects.filter(useroffice__user=self.request.user).distinct()
 
+    def post(self, request, *args, **kwargs):
+        """Handle bulk operations for offices (super admin only)"""
+        if request.user.role != "super_admin":
+            messages.error(request, "You don't have permission to perform this action.")
+            return redirect("admin_panel:office_list")
+
+        action = request.POST.get("action")
+        office_ids = request.POST.get("office_ids", "")
+
+        if not office_ids:
+            messages.error(request, "No offices selected.")
+            return redirect("admin_panel:office_list")
+
+        # Parse comma-separated office IDs
+        office_ids = [oid.strip() for oid in office_ids.split(",") if oid.strip()]
+
+        if action == "bulk_delete":
+            try:
+                # Get the offices to be deleted
+                offices_to_delete = Office.objects.filter(id__in=office_ids)
+                office_names = [office.name for office in offices_to_delete]
+                
+                # Delete the offices
+                deleted_count = offices_to_delete.count()
+                offices_to_delete.delete()
+                
+                messages.success(
+                    request,
+                    f"Successfully deleted {deleted_count} office(s): {', '.join(office_names)}"
+                )
+            except Exception as e:
+                messages.error(request, f"Error deleting offices: {str(e)}")
+        else:
+            messages.error(request, f"Unknown action: {action}")
+
+        return redirect("admin_panel:office_list")
+
 
 class OfficeDetailView(LoginRequiredMixin, DetailView):
     model = Office
