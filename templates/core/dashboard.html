@@ -54,13 +54,13 @@
     pointer-events: auto;
 }
 
-/* Add drag handle area */
+/* Add drag handle area - exclude resize controls area */
 .widget-container.edit-mode::before {
     content: "";
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
+    right: 80px; /* Leave space for resize controls */
     bottom: 0;
     z-index: 1000;
     cursor: move;
@@ -98,7 +98,8 @@
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     display: none;
-    z-index: 1000;
+    z-index: 1002;
+    pointer-events: auto;
 }
 
 .widget-container.edit-mode .widget-resize-controls {
