@@ -15,6 +15,44 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'core/css/dashboard.css' %}">
+<style>
+/* Force horizontal layout for user statistics */
+.user-stats-container {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 10px;
+    overflow-x: auto;
+}
+
+.stat-card-wrapper {
+    flex: 0 0 16.666667%;
+    min-width: 120px;
+    max-width: 200px;
+}
+
+.stat-card {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 12px;
+    border-radius: 8px;
+}
+
+/* Override any conflicting styles */
+.user-stats-container > * {
+    display: block !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .stat-card-wrapper {
+        flex: 0 0 150px;
+    }
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -22,105 +60,93 @@
     <!-- User Management Statistics - 6 Square Cards Horizontal -->
     <div class="card mb-4">
         <div class="card-body p-2">
-            <div class="row g-2">
+            <div class="user-stats-container">
                 <!-- Total Users -->
-                <div class="col-2">
-                    <div class="card bg-primary text-white" style="min-height: 100px;">
-                        <div class="card-body p-2 d-flex flex-column justify-content-between">
-                            <!-- Top Row: Label (left) and Icon (right) -->
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="mb-0 fw-bold small text-white">Total Users</h6>
-                                <i class="fas fa-users fa-lg text-white opacity-75"></i>
-                            </div>
-                            <!-- Bottom Row: Statistic (right) -->
-                            <div class="text-end">
-                                <h3 class="mb-0 fw-bold text-white">{{ stats.total_users }}</h3>
-                            </div>
+                <div class="stat-card-wrapper">
+                    <div class="stat-card bg-primary text-white">
+                        <!-- Top Row: Label (left) and Icon (right) -->
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="mb-0 fw-bold small">Total Users</h6>
+                            <i class="fas fa-users fa-lg opacity-75"></i>
+                        </div>
+                        <!-- Bottom Row: Statistic (right) -->
+                        <div class="text-end">
+                            <h3 class="mb-0 fw-bold">{{ stats.total_users }}</h3>
                         </div>
                     </div>
                 </div>
 
                 <!-- Active Users -->
-                <div class="col-2">
-                    <div class="card bg-success text-white" style="min-height: 100px;">
-                        <div class="card-body p-2 d-flex flex-column justify-content-between">
-                            <!-- Top Row: Label (left) and Icon (right) -->
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="mb-0 fw-bold small">Active Users</h6>
-                                <i class="fas fa-user-check fa-lg opacity-75"></i>
-                            </div>
-                            <!-- Bottom Row: Statistic (right) -->
-                            <div class="text-end">
-                                <h3 class="mb-0 fw-bold">{{ stats.active_users }}</h3>
-                            </div>
+                <div class="stat-card-wrapper">
+                    <div class="stat-card bg-success text-white">
+                        <!-- Top Row: Label (left) and Icon (right) -->
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="mb-0 fw-bold small">Active Users</h6>
+                            <i class="fas fa-user-check fa-lg opacity-75"></i>
+                        </div>
+                        <!-- Bottom Row: Statistic (right) -->
+                        <div class="text-end">
+                            <h3 class="mb-0 fw-bold">{{ stats.active_users }}</h3>
                         </div>
                     </div>
                 </div>
 
                 <!-- Super Admins -->
-                <div class="col-2">
-                    <div class="card bg-warning text-white" style="min-height: 100px;">
-                        <div class="card-body p-2 d-flex flex-column justify-content-between">
-                            <!-- Top Row: Label (left) and Icon (right) -->
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="mb-0 fw-bold small">Super Admins</h6>
-                                <i class="fas fa-crown fa-lg opacity-75"></i>
-                            </div>
-                            <!-- Bottom Row: Statistic (right) -->
-                            <div class="text-end">
-                                <h3 class="mb-0 fw-bold">{{ stats.super_admins }}</h3>
-                            </div>
+                <div class="stat-card-wrapper">
+                    <div class="stat-card bg-warning text-white">
+                        <!-- Top Row: Label (left) and Icon (right) -->
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="mb-0 fw-bold small">Super Admins</h6>
+                            <i class="fas fa-crown fa-lg opacity-75"></i>
+                        </div>
+                        <!-- Bottom Row: Statistic (right) -->
+                        <div class="text-end">
+                            <h3 class="mb-0 fw-bold">{{ stats.super_admins }}</h3>
                         </div>
                     </div>
                 </div>
 
                 <!-- Office Admins -->
-                <div class="col-2">
-                    <div class="card bg-info text-white" style="min-height: 100px;">
-                        <div class="card-body p-2 d-flex flex-column justify-content-between">
-                            <!-- Top Row: Label (left) and Icon (right) -->
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="mb-0 fw-bold small">Office Admins</h6>
-                                <i class="fas fa-user-tie fa-lg opacity-75"></i>
-                            </div>
-                            <!-- Bottom Row: Statistic (right) -->
-                            <div class="text-end">
-                                <h3 class="mb-0 fw-bold">{{ stats.office_admins }}</h3>
-                            </div>
+                <div class="stat-card-wrapper">
+                    <div class="stat-card bg-info text-white">
+                        <!-- Top Row: Label (left) and Icon (right) -->
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="mb-0 fw-bold small">Office Admins</h6>
+                            <i class="fas fa-user-tie fa-lg opacity-75"></i>
+                        </div>
+                        <!-- Bottom Row: Statistic (right) -->
+                        <div class="text-end">
+                            <h3 class="mb-0 fw-bold">{{ stats.office_admins }}</h3>
                         </div>
                     </div>
                 </div>
 
                 <!-- Standard Users -->
-                <div class="col-2">
-                    <div class="card bg-secondary text-white" style="min-height: 100px;">
-                        <div class="card-body p-2 d-flex flex-column justify-content-between">
-                            <!-- Top Row: Label (left) and Icon (right) -->
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="mb-0 fw-bold small text-white">Standard Users</h6>
-                                <i class="fas fa-user fa-lg text-white opacity-75"></i>
-                            </div>
-                            <!-- Bottom Row: Statistic (right) -->
-                            <div class="text-end">
-                                <h3 class="mb-0 fw-bold text-white">{{ stats.standard_users }}</h3>
-                            </div>
+                <div class="stat-card-wrapper">
+                    <div class="stat-card bg-secondary text-white">
+                        <!-- Top Row: Label (left) and Icon (right) -->
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="mb-0 fw-bold small">Standard Users</h6>
+                            <i class="fas fa-user fa-lg opacity-75"></i>
+                        </div>
+                        <!-- Bottom Row: Statistic (right) -->
+                        <div class="text-end">
+                            <h3 class="mb-0 fw-bold">{{ stats.standard_users }}</h3>
                         </div>
                     </div>
                 </div>
 
                 <!-- Limited Users -->
-                <div class="col-2">
-                    <div class="card bg-dark text-white" style="min-height: 100px;">
-                        <div class="card-body p-2 d-flex flex-column justify-content-between">
-                            <!-- Top Row: Label (left) and Icon (right) -->
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="mb-0 fw-bold small text-white">Limited Users</h6>
-                                <i class="fas fa-user-lock fa-lg text-white opacity-75"></i>
-                            </div>
-                            <!-- Bottom Row: Statistic (right) -->
-                            <div class="text-end">
-                                <h3 class="mb-0 fw-bold text-white">{{ stats.limited_users }}</h3>
-                            </div>
+                <div class="stat-card-wrapper">
+                    <div class="stat-card bg-dark text-white">
+                        <!-- Top Row: Label (left) and Icon (right) -->
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="mb-0 fw-bold small">Limited Users</h6>
+                            <i class="fas fa-user-lock fa-lg opacity-75"></i>
+                        </div>
+                        <!-- Bottom Row: Statistic (right) -->
+                        <div class="text-end">
+                            <h3 class="mb-0 fw-bold">{{ stats.limited_users }}</h3>
                         </div>
                     </div>
                 </div>
