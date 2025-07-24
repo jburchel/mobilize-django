@@ -249,49 +249,44 @@
     </div>
 </div>
 
-<div class="row">
-    <div class="col-12">
-        <div class="card mb-3">
-            <div class="card-body py-3">
-                <!-- Search and Filter -->
-                <form method="get">
-                    <div class="row g-3">
-                        <!-- Search Bar Column -->
-                        <div class="col-md-6">
-                            <div class="input-group">
-                                <span class="input-group-text bg-light">
-                                    <i class="fas fa-search text-muted"></i>
-                                </span>
-                                <input type="text" name="q" value="{{ query }}" placeholder="Search people..." class="form-control form-control-lg">
-                            </div>
-                        </div>
-                        <!-- Priority Filter Column -->
-                        <div class="col-md-3">
-                            <select name="priority" class="form-select form-select-lg" onchange="this.form.submit()">
-                                <option value="">All Priorities</option>
-                                {% for priority_value, priority_label in priorities %}
-                                <option value="{{ priority_value }}" {% if priority == priority_value %}selected{% endif %}>{{ priority_label }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <!-- Pipeline Stage Filter Column -->
-                        <div class="col-md-3">
-                            <select name="pipeline_stage" class="form-select form-select-lg" onchange="this.form.submit()">
-                                <option value="">All Pipeline Stages</option>
-                                {% for stage_value, stage_label in pipeline_stages %}
-                                <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
+<div class="card mb-3">
+    <div class="card-body py-3">
+        <!-- Search and Filter -->
+        <form method="get">
+            <div class="row g-3">
+                <!-- Search Bar Column -->
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" name="q" value="{{ query }}" placeholder="Search people..." class="form-control form-control-lg">
                     </div>
-                    <!-- Keep query and filters when changing the view mode or pagination -->
-                    {% if current_view_mode %}
-                        <input type="hidden" name="view_mode" value="{{ current_view_mode }}">
-                    {% endif %}
-                </form>
-
+                </div>
+                <!-- Priority Filter Column -->
+                <div class="col-md-3">
+                    <select name="priority" class="form-select form-select-lg" onchange="this.form.submit()">
+                        <option value="">All Priorities</option>
+                        {% for priority_value, priority_label in priorities %}
+                        <option value="{{ priority_value }}" {% if priority == priority_value %}selected{% endif %}>{{ priority_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <!-- Pipeline Stage Filter Column -->
+                <div class="col-md-3">
+                    <select name="pipeline_stage" class="form-select form-select-lg" onchange="this.form.submit()">
+                        <option value="">All Pipeline Stages</option>
+                        {% for stage_value, stage_label in pipeline_stages %}
+                        <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
-        </div>
+            <!-- Keep query and filters when changing the view mode or pagination -->
+            {% if current_view_mode %}
+                <input type="hidden" name="view_mode" value="{{ current_view_mode }}">
+            {% endif %}
+        </form>
     </div>
 </div>
 
