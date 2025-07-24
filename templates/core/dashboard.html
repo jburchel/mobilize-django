@@ -777,7 +777,7 @@
                 <div class="card w-100 widget-full-width">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span><i class="fas fa-tasks me-2"></i> Pending Tasks</span>
-                        <a href="#" class="btn btn-sm btn-primary">
+                        <a href="{% url 'tasks:task_create' %}" class="btn btn-sm btn-primary">
                             <i class="fas fa-plus me-1"></i> New Task
                         </a>
                     </div>
@@ -831,7 +831,7 @@
                             <div class="text-center py-5">
                                 <i class="fas fa-tasks fa-3x mb-3 text-muted"></i>
                                 <p class="text-muted">No pending tasks</p>
-                                <a href="#" class="btn btn-primary">
+                                <a href="{% url 'tasks:task_create' %}" class="btn btn-primary">
                                     <i class="fas fa-plus me-1"></i> Create Task
                                 </a>
                             </div>
