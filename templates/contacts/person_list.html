@@ -123,10 +123,8 @@
 {% endif %}
 
 <!-- Bulk Operations Bar -->
-<div class="row mb-3" id="bulk-operations" style="display: none;">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body py-2">
+<div class="card mb-3" id="bulk-operations" style="display: none;">
+    <div class="card-body py-2">
                 <!-- Mobile: Stack operations vertically -->
                 <div class="d-md-none">
                     <div class="mb-2">
@@ -245,8 +243,6 @@
                     </form>
                 </div>
             </div>
-        </div>
-    </div>
 </div>
 
 <div class="card mb-3">
@@ -411,6 +407,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectedCountDesktop = document.getElementById('selected-count-desktop');
     const bulkStageSelect = document.getElementById('bulk-stage-select');
     const bulkUpdateStageBtn = document.getElementById('bulk-update-stage');
+    const bulkStageSelectDesktop = document.getElementById('bulk-stage-select-desktop');
+    const bulkUpdateStageBtnDesktop = document.getElementById('bulk-update-stage-desktop');
     
     // Update bulk operations visibility and selected count
     window.updateBulkOperations = function() {
@@ -438,19 +436,36 @@ document.addEventListener('DOMContentLoaded', function() {
         if (count === 0) {
             if (bulkStageSelect) bulkStageSelect.value = '';
             if (bulkUpdateStageBtn) bulkUpdateStageBtn.disabled = true;
+            if (bulkStageSelectDesktop) bulkStageSelectDesktop.value = '';
+            if (bulkUpdateStageBtnDesktop) bulkUpdateStageBtnDesktop.disabled = true;
         }
         
-        // Update hidden inputs for bulk operations
+        // Update hidden inputs for bulk operations (both mobile and desktop)
         const ids = Array.from(selected).map(cb => cb.value).join(',');
+        
+        // Mobile versions
         const deleteIds = document.getElementById('bulk-delete-ids');
         const priorityIds = document.getElementById('bulk-priority-ids');
         const userIds = document.getElementById('bulk-user-ids');
         const officeIds = document.getElementById('bulk-office-ids');
         
+        // Desktop versions
+        const deleteIdsDesktop = document.getElementById('bulk-delete-ids-desktop');
+        const priorityIdsDesktop = document.getElementById('bulk-priority-ids-desktop');
+        const userIdsDesktop = document.getElementById('bulk-user-ids-desktop');
+        const officeIdsDesktop = document.getElementById('bulk-office-ids-desktop');
+        
+        // Update mobile versions
         if (deleteIds) deleteIds.value = ids;
         if (priorityIds) priorityIds.value = ids;
         if (userIds) userIds.value = ids;
         if (officeIds) officeIds.value = ids;
+        
+        // Update desktop versions
+        if (deleteIdsDesktop) deleteIdsDesktop.value = ids;
+        if (priorityIdsDesktop) priorityIdsDesktop.value = ids;
+        if (userIdsDesktop) userIdsDesktop.value = ids;
+        if (officeIdsDesktop) officeIdsDesktop.value = ids;
         
         // Update select all checkbox state
         const checkboxes = document.querySelectorAll('.contact-checkbox');
