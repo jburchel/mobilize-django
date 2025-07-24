@@ -953,30 +953,29 @@ document.addEventListener('DOMContentLoaded', function() {
         let date, dateDisplay, timeSince;
         
         try {
-            // Try multiple date field formats
-            const dateString = item.date || item.created_at || item.timestamp;
-            date = new Date(dateString);
-            
-            // Check if date is valid
-            if (isNaN(date.getTime())) {
-                throw new Error('Invalid date');
+            // The API returns pre-formatted date string, use it directly
+            if (item.date && item.date !== "No date") {
+                // Extract just the date part (before " at ") for display
+                const datePart = item.date.split(' at ')[0];
+                dateDisplay = datePart;
+                
+                // For time calculation, try to parse the full date string
+                date = new Date(item.date);
+                if (!isNaN(date.getTime())) {
+                    const now = new Date();
+                    const diffTime = Math.abs(now - date);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    timeSince = diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+                } else {
+                    timeSince = 'Recently';
+                }
+            } else {
+                throw new Error('No date available');
             }
-            
-            dateDisplay = date.toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric' 
-            });
-            
-            // Calculate time ago
-            const now = new Date();
-            const diffTime = Math.abs(now - date);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            timeSince = diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
             
         } catch (error) {
             console.warn('Date parsing failed for item:', item, error);
-            dateDisplay = 'Unknown Date';
+            dateDisplay = 'No date';
             timeSince = 'Recently';
         }
 
