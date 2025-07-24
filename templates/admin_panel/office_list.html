@@ -56,23 +56,25 @@
             <span class="text-muted"><span id="selected-count">0</span> selected</span>
             
             <!-- Bulk Status Toggle (Active/Inactive) -->
-            <form method="post" action="{% url 'admin_panel:batch_office_status' %}" style="display: inline;">
+            <!-- Temporarily disabled until backend URLs are implemented -->
+            <form method="post" action="#" style="display: inline;">
                 {% csrf_token %}
                 <input type="hidden" name="office_ids" id="bulk-status-ids">
-                <select name="status" class="form-select form-select-sm" style="width: auto; display: inline;">
+                <select name="status" class="form-select form-select-sm" style="width: auto; display: inline;" disabled>
                     <option value="">Change Status...</option>
                     <option value="active">Activate Offices</option>
                     <option value="inactive">Deactivate Offices</option>
                 </select>
-                <button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" disabled>Update (Coming Soon)</button>
             </form>
             
             <!-- Bulk Delete -->
-            <form method="post" action="{% url 'admin_panel:batch_office_delete' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected offices? This action cannot be undone.');">
+            <!-- Temporarily disabled until backend URLs are implemented -->
+            <form method="post" action="#" style="display: inline;">
                 {% csrf_token %}
                 <input type="hidden" name="office_ids" id="bulk-delete-ids">
-                <button type="submit" class="btn btn-danger btn-sm">
-                    <i class="fas fa-trash"></i> Delete Selected
+                <button type="button" class="btn btn-danger btn-sm" disabled>
+                    <i class="fas fa-trash"></i> Delete Selected (Coming Soon)
                 </button>
             </form>
         </div>
