@@ -761,6 +761,10 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
+// Add CSRF token to page
+window.csrfToken = '{{ csrf_token }}';
+</script>
+<script>
     document.addEventListener('DOMContentLoaded', function() {
         // Dashboard Layout Management
         let editMode = false;
@@ -775,29 +779,40 @@
         
         // CSRF Token for API calls
         function getCsrfToken() {
-            return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+            return window.csrfToken || 
+                   document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
                    document.querySelector('meta[name=csrf-token]')?.content || '';
         }
         
         // Toggle Edit Mode
-        editBtn.addEventListener('click', function() {
-            editMode = !editMode;
-            
-            if (editMode) {
-                enterEditMode();
-            } else {
-                exitEditMode();
-            }
-        });
+        if (editBtn) {
+            editBtn.addEventListener('click', function() {
+                console.log('Edit button clicked, current mode:', editMode);
+                editMode = !editMode;
+                
+                if (editMode) {
+                    console.log('Entering edit mode');
+                    enterEditMode();
+                } else {
+                    console.log('Exiting edit mode');
+                    exitEditMode();
+                }
+            });
+        } else {
+            console.error('Edit button not found!');
+        }
         
         function enterEditMode() {
+            console.log('enterEditMode called');
             editModeText.textContent = 'Save Layout';
             editBtn.className = 'btn btn-success btn-sm me-2';
             editOverlay.classList.add('active');
             editInstructions.classList.add('active');
             
             // Add edit-mode class to all widgets
-            document.querySelectorAll('.widget-container').forEach(widget => {
+            const widgets = document.querySelectorAll('.widget-container');
+            console.log('Found', widgets.length, 'widgets to enable edit mode');
+            widgets.forEach(widget => {
                 widget.classList.add('edit-mode');
                 updateResizeButtons(widget);
             });
@@ -832,10 +847,12 @@
                 sortableInstance.destroy();
             }
             
+            // Make the entire dashboard grid sortable for widgets
             sortableInstance = new Sortable(dashboardGrid, {
                 animation: 150,
                 ghostClass: 'sortable-ghost',
                 chosenClass: 'sortable-chosen',
+                draggable: '.widget-container',
                 onEnd: function(evt) {
                     updateWidgetPositions();
                 }
