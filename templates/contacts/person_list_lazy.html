@@ -336,18 +336,37 @@ document.addEventListener('DOMContentLoaded', function() {
         // This listener is kept for any future custom logic if needed
     });
     
-    // Bulk operations management
+    // Bulk operations management - LAZY TEMPLATE DEBUG
+    console.log('DEBUG: Lazy template DOM loaded - initializing bulk operations');
     const selectAll = document.getElementById('select-all');
     const bulkOpsBar = document.getElementById('bulk-operations');
     const selectedCount = document.getElementById('selected-count');
     
+    console.log('DEBUG: Elements found:', {
+        selectAll: !!selectAll,
+        bulkOpsBar: !!bulkOpsBar,
+        selectedCount: !!selectedCount
+    });
+    
     window.updateBulkOperations = function() {
+        console.log('DEBUG: updateBulkOperations called - LAZY TEMPLATE FIXED VERSION');
         const checkboxes = document.querySelectorAll('.contact-checkbox');
         const selected = document.querySelectorAll('.contact-checkbox:checked');
         const count = selected.length;
+        console.log('DEBUG: Selected checkboxes count:', count);
         
         selectedCount.textContent = count;
-        bulkOpsBar.style.display = count > 0 ? 'block' : 'none';
+        
+        // Use CSS class system like other pages instead of direct style manipulation
+        if (bulkOpsBar) {
+            if (count > 0) {
+                bulkOpsBar.classList.add('show');
+                console.log('DEBUG: Added show class to bulk operations');
+            } else {
+                bulkOpsBar.classList.remove('show');
+                console.log('DEBUG: Removed show class from bulk operations');
+            }
+        }
         
         // Update hidden inputs for bulk operations
         const ids = Array.from(selected).map(cb => cb.value).join(',');
@@ -369,6 +388,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const checkboxes = document.querySelectorAll('.contact-checkbox');
         checkboxes.forEach(cb => cb.checked = this.checked);
         updateBulkOperations();
+    });
+    
+    // Individual checkbox functionality - CRITICAL FIX
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('contact-checkbox')) {
+            console.log('DEBUG: Individual checkbox changed');
+            updateBulkOperations();
+        }
     });
     
     // Handle bulk operation form submissions
