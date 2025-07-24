@@ -19,27 +19,22 @@
 
 {% block content %}
 
-    <!-- User Management Statistics - Single Container with 6 Square Cards Side by Side -->
+    <!-- User Management Statistics - 6 Square Cards Horizontal -->
     <div class="card mb-4">
-        <div class="card-body">
+        <div class="card-body p-2">
             <div class="row g-2">
                 <!-- Total Users -->
                 <div class="col-2">
-                    <div class="card bg-primary text-white h-100">
-                        <div class="card-body p-2">
-                            <div class="row g-1">
-                                <!-- Top Row: Icon and Label -->
-                                <div class="col-3 d-flex align-items-center justify-content-center">
-                                    <i class="fas fa-users fa-lg opacity-75"></i>
-                                </div>
-                                <div class="col-9 d-flex align-items-center">
-                                    <h6 class="mb-0 fw-bold small">Total Users</h6>
-                                </div>
-                                <!-- Bottom Row: Statistic -->
-                                <div class="col-3"></div>
-                                <div class="col-9">
-                                    <h3 class="mb-0 fw-bold">{{ stats.total_users }}</h3>
-                                </div>
+                    <div class="card bg-primary text-white" style="min-height: 100px;">
+                        <div class="card-body p-2 d-flex flex-column justify-content-between">
+                            <!-- Top Row: Label (left) and Icon (right) -->
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0 fw-bold small text-white">Total Users</h6>
+                                <i class="fas fa-users fa-lg text-white opacity-75"></i>
+                            </div>
+                            <!-- Bottom Row: Statistic (right) -->
+                            <div class="text-end">
+                                <h3 class="mb-0 fw-bold text-white">{{ stats.total_users }}</h3>
                             </div>
                         </div>
                     </div>
@@ -47,21 +42,16 @@
 
                 <!-- Active Users -->
                 <div class="col-2">
-                    <div class="card bg-success text-white h-100">
-                        <div class="card-body p-2">
-                            <div class="row g-1">
-                                <!-- Top Row: Icon and Label -->
-                                <div class="col-3 d-flex align-items-center justify-content-center">
-                                    <i class="fas fa-user-check fa-lg opacity-75"></i>
-                                </div>
-                                <div class="col-9 d-flex align-items-center">
-                                    <h6 class="mb-0 fw-bold small">Active Users</h6>
-                                </div>
-                                <!-- Bottom Row: Statistic -->
-                                <div class="col-3"></div>
-                                <div class="col-9">
-                                    <h3 class="mb-0 fw-bold">{{ stats.active_users }}</h3>
-                                </div>
+                    <div class="card bg-success text-white" style="min-height: 100px;">
+                        <div class="card-body p-2 d-flex flex-column justify-content-between">
+                            <!-- Top Row: Label (left) and Icon (right) -->
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0 fw-bold small">Active Users</h6>
+                                <i class="fas fa-user-check fa-lg opacity-75"></i>
+                            </div>
+                            <!-- Bottom Row: Statistic (right) -->
+                            <div class="text-end">
+                                <h3 class="mb-0 fw-bold">{{ stats.active_users }}</h3>
                             </div>
                         </div>
                     </div>
@@ -69,21 +59,16 @@
 
                 <!-- Super Admins -->
                 <div class="col-2">
-                    <div class="card bg-warning text-white h-100">
-                        <div class="card-body p-2">
-                            <div class="row g-1">
-                                <!-- Top Row: Icon and Label -->
-                                <div class="col-3 d-flex align-items-center justify-content-center">
-                                    <i class="fas fa-crown fa-lg opacity-75"></i>
-                                </div>
-                                <div class="col-9 d-flex align-items-center">
-                                    <h6 class="mb-0 fw-bold small">Super Admins</h6>
-                                </div>
-                                <!-- Bottom Row: Statistic -->
-                                <div class="col-3"></div>
-                                <div class="col-9">
-                                    <h3 class="mb-0 fw-bold">{{ stats.super_admins }}</h3>
-                                </div>
+                    <div class="card bg-warning text-white" style="min-height: 100px;">
+                        <div class="card-body p-2 d-flex flex-column justify-content-between">
+                            <!-- Top Row: Label (left) and Icon (right) -->
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0 fw-bold small">Super Admins</h6>
+                                <i class="fas fa-crown fa-lg opacity-75"></i>
+                            </div>
+                            <!-- Bottom Row: Statistic (right) -->
+                            <div class="text-end">
+                                <h3 class="mb-0 fw-bold">{{ stats.super_admins }}</h3>
                             </div>
                         </div>
                     </div>
@@ -91,21 +76,16 @@
 
                 <!-- Office Admins -->
                 <div class="col-2">
-                    <div class="card bg-info text-white h-100">
-                        <div class="card-body p-2">
-                            <div class="row g-1">
-                                <!-- Top Row: Icon and Label -->
-                                <div class="col-3 d-flex align-items-center justify-content-center">
-                                    <i class="fas fa-user-tie fa-lg opacity-75"></i>
-                                </div>
-                                <div class="col-9 d-flex align-items-center">
-                                    <h6 class="mb-0 fw-bold small">Office Admins</h6>
-                                </div>
-                                <!-- Bottom Row: Statistic -->
-                                <div class="col-3"></div>
-                                <div class="col-9">
-                                    <h3 class="mb-0 fw-bold">{{ stats.office_admins }}</h3>
-                                </div>
+                    <div class="card bg-info text-white" style="min-height: 100px;">
+                        <div class="card-body p-2 d-flex flex-column justify-content-between">
+                            <!-- Top Row: Label (left) and Icon (right) -->
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0 fw-bold small">Office Admins</h6>
+                                <i class="fas fa-user-tie fa-lg opacity-75"></i>
+                            </div>
+                            <!-- Bottom Row: Statistic (right) -->
+                            <div class="text-end">
+                                <h3 class="mb-0 fw-bold">{{ stats.office_admins }}</h3>
                             </div>
                         </div>
                     </div>
@@ -113,21 +93,16 @@
 
                 <!-- Standard Users -->
                 <div class="col-2">
-                    <div class="card bg-secondary text-white h-100">
-                        <div class="card-body p-2">
-                            <div class="row g-1">
-                                <!-- Top Row: Icon and Label -->
-                                <div class="col-3 d-flex align-items-center justify-content-center">
-                                    <i class="fas fa-user fa-lg opacity-75"></i>
-                                </div>
-                                <div class="col-9 d-flex align-items-center">
-                                    <h6 class="mb-0 fw-bold small">Standard Users</h6>
-                                </div>
-                                <!-- Bottom Row: Statistic -->
-                                <div class="col-3"></div>
-                                <div class="col-9">
-                                    <h3 class="mb-0 fw-bold">{{ stats.standard_users }}</h3>
-                                </div>
+                    <div class="card bg-secondary text-white" style="min-height: 100px;">
+                        <div class="card-body p-2 d-flex flex-column justify-content-between">
+                            <!-- Top Row: Label (left) and Icon (right) -->
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0 fw-bold small text-white">Standard Users</h6>
+                                <i class="fas fa-user fa-lg text-white opacity-75"></i>
+                            </div>
+                            <!-- Bottom Row: Statistic (right) -->
+                            <div class="text-end">
+                                <h3 class="mb-0 fw-bold text-white">{{ stats.standard_users }}</h3>
                             </div>
                         </div>
                     </div>
@@ -135,21 +110,16 @@
 
                 <!-- Limited Users -->
                 <div class="col-2">
-                    <div class="card bg-dark text-white h-100">
-                        <div class="card-body p-2">
-                            <div class="row g-1">
-                                <!-- Top Row: Icon and Label -->
-                                <div class="col-3 d-flex align-items-center justify-content-center">
-                                    <i class="fas fa-user-lock fa-lg opacity-75"></i>
-                                </div>
-                                <div class="col-9 d-flex align-items-center">
-                                    <h6 class="mb-0 fw-bold small">Limited Users</h6>
-                                </div>
-                                <!-- Bottom Row: Statistic -->
-                                <div class="col-3"></div>
-                                <div class="col-9">
-                                    <h3 class="mb-0 fw-bold">{{ stats.limited_users }}</h3>
-                                </div>
+                    <div class="card bg-dark text-white" style="min-height: 100px;">
+                        <div class="card-body p-2 d-flex flex-column justify-content-between">
+                            <!-- Top Row: Label (left) and Icon (right) -->
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0 fw-bold small text-white">Limited Users</h6>
+                                <i class="fas fa-user-lock fa-lg text-white opacity-75"></i>
+                            </div>
+                            <!-- Bottom Row: Statistic (right) -->
+                            <div class="text-end">
+                                <h3 class="mb-0 fw-bold text-white">{{ stats.limited_users }}</h3>
                             </div>
                         </div>
                     </div>
