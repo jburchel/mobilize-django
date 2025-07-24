@@ -392,6 +392,7 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 1.5rem;
     margin-bottom: 2rem;
+    align-items: start;
 }
 
 /* Ensure View Mode card matches width of other cards */
@@ -403,11 +404,19 @@
 .dashboard-metrics-grid .card {
     height: 100%;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    align-self: start;
+    margin: 0;
 }
 
 .dashboard-metrics-grid .card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Ensure metrics summary widget container doesn't add extra margin */
+.widget-container .dashboard-metrics-grid {
+    margin: 0;
+    padding: 0;
 }
 
 /* Responsive adjustments for dashboard cards */
