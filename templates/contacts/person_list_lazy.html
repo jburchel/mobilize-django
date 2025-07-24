@@ -83,10 +83,10 @@
 </div>
 {% endif %}
 
-<!-- Bulk Operations Bar -->
+<!-- Bulk Operations Bar - LAZY TEMPLATE FIXED -->
 <div class="card mb-3" id="bulk-operations" style="display: none;">
     <div class="card-body py-2">
-        <div class="d-flex align-items-center gap-3">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
             <span class="text-muted"><span id="selected-count">0</span> selected</span>
             
             <!-- Bulk Delete -->
@@ -140,40 +140,62 @@
     </div>
 </div>
 
-<!-- Prominent Search Bar -->
+<!-- Search and Filter - STANDARDIZED LAYOUT -->
 <div class="card mb-3">
     <div class="card-body py-3">
-        <div class="row">
-            <div class="col-12">
-                <div class="input-group">
-                    <span class="input-group-text bg-light">
-                        <i class="fas fa-search text-muted"></i>
-                    </span>
-                    <input type="text" id="main-search-input" class="form-control form-control-lg" 
-                           placeholder="Search people by name, email, phone, or notes..." 
-                           value="{{ query }}" autocomplete="off">
+        <form method="get">
+            <div class="row g-3">
+                <!-- Search Bar Column -->
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" name="q" value="{{ query }}" placeholder="Search people..." class="form-control form-control-lg">
+                    </div>
+                </div>
+                <!-- Priority Filter Column -->
+                <div class="col-md-3">
+                    <select name="priority" class="form-select form-select-lg" onchange="this.form.submit()">
+                        <option value="">All Priorities</option>
+                        {% for priority_value, priority_label in priorities %}
+                        <option value="{{ priority_value }}" {% if priority == priority_value %}selected{% endif %}>{{ priority_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <!-- Pipeline Stage Filter Column -->
+                <div class="col-md-3">
+                    <select name="pipeline_stage" class="form-select form-select-lg" onchange="this.form.submit()">
+                        <option value="">All Pipeline Stages</option>
+                        {% for stage_value, stage_label in pipeline_stages %}
+                        <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
-        </div>
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <select id="quick-priority-filter" class="form-select">
-                    <option value="">All Priorities</option>
-                    {% for priority_value, priority_label in priorities %}
-                    <option value="{{ priority_value }}" {% if priority == priority_value %}selected{% endif %}>{{ priority_label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-6">
-                <select id="quick-pipeline-filter" class="form-select">
-                    <option value="">All Stages</option>
-                    {% for stage_value, stage_label in pipeline_stages %}
-                    <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
+            <!-- Keep query and filters when changing the view mode or pagination -->
+            {% if current_view_mode %}
+                <input type="hidden" name="view_mode" value="{{ current_view_mode }}">
+            {% endif %}
+        </form>
     </div>
+</div>
+
+<!-- Legacy dynamic search functionality maintained for backward compatibility -->
+<div style="display: none;">
+    <input type="text" id="main-search-input" value="{{ query }}">
+    <select id="quick-priority-filter">
+        <option value="">All Priorities</option>
+        {% for priority_value, priority_label in priorities %}
+        <option value="{{ priority_value }}" {% if priority == priority_value %}selected{% endif %}>{{ priority_label }}</option>
+        {% endfor %}
+    </select>
+    <select id="quick-pipeline-filter" style="display: none;">
+        <option value="">All Stages</option>
+        {% for stage_value, stage_label in pipeline_stages %}
+        <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
+        {% endfor %}
+    </select>
 </div>
 
 <div class="card">
