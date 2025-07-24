@@ -55,9 +55,8 @@
         <div class="d-flex align-items-center gap-3 flex-wrap">
             <span class="text-muted"><span id="selected-count">0</span> selected</span>
             
-            <!-- Bulk Activate/Deactivate -->
-            <!-- Note: bulk_office_status URL needs to be created in admin_panel/urls.py -->
-            <form method="post" action="#" data-bulk-action="status" style="display: inline;">
+            <!-- Bulk Status Toggle (Active/Inactive) -->
+            <form method="post" action="{% url 'admin_panel:batch_office_status' %}" style="display: inline;">
                 {% csrf_token %}
                 <input type="hidden" name="office_ids" id="bulk-status-ids">
                 <select name="status" class="form-select form-select-sm" style="width: auto; display: inline;">
@@ -65,15 +64,14 @@
                     <option value="active">Activate Offices</option>
                     <option value="inactive">Deactivate Offices</option>
                 </select>
-                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="alert('Bulk status update functionality needs to be implemented in the backend.')">Update</button>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>
             </form>
             
             <!-- Bulk Delete -->
-            <!-- Note: bulk_office_delete URL needs to be created in admin_panel/urls.py -->
-            <form method="post" action="#" data-bulk-action="delete" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected offices? This action cannot be undone.');">
+            <form method="post" action="{% url 'admin_panel:batch_office_delete' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected offices? This action cannot be undone.');">
                 {% csrf_token %}
                 <input type="hidden" name="office_ids" id="bulk-delete-ids">
-                <button type="button" class="btn btn-danger btn-sm" onclick="alert('Bulk delete functionality needs to be implemented in the backend.')">
+                <button type="submit" class="btn btn-danger btn-sm">
                     <i class="fas fa-trash"></i> Delete Selected
                 </button>
             </form>
