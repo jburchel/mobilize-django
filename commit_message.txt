@@ -1,0 +1,13 @@
+FIX: Enable View Mode toggle for office admins on People page
+
+- Fixed hardcoded role assignment in CustomAuthMiddleware that was preventing office admins from seeing the View Mode toggle
+- Updated AuthenticatedUser class to query User model for actual role instead of hardcoding roles
+- Added proper error handling for missing users with fallback to standard_user
+- Office admins will now see toggle with "My Office"/"My People Only" options
+- Maintains backward compatibility for super admins and standard users
+
+Fixes issue where only j.burchel@crossoverglobal.net got super_admin role while all other users were hardcoded as standard_user, preventing office admins from accessing their proper permissions.
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>

@@ -571,8 +571,33 @@ h6 { font-size: clamp(0.9rem, 1.5vw, 1.125rem); }
     padding: 20px !important;
 }
 
-.row, .col-12, .col-lg-3, .col-md-6, .card {
-    display: block !important;
+/* Remove overly broad display overrides that break Bootstrap responsive classes */
+.row, .col-12, .col-lg-3, .col-md-6 {
     visibility: visible !important;
     opacity: 1 !important;
+    /* Removed display: block !important to allow Bootstrap responsive classes to work */
 }
+
+.card {
+    visibility: visible !important;
+    opacity: 1 !important;
+    /* Removed display: block !important to allow Bootstrap responsive classes to work */
+}
+
+/* Fix for View Mode and Filter container height issues */
+.card .card-body {
+    min-height: auto !important;
+    height: auto !important;
+    padding: 1rem !important;
+}
+
+/* Ensure form elements in cards are properly sized */
+.card .form-control,
+.card .form-select,
+.card .btn {
+    height: auto !important;
+    min-height: 38px !important;
+}
+
+/* Note: Removed specific fixes for Bootstrap responsive classes 
+   to allow Bootstrap to handle display properties correctly */

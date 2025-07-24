@@ -24,11 +24,6 @@
         width: 100% !important;
     }
 }
-
-/* Debug marker */
-.data-overview-debug {
-    border: 2px solid red !important;
-}
 </style>
 {% endblock %}
 
@@ -93,16 +88,15 @@
 </div>
 {% endif %}
 
-<!-- Top Row: Data Overview and Dashboard Summary -->
+<!-- Full Width Data Overview -->
 <div class="row mb-4">
-    <!-- Data Overview -->
-    <div class="col-lg-8 mb-4">
-        <div class="card h-100">
+    <div class="col-12">
+        <div class="card">
             <div class="card-header">
                 <i class="fas fa-chart-bar me-2"></i> Data Overview
             </div>
             <div class="card-body">
-                <div class="row data-overview-row data-overview-debug">
+                <div class="row data-overview-row">
                     <div class="col-3 mb-3">
                         <div class="text-center">
                             <h4 class="text-primary mb-2">{{ people_count }}</h4>
@@ -131,9 +125,12 @@
             </div>
         </div>
     </div>
-    
-    <!-- Dashboard Summary (moved here from below) -->
-    <div class="col-lg-3 col-md-6 mb-4">
+</div>
+
+<!-- First Row: 3 Widgets (1/3 width each) -->
+<div class="row mb-4">
+    <!-- Dashboard Summary -->
+    <div class="col-md-4 mb-4">
         <div class="card h-100">
             <div class="card-header">
                 <i class="fas fa-chart-pie me-2"></i> Dashboard Summary
@@ -150,12 +147,9 @@
             </div>
         </div>
     </div>
-</div>
 
-<!-- Report Cards: 4 columns -->
-<div class="row">
     <!-- People Report -->
-    <div class="col-lg-3 col-md-6 mb-4">
+    <div class="col-md-4 mb-4">
         <div class="card h-100">
             <div class="card-header">
                 <i class="fas fa-users me-2"></i> People Report
@@ -180,7 +174,7 @@
     </div>
 
     <!-- Churches Report -->
-    <div class="col-lg-3 col-md-6 mb-4">
+    <div class="col-md-4 mb-4">
         <div class="card h-100">
             <div class="card-header">
                 <i class="fas fa-church me-2"></i> Churches Report
@@ -204,8 +198,12 @@
         </div>
     </div>
 
+</div>
+
+<!-- Second Row: 3 Widgets (1/3 width each) -->
+<div class="row mb-4">
     <!-- Tasks Report -->
-    <div class="col-lg-3 col-md-6 mb-4">
+    <div class="col-md-4 mb-4">
         <div class="card h-100">
             <div class="card-header">
                 <i class="fas fa-tasks me-2"></i> Tasks Report
@@ -237,7 +235,7 @@
     </div>
 
     <!-- Communications Report -->
-    <div class="col-lg-3 col-md-6 mb-4">
+    <div class="col-md-4 mb-4">
         <div class="card h-100">
             <div class="card-header">
                 <i class="fas fa-envelope me-2"></i> Communications Report
@@ -269,42 +267,39 @@
         </div>
     </div>
 
-
-<!-- Export Instructions -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
+    <!-- Export Information -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
             <div class="card-header">
                 <i class="fas fa-info-circle me-2"></i> Export Information
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Data Access</h6>
-                        <p class="small text-muted">
-                            The data included in your exports depends on your role and current view mode:
-                        </p>
-                        <ul class="small text-muted">
-                            <li><strong>Super Admin:</strong> Can export all data or filter to personal assignments</li>
-                            <li><strong>Office Admin:</strong> Can export office data or filter to personal assignments</li>
-                            <li><strong>Standard User:</strong> Can only export personally assigned contacts</li>
-                        </ul>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>File Formats</h6>
-                        <p class="small text-muted">
-                            Available export formats:
-                        </p>
-                        <ul class="small text-muted">
-                            <li><strong>CSV:</strong> Universal format compatible with all spreadsheet applications</li>
-                            <li><strong>Excel:</strong> Native Microsoft Excel format with enhanced formatting</li>
-                        </ul>
-                    </div>
+                <div class="mb-3">
+                    <h6>Data Access</h6>
+                    <p class="small text-muted">
+                        The data included in your exports depends on your role and current view mode:
+                    </p>
+                    <ul class="small text-muted">
+                        <li><strong>Super Admin:</strong> Can export all data or filter to personal assignments</li>
+                        <li><strong>Office Admin:</strong> Can export office data or filter to personal assignments</li>
+                        <li><strong>Standard User:</strong> Can only export personally assigned contacts</li>
+                    </ul>
+                </div>
+                <div>
+                    <h6>File Formats</h6>
+                    <p class="small text-muted">
+                        Available export formats:
+                    </p>
+                    <ul class="small text-muted">
+                        <li><strong>CSV:</strong> Universal format compatible with all spreadsheet applications</li>
+                        <li><strong>Excel:</strong> Native Microsoft Excel format with enhanced formatting</li>
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}

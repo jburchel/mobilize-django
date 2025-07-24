@@ -122,8 +122,8 @@
 </div>
 {% endif %}
 
-<!-- Bulk Operations Bar -->
-<div class="card mb-3" id="bulk-operations" style="display: none;">
+<!-- Bulk Operations Bar - FIXED VERSION 2025-01-24 -->
+<div class="card mb-3" id="bulk-operations" style="display: none;" data-debug="fixed-version">
     <div class="card-body py-2">
         <div class="d-flex align-items-center gap-3 flex-wrap">
             <span class="text-muted"><span id="selected-count">0</span> selected</span>
@@ -192,9 +192,9 @@
     </div>
 </div>
 
-<div class="card mb-3">
+<div class="card mb-3" data-debug="search-filter-fixed">
     <div class="card-body py-3">
-        <!-- Search and Filter -->
+        <!-- Search and Filter - FIXED VERSION 2025-01-24 -->
         <form method="get">
             <div class="row g-3">
                 <!-- Search Bar Column -->
@@ -348,29 +348,46 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DEBUG: People page DOM loaded - FIXED VERSION 2025-01-24');
     const selectAll = document.getElementById('select-all');
     const bulkOpsBar = document.getElementById('bulk-operations');
     const selectedCount = document.getElementById('selected-count');
     const bulkStageSelect = document.getElementById('bulk-stage-select');
     const bulkUpdateStageBtn = document.getElementById('bulk-update-stage');
     
-    // Update bulk operations visibility and selected count
+    console.log('DEBUG: Elements found:', {
+        selectAll: !!selectAll,
+        bulkOpsBar: !!bulkOpsBar,
+        selectedCount: !!selectedCount,
+        bulkStageSelect: !!bulkStageSelect,
+        bulkUpdateStageBtn: !!bulkUpdateStageBtn
+    });
+    
+    // Update bulk operations visibility and selected count - FIXED VERSION
     window.updateBulkOperations = function() {
+        console.log('DEBUG: updateBulkOperations called - FIXED VERSION 2025-01-24');
         const selected = document.querySelectorAll('.contact-checkbox:checked');
         const count = selected.length;
+        console.log('DEBUG: Selected checkboxes count:', count);
         
         // Update selected count
         if (selectedCount) {
             selectedCount.textContent = count;
+            console.log('DEBUG: Updated selected count to:', count);
         }
         
         // Show/hide bulk operations bar
         if (bulkOpsBar) {
+            console.log('DEBUG: Bulk operations bar found:', bulkOpsBar);
             if (count > 0) {
                 bulkOpsBar.classList.add('show');
+                console.log('DEBUG: Added show class to bulk operations');
             } else {
                 bulkOpsBar.classList.remove('show');
+                console.log('DEBUG: Removed show class from bulk operations');
             }
+        } else {
+            console.log('ERROR: Bulk operations bar NOT found!');
         }
         
         // Reset stage selection when no items selected

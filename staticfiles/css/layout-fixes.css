@@ -371,7 +371,36 @@
 .bulk-operations-card {
     width: 100% !important;
     margin-bottom: 1.5rem;
+    min-height: auto !important;
 }
+
+/* Ensure filter card content is properly sized */
+.filter-card .card-body,
+.bulk-operations-card .card-body {
+    min-height: 60px !important;
+    height: auto !important;
+    padding: 1rem !important;
+}
+
+/* Fix for View Mode toggle cards specifically */
+.card .card-body.py-3,
+.card .card-body.py-2 {
+    min-height: 60px !important;
+    height: auto !important;
+    padding: 1rem !important;
+}
+
+/* Comprehensive card content visibility fixes - more specific targeting */
+.card .card-body > div:not(.d-none):not(.d-md-none),
+.card .card-body > form:not(.d-none):not(.d-md-none) {
+    min-height: auto !important;
+    height: auto !important;
+    visibility: visible !important;
+}
+
+/* Allow Bootstrap responsive display classes to work properly */
+/* Removed all custom handling of Bootstrap's responsive display utilities */
+/* Bootstrap handles all display properties for these classes automatically */
 
 /* Form row improvements */
 .form-row-responsive {
@@ -553,5 +582,70 @@
     
     .pagination .page-link {
         padding: 0.375rem 0.75rem;
+    }
+}
+
+/* === SEARCH AND FILTER SECTION FIXES === */
+
+/* Add proper spacing to search/filter containers */
+.card .card-body.py-3 {
+    padding: 2rem !important; /* Increase padding for search/filter cards */
+}
+
+/* Add breathing room to input groups and form controls in search/filter sections */
+.card .card-body .input-group {
+    margin-bottom: 0.5rem;
+}
+
+.card .card-body .form-select,
+.card .card-body .form-control {
+    padding: 0.75rem 1rem; /* Increase padding for form elements */
+    font-size: 1rem;
+}
+
+/* Override global row margin restrictions for search/filter sections */
+.card .card-body .row.mt-4,
+.card .card-body .row.mt-3,
+.card .card-body .row.mt-5 {
+    margin-top: 2rem !important; /* Increase from 1.5rem to 2rem */
+    margin-left: -0.75rem !important;
+    margin-right: -0.75rem !important;
+}
+
+/* Ensure Bootstrap grid columns work properly in search/filter sections */
+.card .card-body .row.mt-4 > .col-md-4,
+.card .card-body .row.mt-4 > .col-md-6,
+.card .card-body .row.mt-3 > .col-md-4,
+.card .card-body .row.mt-3 > .col-md-6,
+.card .card-body .row.mt-5 > .col-md-4,
+.card .card-body .row.mt-5 > .col-md-6 {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    flex: 0 0 auto !important;
+}
+
+/* Specific column width overrides */
+.card .card-body .row.mt-4 > .col-md-4,
+.card .card-body .row.mt-3 > .col-md-4,
+.card .card-body .row.mt-5 > .col-md-4 {
+    width: 33.33333% !important;
+}
+
+.card .card-body .row.mt-4 > .col-md-6,
+.card .card-body .row.mt-3 > .col-md-6,
+.card .card-body .row.mt-5 > .col-md-6 {
+    width: 50% !important;
+}
+
+/* Mobile responsive for search/filter sections */
+@media (max-width: 767px) {
+    .card .card-body .row.mt-4 > .col-md-4,
+    .card .card-body .row.mt-4 > .col-md-6,
+    .card .card-body .row.mt-3 > .col-md-4,
+    .card .card-body .row.mt-3 > .col-md-6,
+    .card .card-body .row.mt-5 > .col-md-4,
+    .card .card-body .row.mt-5 > .col-md-6 {
+        width: 100% !important;
+        margin-bottom: 0.75rem;
     }
 }
