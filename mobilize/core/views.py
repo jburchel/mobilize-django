@@ -60,7 +60,6 @@ def dashboard(request):
     from mobilize.core.dashboard_widgets import (
         get_user_dashboard_config,
         organize_widgets_by_row,
-        get_widget_css_class,
     )
     from django.db.models import Count, Q
     from datetime import datetime, timedelta
@@ -362,7 +361,6 @@ def dashboard(request):
         "all_offices": all_offices,
         # Add widget configuration
         "widget_rows": widget_rows,
-        "get_widget_css_class": get_widget_css_class,
     }
 
     return render(request, "core/dashboard.html", context)
