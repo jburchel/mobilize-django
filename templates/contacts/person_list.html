@@ -411,20 +411,23 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const selectAll = document.getElementById('select-all');
-    const checkboxes = document.querySelectorAll('.contact-checkbox');
     const bulkOpsBar = document.getElementById('bulk-operations');
-    const selectedCount = document.querySelector('#bulk-operations #selected-count');
+    const selectedCountMobile = document.getElementById('selected-count');
+    const selectedCountDesktop = document.getElementById('selected-count-desktop');
     const bulkStageSelect = document.getElementById('bulk-stage-select');
     const bulkUpdateStageBtn = document.getElementById('bulk-update-stage');
     
     // Update bulk operations visibility and selected count
-    function updateBulkOperations() {
+    window.updateBulkOperations = function() {
         const selected = document.querySelectorAll('.contact-checkbox:checked');
         const count = selected.length;
         
-        // Update selected count
-        if (selectedCount) {
-            selectedCount.textContent = count;
+        // Update selected count for both mobile and desktop
+        if (selectedCountMobile) {
+            selectedCountMobile.textContent = count;
+        }
+        if (selectedCountDesktop) {
+            selectedCountDesktop.textContent = count;
         }
         
         // Show/hide bulk operations bar
@@ -455,23 +458,28 @@ document.addEventListener('DOMContentLoaded', function() {
         if (officeIds) officeIds.value = ids;
         
         // Update select all checkbox state
+        const checkboxes = document.querySelectorAll('.contact-checkbox');
         const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
         const noneChecked = Array.from(checkboxes).every(cb => !cb.checked);
         
-        selectAll.checked = allChecked;
-        selectAll.indeterminate = !allChecked && !noneChecked;
+        const selectAllCheckbox = document.getElementById('select-all');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = !allChecked && !noneChecked;
+        }
     }
     
     // Select all functionality
     selectAll.addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.contact-checkbox');
         checkboxes.forEach(cb => cb.checked = this.checked);
-        updateBulkOperations();
+        window.updateBulkOperations();
     });
     
     // Individual checkbox functionality
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('contact-checkbox')) {
-            updateBulkOperations();
+            window.updateBulkOperations();
         }
     });
     
