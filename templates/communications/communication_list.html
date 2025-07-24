@@ -169,47 +169,55 @@
     </div>
 </div>
 
-<!-- Prominent Search Bar -->
+<!-- Search and Filter Bar -->
 <div class="card mb-3">
     <div class="card-body py-3">
-        <div class="row">
-            <div class="col-12">
-                <div class="input-group">
-                    <span class="input-group-text bg-light">
-                        <i class="fas fa-search text-muted"></i>
-                    </span>
-                    <input type="text" id="main-search-input" class="form-control form-control-lg" 
-                           placeholder="Search by people, church, subject, type..." 
-                           value="{{ request.GET.search }}" autocomplete="off">
+        <form method="get">
+            <div class="row g-3">
+                <!-- Search Bar Column -->
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" name="search" class="form-control form-control-lg" 
+                               placeholder="Search communications..." 
+                               value="{{ request.GET.search }}" autocomplete="off">
+                    </div>
+                </div>
+                <!-- Type Filter Column -->
+                <div class="col-md-3">
+                    <select name="type" class="form-select form-select-lg" onchange="this.form.submit()">
+                        <option value="">All Types</option>
+                        {% for type_value, type_label in type_choices %}
+                        <option value="{{ type_value }}" {% if request.GET.type == type_value %}selected{% endif %}>{{ type_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <!-- Direction Filter Column -->
+                <div class="col-md-3">
+                    <select name="direction" class="form-select form-select-lg" onchange="this.form.submit()">
+                        <option value="">All Directions</option>
+                        {% for direction_value, direction_label in direction_choices %}
+                        <option value="{{ direction_value }}" {% if request.GET.direction == direction_value %}selected{% endif %}>{{ direction_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <!-- Status Filter Column -->
+                <div class="col-md-3">
+                    <select name="status" class="form-select form-select-lg" onchange="this.form.submit()">
+                        <option value="">All Status</option>
+                        {% for status_value, status_label in status_choices %}
+                        <option value="{{ status_value }}" {% if request.GET.status == status_value %}selected{% endif %}>{{ status_label }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
-        </div>
-        <div class="row mt-4">
-            <div class="col-md-4">
-                <select id="quick-type-filter" class="form-select">
-                    <option value="">All Types</option>
-                    {% for type_value, type_label in type_choices %}
-                    <option value="{{ type_value }}" {% if request.GET.type == type_value %}selected{% endif %}>{{ type_label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-4">
-                <select id="quick-direction-filter" class="form-select">
-                    <option value="">All Directions</option>
-                    {% for direction_value, direction_label in direction_choices %}
-                    <option value="{{ direction_value }}" {% if request.GET.direction == direction_value %}selected{% endif %}>{{ direction_label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-4">
-                <select id="quick-status-filter" class="form-select">
-                    <option value="">All Status</option>
-                    {% for status_value, status_label in status_choices %}
-                    <option value="{{ status_value }}" {% if request.GET.status == status_value %}selected{% endif %}>{{ status_label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
+            <!-- Keep other parameters when changing filters -->
+            {% if current_view_mode %}
+                <input type="hidden" name="view_mode" value="{{ current_view_mode }}">
+            {% endif %}
+        </form>
     </div>
 </div>
 

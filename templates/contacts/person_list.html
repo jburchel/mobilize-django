@@ -249,76 +249,57 @@
     </div>
 </div>
 
-<div class="row ">
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-3">
+            <div class="card-body py-3">
+                <!-- Search and Filter -->
+                <form method="get">
+                    <div class="row g-3">
+                        <!-- Search Bar Column -->
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input type="text" name="q" value="{{ query }}" placeholder="Search people..." class="form-control form-control-lg">
+                            </div>
+                        </div>
+                        <!-- Priority Filter Column -->
+                        <div class="col-md-3">
+                            <select name="priority" class="form-select form-select-lg" onchange="this.form.submit()">
+                                <option value="">All Priorities</option>
+                                {% for priority_value, priority_label in priorities %}
+                                <option value="{{ priority_value }}" {% if priority == priority_value %}selected{% endif %}>{{ priority_label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <!-- Pipeline Stage Filter Column -->
+                        <div class="col-md-3">
+                            <select name="pipeline_stage" class="form-select form-select-lg" onchange="this.form.submit()">
+                                <option value="">All Pipeline Stages</option>
+                                {% for stage_value, stage_label in pipeline_stages %}
+                                <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Keep query and filters when changing the view mode or pagination -->
+                    {% if current_view_mode %}
+                        <input type="hidden" name="view_mode" value="{{ current_view_mode }}">
+                    {% endif %}
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
     <div class="col-12">
         <div class="card">
-    <div class="card-body">
-        <!-- Search and Filter -->
-        <form method="get" class="mb-3">
-            <!-- Mobile: stacked layout -->
-            <div class="d-md-none">
-                <div class="row g-3">
-                    <div class="col-12">
-                        <input type="text" name="q" value="{{ query }}" placeholder="Search people..." class="form-control">
-                    </div>
-                    <div class="col-6">
-                        <select name="priority" class="form-select">
-                            <option value="">All Priorities</option>
-                            {% for priority_value, priority_label in priorities %}
-                            <option value="{{ priority_value }}" {% if priority == priority_value %}selected{% endif %}>{{ priority_label }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-6">
-                        <select name="pipeline_stage" class="form-select">
-                            <option value="">All Pipeline Stages</option>
-                            {% for stage_value, stage_label in pipeline_stages %}
-                            <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-6">
-                        <select name="sort" class="form-select" onchange="this.form.submit()">
-                            <option value="">Sort By...</option>
-                            {% for value, label in sort_options %}
-                            <option value="{{ value }}" {% if value == sort_by %}selected{% endif %}>{{ label }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-6">
-                        <button type="submit" class="btn btn-outline-primary w-100">Filter</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Desktop: horizontal layout all on one line -->
-            <div class="d-none d-md-flex align-items-center gap-2 flex-nowrap">
-                <input type="text" name="q" value="{{ query }}" placeholder="Search people..." class="form-control" style="flex: 1; min-width: 200px;">
-                <select name="priority" class="form-select" style="width: 140px; flex-shrink: 0;">
-                    <option value="">All Priorities</option>
-                    {% for priority_value, priority_label in priorities %}
-                    <option value="{{ priority_value }}" {% if priority == priority_value %}selected{% endif %}>{{ priority_label }}</option>
-                    {% endfor %}
-                </select>
-                <select name="pipeline_stage" class="form-select" style="width: 160px; flex-shrink: 0;">
-                    <option value="">All Pipeline Stages</option>
-                    {% for stage_value, stage_label in pipeline_stages %}
-                    <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
-                    {% endfor %}
-                </select>
-                <select name="sort" class="form-select" onchange="this.form.submit()" style="width: 120px; flex-shrink: 0;">
-                    <option value="">Name A-Z</option>
-                    {% for value, label in sort_options %}
-                    <option value="{{ value }}" {% if value == sort_by %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-                <button type="submit" class="btn btn-outline-primary btn-sm px-3" style="flex-shrink: 0;">
-                    <i class="fas fa-search"></i> Refresh
-                </button>
-            </div>
-        </form>
-
-        <div class="table-responsive">
+            <div class="card-body">
+                <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
                     <tr>
