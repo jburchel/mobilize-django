@@ -461,7 +461,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const count = selected.length;
         
         selectedCount.textContent = count;
-        bulkOpsBar.style.display = count > 0 ? 'block' : 'none';
+        if (count > 0) {
+            bulkOpsBar.classList.add('show');
+        } else {
+            bulkOpsBar.classList.remove('show');
+        }
         
         // Update all hidden inputs for bulk operations
         const ids = Array.from(selected).map(cb => cb.value).join(',');

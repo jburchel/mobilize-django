@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const count = checkedBoxes.length;
         
         if (count > 0) {
-            bulkOperationsBar.style.display = 'block';
+            bulkOperationsBar.classList.add('show');
             selectedCountSpan.textContent = count;
             
             // Update all hidden communication_ids inputs
@@ -456,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('bulk-type-ids').value = communicationIds;
             document.getElementById('bulk-user-ids').value = communicationIds;
         } else {
-            bulkOperationsBar.style.display = 'none';
+            bulkOperationsBar.classList.remove('show');
         }
     }
     
@@ -1014,7 +1014,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const count = selected.length;
         
         selectedCount.textContent = count;
-        bulkOpsBar.style.display = count > 0 ? 'block' : 'none';
+        if (count > 0) {
+            bulkOpsBar.classList.add('show');
+        } else {
+            bulkOpsBar.classList.remove('show');
+        }
         
         // Update hidden inputs for bulk operations
         const ids = Array.from(selected).map(cb => cb.value).join(',');

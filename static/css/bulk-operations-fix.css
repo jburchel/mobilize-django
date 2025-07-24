@@ -1,0 +1,23 @@
+/* 
+ * Bulk Operations Container Visibility Fix
+ * Ensures bulk operations containers are hidden by default
+ */
+
+/* Force bulk operations containers to be hidden by default */
+#bulk-operations {
+    display: none !important;
+}
+
+/* Show bulk operations only when explicitly shown by JavaScript */
+#bulk-operations.show {
+    display: block !important;
+}
+
+/* Ensure bulk operations don't interfere with layout when hidden */
+#bulk-operations:not(.show) {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}

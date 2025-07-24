@@ -429,7 +429,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Show/hide bulk operations bar
         if (bulkOpsBar) {
-            bulkOpsBar.style.display = count > 0 ? 'block' : 'none';
+            if (count > 0) {
+                bulkOpsBar.classList.add('show');
+            } else {
+                bulkOpsBar.classList.remove('show');
+            }
         }
         
         // Reset stage selection when no items selected
