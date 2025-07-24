@@ -33,19 +33,23 @@
     padding-right: 0;
 }
 
-/* Ensure form controls are consistent height */
+/* Ensure form controls are consistent height and properly sized */
 .card.mb-3 .card-body.py-3 .form-control.form-control-lg,
 .card.mb-3 .card-body.py-3 .form-select.form-select-lg {
-    height: calc(1.5em + 1rem + 2px);
+    height: calc(1.5em + 1.5rem + 2px);  /* Increased padding for better text visibility */
     font-size: 1.125rem;
-    padding: 0.75rem 1rem;
+    padding: 0.875rem 1rem;  /* Increased vertical padding */
+    line-height: 1.5;
 }
 
 /* Input group styling consistency */
 .card.mb-3 .card-body.py-3 .input-group .input-group-text {
     background-color: #f8f9fa;
     border-right: none;
-    padding: 0.75rem 1rem;
+    padding: 0.875rem 1rem;  /* Match form control padding */
+    height: calc(1.5em + 1.5rem + 2px);  /* Match form control height */
+    display: flex;
+    align-items: center;
 }
 
 .card.mb-3 .card-body.py-3 .input-group .form-control {
