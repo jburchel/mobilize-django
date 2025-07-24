@@ -36,18 +36,32 @@
     margin: 5px;
     padding: 10px;
     cursor: move;
+    position: relative;
 }
 
-.widget-container.edit-mode * {
+.widget-container.edit-mode .card {
     pointer-events: none;
 }
 
 .widget-container.edit-mode .widget-resize-controls {
     pointer-events: auto;
+    z-index: 1001;
 }
 
 .widget-container.edit-mode .widget-resize-controls * {
     pointer-events: auto;
+}
+
+/* Add drag handle area */
+.widget-container.edit-mode::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    cursor: move;
 }
 
 
@@ -279,6 +293,52 @@
 .chart-legend {
     padding: 10px 0;
     font-size: 0.85rem;
+}
+
+/* Ensure outer row doesn't interfere */
+.pipeline-chart-container > .row.w-100 {
+    display: flex !important;
+    flex-wrap: wrap;
+}
+
+/* Force chart and legend to stay side by side */
+.pipeline-chart-container .row.g-2 {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-start;
+}
+
+.pipeline-chart-container .row.g-2 > div:first-child {
+    flex: 0 0 65% !important;
+    max-width: 65% !important;
+}
+
+.pipeline-chart-container .row.g-2 > div:last-child {
+    flex: 0 0 35% !important;
+    max-width: 35% !important;
+    padding-left: 10px;
+}
+
+/* Ensure legend items don't wrap */
+.chart-legend .legend-item {
+    min-height: 20px;
+}
+
+/* Mobile adjustments for charts */
+@media (max-width: 576px) {
+    .pipeline-chart-container .row.g-2 > div:first-child {
+        flex: 0 0 60% !important;
+        max-width: 60% !important;
+    }
+    
+    .pipeline-chart-container .row.g-2 > div:last-child {
+        flex: 0 0 40% !important;
+        max-width: 40% !important;
+    }
+    
+    .chart-legend {
+        font-size: 0.75rem;
+    }
 }
 
 .legend-item {
@@ -623,7 +683,7 @@
                         </div>
                     </div>
                     <div class="card-body pipeline-chart-container">
-                        <div class="row w-100">
+                        <div class="row w-100 g-3">
                             <!-- People Chart -->
                             <div class="col-lg-6 col-12" id="peopleChartContainer">
                                 <h6 class="text-center mb-3">People Pipeline</h6>
@@ -872,8 +932,10 @@ window.csrfToken = '{{ csrf_token }}';
                 ghostClass: 'sortable-ghost',
                 chosenClass: 'sortable-chosen',
                 dragClass: 'sortable-drag',
-                filter: '.widget-resize-controls',
+                filter: '.widget-resize-controls, .widget-resize-btn',
                 preventOnFilter: false,
+                fallbackTolerance: 0,
+                delay: 100,
                 onStart: function(evt) {
                     console.log('Drag started on:', evt.item.dataset.widgetId);
                     evt.item.classList.add('dragging');
@@ -882,6 +944,11 @@ window.csrfToken = '{{ csrf_token }}';
                     console.log('Drag ended, updating positions');
                     evt.item.classList.remove('dragging');
                     updateWidgetPositions();
+                },
+                onMove: function(evt) {
+                    // Allow dragging only if not clicking on resize controls
+                    const target = evt.originalEvent.target;
+                    return !target.closest('.widget-resize-controls');
                 }
             });
         }
