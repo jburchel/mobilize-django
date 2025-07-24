@@ -18,6 +18,9 @@ DEFAULT_WIDGETS = [
         "enabled": True,
         "order": 1,
         "size": "full",  # full, half, quarter
+        "columns": 4,  # 1-4 columns width
+        "row": 0,
+        "position": 0,
     },
     {
         "id": "pipeline_distribution",
@@ -26,6 +29,9 @@ DEFAULT_WIDGETS = [
         "enabled": True,
         "order": 2,
         "size": "full",
+        "columns": 4,
+        "row": 1,
+        "position": 0,
     },
     {
         "id": "task_priorities",
@@ -34,6 +40,9 @@ DEFAULT_WIDGETS = [
         "enabled": True,
         "order": 3,
         "size": "one_third",
+        "columns": 1,
+        "row": 2,
+        "position": 0,
     },
     {
         "id": "pending_tasks",
@@ -42,6 +51,9 @@ DEFAULT_WIDGETS = [
         "enabled": True,
         "order": 4,
         "size": "full",
+        "columns": 4,
+        "row": 3,
+        "position": 0,
     },
     {
         "id": "weekly_summary",
@@ -50,6 +62,9 @@ DEFAULT_WIDGETS = [
         "enabled": True,
         "order": 5,
         "size": "two_thirds",
+        "columns": 2,
+        "row": 2,
+        "position": 1,
     },
     {
         "id": "recent_activity",
@@ -58,6 +73,9 @@ DEFAULT_WIDGETS = [
         "enabled": True,
         "order": 6,
         "size": "one_third",
+        "columns": 1,
+        "row": 2,
+        "position": 2,
     },
     {
         "id": "activity_timeline",
@@ -66,6 +84,9 @@ DEFAULT_WIDGETS = [
         "enabled": True,
         "order": 7,
         "size": "full",
+        "columns": 4,
+        "row": 4,
+        "position": 0,
     },
 ]
 
@@ -93,7 +114,7 @@ def get_user_dashboard_config(user):
 
 def organize_widgets_by_row(widgets):
     """
-    Organize widgets into rows based on their sizes.
+    Organize widgets into rows based on their grid positions and column widths.
 
     Args:
         widgets: List of widget configurations
@@ -101,57 +122,47 @@ def organize_widgets_by_row(widgets):
     Returns:
         List of rows, each containing widgets that fit together
     """
-    rows = []
-    current_row = []
-    current_row_size = 0
+    if not widgets:
+        return []
 
-    # Size mappings (in terms of 12-column grid)
-    size_map = {
-        "full": 12,
-        "two_thirds": 8,
-        "half": 6,
-        "one_third": 4,
-        "quarter": 3,
-    }
+    # Sort widgets by row first, then by position within row
+    sorted_widgets = sorted(
+        widgets, key=lambda w: (w.get("row", 0), w.get("position", 0))
+    )
 
-    for widget in widgets:
-        widget_size = size_map.get(widget.get("size", "full"), 12)
+    # Group widgets by row
+    rows = {}
+    for widget in sorted_widgets:
+        row_num = widget.get("row", 0)
+        if row_num not in rows:
+            rows[row_num] = []
+        rows[row_num].append(widget)
 
-        # If this widget would overflow the current row, start a new row
-        if current_row_size + widget_size > 12:
-            if current_row:
-                rows.append(current_row)
-            current_row = [widget]
-            current_row_size = widget_size
-        else:
-            current_row.append(widget)
-            current_row_size += widget_size
-
-    # Add the last row if it has widgets
-    if current_row:
-        rows.append(current_row)
-
-    return rows
+    # Convert to list of rows ordered by row number
+    return [rows[row_num] for row_num in sorted(rows.keys())]
 
 
-def get_widget_css_class(widget_size):
+def get_widget_css_class(widget):
     """
-    Get CSS class for widget size.
+    Get CSS class for widget size based on columns.
 
     Args:
-        widget_size: Size string
+        widget: Widget configuration dictionary
 
     Returns:
         CSS class string
     """
-    size_classes = {
-        "full": "col-12",
-        "two_thirds": "col-lg-8",
-        "half": "col-lg-6",
-        "one_third": "col-lg-4",
-        "quarter": "col-lg-3",
+    columns = widget.get("columns", 4)
+
+    # Map columns to Bootstrap grid classes (4 columns = full width)
+    column_classes = {
+        1: "col-lg-3",  # 1/4 width
+        2: "col-lg-6",  # 1/2 width
+        3: "col-lg-9",  # 3/4 width
+        4: "col-12",  # full width
     }
-    return size_classes.get(widget_size, "col-12")
+
+    return column_classes.get(columns, "col-12")
 
 
 def update_widget_preferences(user, widget_updates):
@@ -218,3 +229,52 @@ def reorder_widgets(user, widget_order):
 
     prefs.set_widget_config(reordered_widgets)
     return prefs
+
+
+def update_widget_layout(user, layout_data):
+    """
+    Update widget layout positions and sizes.
+
+    Args:
+        user: User instance
+        layout_data: Dictionary containing layout information
+                    Format: {"widget_id": {"row": 0, "position": 1, "columns": 2}}
+    """
+    prefs = get_user_dashboard_config(user)
+    widgets = prefs.get_widget_config()
+
+    # Update widgets with new layout data
+    for widget in widgets:
+        widget_id = widget["id"]
+        if widget_id in layout_data:
+            layout = layout_data[widget_id]
+            widget.update(
+                {
+                    "row": layout.get("row", widget.get("row", 0)),
+                    "position": layout.get("position", widget.get("position", 0)),
+                    "columns": layout.get("columns", widget.get("columns", 4)),
+                }
+            )
+
+            # Update legacy size field for backward compatibility
+            columns = widget.get("columns", 4)
+            size_map = {1: "quarter", 2: "half", 3: "three_quarters", 4: "full"}
+            widget["size"] = size_map.get(columns, "full")
+
+    prefs.set_widget_config(widgets)
+    return prefs
+
+
+def resize_widget(user, widget_id, columns):
+    """
+    Resize a specific widget.
+
+    Args:
+        user: User instance
+        widget_id: ID of the widget to resize
+        columns: Number of columns (1-4)
+    """
+    if columns not in [1, 2, 3, 4]:
+        raise ValueError("Columns must be between 1 and 4")
+
+    return update_widget_layout(user, {widget_id: {"columns": columns}})

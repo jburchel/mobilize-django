@@ -1,10 +1,14 @@
 {% extends 'base.html' %}
+{% load dashboard_filters %}
 
 {% block title %}Dashboard - Mobilize CRM{% endblock %}
 
 {% block page_title %}Dashboard{% endblock %}
 
 {% block page_actions %}
+    <button id="edit-dashboard-btn" class="btn btn-outline-primary btn-sm me-2">
+        <i class="fas fa-edit me-1"></i> <span id="edit-mode-text">Edit Layout</span>
+    </button>
     <a href="{% url 'core:customize_dashboard' %}" class="btn btn-outline-primary btn-sm">
         <i class="fas fa-cog me-1"></i> Customize
     </a>
@@ -14,6 +18,110 @@
 {% block extra_css %}
 <style>
 /* Dashboard-specific styling */
+
+/* Widget drag and drop styling */
+.dashboard-grid {
+    transition: all 0.3s ease;
+}
+
+.widget-container {
+    position: relative;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+}
+
+.widget-container.edit-mode {
+    border: 2px dashed #007bff;
+    margin: 5px;
+    padding: 10px;
+    cursor: move;
+}
+
+.widget-container.edit-mode .card {
+    pointer-events: none;
+}
+
+.widget-container.edit-mode:hover {
+    border-color: #28a745;
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.widget-container.sortable-ghost {
+    opacity: 0.4;
+}
+
+.widget-container.sortable-chosen {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.widget-resize-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: none;
+    z-index: 1000;
+}
+
+.widget-container.edit-mode .widget-resize-controls {
+    display: block;
+}
+
+.widget-resize-btn {
+    border: none;
+    background: #f8f9fa;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.widget-resize-btn:hover {
+    background: #007bff;
+    color: white;
+}
+
+.widget-resize-btn.active {
+    background: #007bff;
+    color: white;
+}
+
+.edit-mode-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.1);
+    z-index: 999;
+    display: none;
+}
+
+.edit-mode-overlay.active {
+    display: block;
+}
+
+.edit-mode-instructions {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    z-index: 1001;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.edit-mode-instructions.active {
+    display: block;
+}
 
 /* Compact modern card styling for dashboard */
 .card {
@@ -338,19 +446,31 @@
 </div>
 {% endif %}
 
+<!-- Edit Mode Overlay and Instructions -->
+<div id="edit-mode-overlay" class="edit-mode-overlay"></div>
+<div id="edit-mode-instructions" class="edit-mode-instructions">
+    <i class="fas fa-arrows-alt me-2"></i>
+    Drag widgets to reorder • Use resize buttons to change width • Click "Save Layout" when done
+</div>
 
 <!-- Dynamic Dashboard Widgets -->
-{% for widget_row in widget_rows %}
-    {% if widget_row|length > 1 %}
-        <!-- Multi-widget row using new grid system -->
-        <div class="widget-row-secondary mb-4">
-    {% endif %}
-    
-    {% for widget in widget_row %}
-        {% if widget_row|length == 1 %}
-            <!-- Single widget using full width -->
-            <div class="w-100 mb-4">
-        {% endif %}
+<div id="dashboard-grid" class="dashboard-grid">
+    {% for widget_row in widget_rows %}
+        <div class="row mb-4 widget-row" data-row="{{ forloop.counter0 }}">
+            {% for widget in widget_row %}
+                <div class="widget-container {{ widget|widget_css_class }}" 
+                     data-widget-id="{{ widget.id }}" 
+                     data-columns="{{ widget.columns|default:4 }}"
+                     data-row="{{ widget.row|default:forloop.parentloop.counter0 }}"
+                     data-position="{{ widget.position|default:forloop.counter0 }}">
+                    
+                    <!-- Widget Resize Controls -->
+                    <div class="widget-resize-controls">
+                        <button class="widget-resize-btn" data-columns="1" title="1 Column">1</button>
+                        <button class="widget-resize-btn" data-columns="2" title="2 Columns">2</button>
+                        <button class="widget-resize-btn" data-columns="3" title="3 Columns">3</button>
+                        <button class="widget-resize-btn" data-columns="4" title="4 Columns">4</button>
+                    </div>
             {% if widget.id == 'metrics_summary' %}
                 <!-- Metrics Summary Widget (4 cards) -->
                 <div class="dashboard-metrics-grid w-100">
@@ -629,22 +749,218 @@
                     </div>
                 </div>
             {% endif %}
-        {% if widget_row|length == 1 %}
-            </div>
-        {% endif %}
+                </div> <!-- Close widget-container -->
+            {% endfor %}
+        </div> <!-- Close widget-row -->
     {% endfor %}
-    
-    {% if widget_row|length > 1 %}
-        </div>
-    {% endif %}
-{% endfor %}
+</div> <!-- Close dashboard-grid -->
 
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Dashboard Layout Management
+        let editMode = false;
+        let sortableInstance = null;
+        
+        // Edit Mode Toggle
+        const editBtn = document.getElementById('edit-dashboard-btn');
+        const editModeText = document.getElementById('edit-mode-text');
+        const editOverlay = document.getElementById('edit-mode-overlay');
+        const editInstructions = document.getElementById('edit-mode-instructions');
+        const dashboardGrid = document.getElementById('dashboard-grid');
+        
+        // CSRF Token for API calls
+        function getCsrfToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                   document.querySelector('meta[name=csrf-token]')?.content || '';
+        }
+        
+        // Toggle Edit Mode
+        editBtn.addEventListener('click', function() {
+            editMode = !editMode;
+            
+            if (editMode) {
+                enterEditMode();
+            } else {
+                exitEditMode();
+            }
+        });
+        
+        function enterEditMode() {
+            editModeText.textContent = 'Save Layout';
+            editBtn.className = 'btn btn-success btn-sm me-2';
+            editOverlay.classList.add('active');
+            editInstructions.classList.add('active');
+            
+            // Add edit-mode class to all widgets
+            document.querySelectorAll('.widget-container').forEach(widget => {
+                widget.classList.add('edit-mode');
+                updateResizeButtons(widget);
+            });
+            
+            // Initialize Sortable for drag and drop
+            initializeSortable();
+        }
+        
+        function exitEditMode() {
+            editModeText.textContent = 'Edit Layout';
+            editBtn.className = 'btn btn-outline-primary btn-sm me-2';
+            editOverlay.classList.remove('active');
+            editInstructions.classList.remove('active');
+            
+            // Remove edit-mode class from all widgets
+            document.querySelectorAll('.widget-container').forEach(widget => {
+                widget.classList.remove('edit-mode');
+            });
+            
+            // Destroy sortable instance
+            if (sortableInstance) {
+                sortableInstance.destroy();
+                sortableInstance = null;
+            }
+            
+            // Save layout
+            saveLayout();
+        }
+        
+        function initializeSortable() {
+            if (sortableInstance) {
+                sortableInstance.destroy();
+            }
+            
+            sortableInstance = new Sortable(dashboardGrid, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                onEnd: function(evt) {
+                    updateWidgetPositions();
+                }
+            });
+        }
+        
+        function updateWidgetPositions() {
+            const widgets = document.querySelectorAll('.widget-container');
+            const rows = {};
+            
+            widgets.forEach((widget, index) => {
+                const widgetId = widget.dataset.widgetId;
+                const row = Math.floor(index / 4); // Assume max 4 widgets per row
+                const position = index % 4;
+                
+                widget.dataset.row = row;
+                widget.dataset.position = position;
+                
+                if (!rows[row]) rows[row] = [];
+                rows[row].push({
+                    id: widgetId,
+                    position: position,
+                    columns: parseInt(widget.dataset.columns)
+                });
+            });
+        }
+        
+        function updateResizeButtons(widget) {
+            const currentColumns = parseInt(widget.dataset.columns);
+            const resizeButtons = widget.querySelectorAll('.widget-resize-btn');
+            
+            resizeButtons.forEach(btn => {
+                btn.classList.remove('active');
+                if (parseInt(btn.dataset.columns) === currentColumns) {
+                    btn.classList.add('active');
+                }
+                
+                // Add click handler
+                btn.onclick = function() {
+                    resizeWidget(widget, parseInt(this.dataset.columns));
+                };
+            });
+        }
+        
+        function resizeWidget(widget, columns) {
+            const widgetId = widget.dataset.widgetId;
+            
+            // Update widget data and CSS class
+            widget.dataset.columns = columns;
+            
+            // Update CSS class
+            const columnClasses = {
+                1: 'col-lg-3',
+                2: 'col-lg-6', 
+                3: 'col-lg-9',
+                4: 'col-12'
+            };
+            
+            // Remove old column classes
+            widget.className = widget.className.replace(/col-\S+/g, '');
+            // Add new column class
+            widget.classList.add(columnClasses[columns]);
+            
+            // Update resize buttons
+            updateResizeButtons(widget);
+            
+            // Send resize request to server
+            fetch('{% url "core:resize_widget_api" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({
+                    widget_id: widgetId,
+                    columns: columns
+                })
+            }).then(response => response.json())
+              .then(data => {
+                  if (!data.success) {
+                      console.error('Error resizing widget:', data.error);
+                  }
+              });
+        }
+        
+        function saveLayout() {
+            const widgets = [];
+            
+            document.querySelectorAll('.widget-container').forEach(widget => {
+                widgets.push({
+                    id: widget.dataset.widgetId,
+                    row: parseInt(widget.dataset.row),
+                    position: parseInt(widget.dataset.position), 
+                    columns: parseInt(widget.dataset.columns)
+                });
+            });
+            
+            fetch('{% url "core:update_widget_layout_api" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ widgets: widgets })
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      // Show success message briefly
+                      const successMsg = document.createElement('div');
+                      successMsg.className = 'alert alert-success position-fixed';
+                      successMsg.style.top = '20px';
+                      successMsg.style.right = '20px';
+                      successMsg.style.zIndex = '1050';
+                      successMsg.innerHTML = '<i class="fas fa-check me-2"></i>Layout saved successfully!';
+                      document.body.appendChild(successMsg);
+                      
+                      setTimeout(() => {
+                          successMsg.remove();
+                      }, 3000);
+                  } else {
+                      console.error('Error saving layout:', data.error);
+                  }
+              });
+        }
+
         // Pipeline Distribution Dual Charts
         let peopleChart = null;
         let churchesChart = null;

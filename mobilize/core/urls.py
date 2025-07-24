@@ -13,6 +13,10 @@ urlpatterns = [
     path("reports/", views.reports, name="reports"),
     path("export/<str:report_type>/", views.export_report, name="export_report"),
     path("customize-dashboard/", views.customize_dashboard, name="customize_dashboard"),
+    # Widget layout API endpoints
+    path("api/widget-layout/", views.update_widget_layout_api, name="update_widget_layout_api"),
+    path("api/widget-resize/", views.resize_widget_api, name="resize_widget_api"),
+    path("api/widget-layout-get/", views.get_widget_layout_api, name="get_widget_layout_api"),
     path("db-diagnostic/", views.db_diagnostic, name="db_diagnostic"),
     path("permissions-debug/", views.permissions_debug, name="permissions_debug"),
     path("debug-oauth-uri/", views.debug_oauth_uri, name="debug_oauth_uri"),

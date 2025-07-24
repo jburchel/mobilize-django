@@ -947,3 +947,110 @@ def permissions_debug(request):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
+def update_widget_layout_api(request):
+    """
+    API endpoint to update widget layout (drag and drop positioning).
+
+    Expected POST data:
+    {
+        "widgets": [
+            {"id": "widget_id", "row": 0, "position": 1, "columns": 2},
+            ...
+        ]
+    }
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    try:
+        import json
+        from mobilize.core.dashboard_widgets import update_widget_layout
+
+        data = json.loads(request.body)
+        widgets = data.get("widgets", [])
+
+        # Convert list format to dictionary format expected by update_widget_layout
+        layout_data = {}
+        for widget_data in widgets:
+            widget_id = widget_data.get("id")
+            if widget_id:
+                layout_data[widget_id] = {
+                    "row": widget_data.get("row", 0),
+                    "position": widget_data.get("position", 0),
+                    "columns": widget_data.get("columns", 4),
+                }
+
+        # Update user's widget layout preferences
+        update_widget_layout(request.user, layout_data)
+
+        return JsonResponse(
+            {"success": True, "message": "Widget layout updated successfully"}
+        )
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
+def resize_widget_api(request):
+    """
+    API endpoint to resize a specific widget.
+
+    Expected POST data:
+    {
+        "widget_id": "metrics_summary",
+        "columns": 2
+    }
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    try:
+        import json
+        from mobilize.core.dashboard_widgets import resize_widget
+
+        data = json.loads(request.body)
+        widget_id = data.get("widget_id")
+        columns = data.get("columns")
+
+        if not widget_id or columns not in [1, 2, 3, 4]:
+            return JsonResponse({"error": "Invalid widget_id or columns"}, status=400)
+
+        # Resize the widget
+        resize_widget(request.user, widget_id, columns)
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"Widget {widget_id} resized to {columns} columns",
+            }
+        )
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except ValueError as e:
+        return JsonResponse({"error": str(e)}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
+def get_widget_layout_api(request):
+    """
+    API endpoint to get current user's widget layout configuration.
+    """
+    try:
+        from mobilize.core.dashboard_widgets import get_user_dashboard_config
+
+        prefs = get_user_dashboard_config(request.user)
+        widgets = prefs.get_enabled_widgets()
+
+        return JsonResponse({"success": True, "widgets": widgets})
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
