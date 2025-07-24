@@ -58,6 +58,37 @@ class Office(models.Model):
         except (ValueError, TypeError):
             return 0
 
+    @property
+    def office_admin(self):
+        """Get the primary office admin for this office."""
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        # Get user_ids from this office
+        user_ids = self.useroffice_set.values_list("user_id", flat=True)
+        # Convert to integers and get admin users
+        try:
+            int_user_ids = [int(uid) for uid in user_ids if uid]
+            # First try to get office_admin, then super_admin as fallback
+            admin = User.objects.filter(
+                id__in=int_user_ids, role="office_admin"
+            ).first()
+            if not admin:
+                admin = User.objects.filter(
+                    id__in=int_user_ids, role="super_admin"
+                ).first()
+            return admin
+        except (ValueError, TypeError):
+            return None
+
+    @property
+    def office_admin_name(self):
+        """Get the display name of the office admin."""
+        admin = self.office_admin
+        if admin:
+            return admin.get_full_name() or admin.email or admin.username
+        return "No Admin Assigned"
+
 
 class UserOfficeManager(models.Manager):
     """
