@@ -4,6 +4,34 @@
 
 {% block page_title %}Reports{% endblock %}
 
+{% block extra_css %}
+<style>
+/* Force 4-column layout for Data Overview */
+.data-overview-row .col-3 {
+    flex: 0 0 auto;
+    width: 25% !important;
+    min-width: 0;
+}
+
+@media (max-width: 576px) {
+    .data-overview-row .col-3 {
+        width: 50% !important;
+    }
+}
+
+@media (max-width: 400px) {
+    .data-overview-row .col-3 {
+        width: 100% !important;
+    }
+}
+
+/* Debug marker */
+.data-overview-debug {
+    border: 2px solid red !important;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- View Mode Toggle for Admins -->
 {% if can_toggle_view %}
@@ -74,7 +102,7 @@
                 <i class="fas fa-chart-bar me-2"></i> Data Overview
             </div>
             <div class="card-body">
-                <div class="row">
+                <div class="row data-overview-row data-overview-debug">
                     <div class="col-3 mb-3">
                         <div class="text-center">
                             <h4 class="text-primary mb-2">{{ people_count }}</h4>
