@@ -16,29 +16,69 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'core/css/dashboard.css' %}">
 <style>
-/* Force horizontal layout for user statistics */
+/* Force horizontal layout for user statistics - Full Width Distribution */
 .user-stats-container {
     display: flex !important;
     flex-direction: row !important;
     flex-wrap: nowrap !important;
-    gap: 10px;
-    overflow-x: auto;
+    gap: 15px;
+    width: 100%;
 }
 
 .stat-card-wrapper {
-    flex: 0 0 16.666667%;
-    min-width: 120px;
-    max-width: 200px;
+    flex: 1 1 0;
+    min-width: 0;
 }
 
 .stat-card {
     width: 100%;
-    aspect-ratio: 1 / 1;
+    min-height: 120px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 12px;
-    border-radius: 8px;
+    padding: 16px;
+    border-radius: 10px;
+    transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Enhanced Typography */
+.stat-card h6 {
+    font-size: 0.9rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.stat-card h3 {
+    font-size: 2.2rem !important;
+    font-weight: 800 !important;
+    line-height: 1;
+}
+
+/* Light text for dark backgrounds */
+.stat-card.bg-primary,
+.stat-card.bg-secondary,
+.stat-card.bg-dark {
+    color: #ffffff !important;
+}
+
+.stat-card.bg-primary h6,
+.stat-card.bg-primary h3,
+.stat-card.bg-secondary h6,
+.stat-card.bg-secondary h3,
+.stat-card.bg-dark h6,
+.stat-card.bg-dark h3 {
+    color: #ffffff !important;
+}
+
+.stat-card.bg-primary .opacity-75,
+.stat-card.bg-secondary .opacity-75,
+.stat-card.bg-dark .opacity-75 {
+    opacity: 0.8 !important;
 }
 
 /* Override any conflicting styles */
@@ -49,7 +89,28 @@
 /* Responsive adjustments */
 @media (max-width: 992px) {
     .stat-card-wrapper {
-        flex: 0 0 150px;
+        min-width: 120px;
+    }
+    
+    .stat-card h3 {
+        font-size: 1.8rem !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .user-stats-container {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .stat-card-wrapper {
+        flex: 0 0 calc(50% - 5px);
+    }
+}
+
+@media (max-width: 576px) {
+    .stat-card-wrapper {
+        flex: 0 0 100%;
     }
 }
 </style>
