@@ -389,7 +389,7 @@
 /* Dashboard card grid improvements */
 .dashboard-metrics-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 1.5rem;
     margin-bottom: 2rem;
 }
@@ -413,7 +413,7 @@
 /* Responsive adjustments for dashboard cards */
 @media (max-width: 1200px) {
     .dashboard-metrics-grid {
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
     }
 }
