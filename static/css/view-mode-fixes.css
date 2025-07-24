@@ -1,0 +1,73 @@
+/* 
+ * View Mode Container Fixes
+ * Ensures consistent width and spacing for View Mode containers across all pages
+ */
+
+/* Fix View Mode container width to match other containers */
+.row.mb-5:has(.card .card-body.py-2),
+.row.mb-3:has(.card .card-body.py-2),
+.row.mb-3:has(.card .card-body.py-3),
+.w-100.mb-3:has(.card .card-body.py-3) {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Standardize spacing below View Mode containers */
+.row.mb-5:has(.card .card-body.py-2) {
+    margin-bottom: 2rem !important; /* Increased from mb-5 (3rem) to provide proper spacing */
+}
+
+.row.mb-3:has(.card .card-body.py-2),
+.row.mb-3:has(.card .card-body.py-3),
+.w-100.mb-3:has(.card .card-body.py-3) {
+    margin-bottom: 2rem !important; /* Increased from mb-3 (1rem) to provide proper spacing */
+}
+
+/* Ensure View Mode cards are full width */
+.row.mb-5 > .col-12 > .card:has(.card-body.py-2),
+.row.mb-3 > .col-12 > .card:has(.card-body.py-2),
+.row.mb-3 > .col-12 > .card:has(.card-body.py-3),
+.w-100.mb-3 > .card:has(.card-body.py-3) {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* Additional fallback selectors for View Mode cards */
+/* Target cards that contain View Mode elements more specifically */
+.card:has(.fa-eye + .text-muted:contains("View Mode")) {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* Target parent containers of View Mode cards */
+.row:has(.card .fa-eye + span:contains("View Mode")),
+.w-100:has(.card .fa-eye + span:contains("View Mode")) {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 2rem !important;
+}
+
+/* Ensure consistent spacing for all card containers on list pages */
+.card + .card,
+.card + .row,
+.row + .card {
+    margin-top: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+    .row.mb-5:has(.card .card-body.py-2),
+    .row.mb-3:has(.card .card-body.py-2),
+    .row.mb-3:has(.card .card-body.py-3),
+    .w-100.mb-3:has(.card .card-body.py-3) {
+        margin-bottom: 1.5rem !important;
+    }
+}
