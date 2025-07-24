@@ -28,6 +28,7 @@
     position: relative;
     transition: all 0.3s ease;
     border-radius: 8px;
+    margin-bottom: 20px;
 }
 
 .widget-container.edit-mode {
@@ -37,9 +38,18 @@
     cursor: move;
 }
 
-.widget-container.edit-mode .card {
+.widget-container.edit-mode * {
     pointer-events: none;
 }
+
+.widget-container.edit-mode .widget-resize-controls {
+    pointer-events: auto;
+}
+
+.widget-container.edit-mode .widget-resize-controls * {
+    pointer-events: auto;
+}
+
 
 .widget-container.edit-mode:hover {
     border-color: #28a745;
@@ -53,6 +63,15 @@
 .widget-container.sortable-chosen {
     transform: scale(1.02);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.widget-container.dragging {
+    opacity: 0.8;
+    transform: rotate(5deg);
+}
+
+.widget-container.sortable-drag {
+    opacity: 0.6;
 }
 
 .widget-resize-controls {
@@ -454,23 +473,22 @@
 </div>
 
 <!-- Dynamic Dashboard Widgets -->
-<div id="dashboard-grid" class="dashboard-grid">
+<div id="dashboard-grid" class="dashboard-grid row g-3">
     {% for widget_row in widget_rows %}
-        <div class="row mb-4 widget-row" data-row="{{ forloop.counter0 }}">
-            {% for widget in widget_row %}
-                <div class="widget-container {{ widget|widget_css_class }}" 
-                     data-widget-id="{{ widget.id }}" 
-                     data-columns="{{ widget.columns|default:4 }}"
-                     data-row="{{ widget.row|default:forloop.parentloop.counter0 }}"
-                     data-position="{{ widget.position|default:forloop.counter0 }}">
-                    
-                    <!-- Widget Resize Controls -->
-                    <div class="widget-resize-controls">
-                        <button class="widget-resize-btn" data-columns="1" title="1 Column">1</button>
-                        <button class="widget-resize-btn" data-columns="2" title="2 Columns">2</button>
-                        <button class="widget-resize-btn" data-columns="3" title="3 Columns">3</button>
-                        <button class="widget-resize-btn" data-columns="4" title="4 Columns">4</button>
-                    </div>
+        {% for widget in widget_row %}
+            <div class="widget-container {{ widget|widget_css_class }}" 
+                 data-widget-id="{{ widget.id }}" 
+                 data-columns="{{ widget.columns|default:4 }}"
+                 data-row="{{ widget.row|default:forloop.parentloop.counter0 }}"
+                 data-position="{{ widget.position|default:forloop.counter0 }}">
+                
+                <!-- Widget Resize Controls -->
+                <div class="widget-resize-controls">
+                    <button class="widget-resize-btn" data-columns="1" title="1 Column">1</button>
+                    <button class="widget-resize-btn" data-columns="2" title="2 Columns">2</button>
+                    <button class="widget-resize-btn" data-columns="3" title="3 Columns">3</button>
+                    <button class="widget-resize-btn" data-columns="4" title="4 Columns">4</button>
+                </div>
             {% if widget.id == 'metrics_summary' %}
                 <!-- Metrics Summary Widget (4 cards) -->
                 <div class="dashboard-metrics-grid w-100">
@@ -609,13 +627,13 @@
                             <!-- People Chart -->
                             <div class="col-lg-6 col-12" id="peopleChartContainer">
                                 <h6 class="text-center mb-3">People Pipeline</h6>
-                                <div class="row">
-                                    <div class="col-8">
+                                <div class="row g-2">
+                                    <div class="col-sm-8 col-12">
                                         <div style="position: relative; height: 280px;">
                                             <canvas id="peopleChart"></canvas>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-sm-4 col-12">
                                         <div id="peopleLegend" class="chart-legend"></div>
                                     </div>
                                 </div>
@@ -624,13 +642,13 @@
                             <!-- Churches Chart -->
                             <div class="col-lg-6 col-12" id="churchesChartContainer">
                                 <h6 class="text-center mb-3">Churches Pipeline</h6>
-                                <div class="row">
-                                    <div class="col-8">
+                                <div class="row g-2">
+                                    <div class="col-sm-8 col-12">
                                         <div style="position: relative; height: 280px;">
                                             <canvas id="churchesChart"></canvas>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-sm-4 col-12">
                                         <div id="churchesLegend" class="chart-legend"></div>
                                     </div>
                                 </div>
@@ -749,9 +767,8 @@
                     </div>
                 </div>
             {% endif %}
-                </div> <!-- Close widget-container -->
-            {% endfor %}
-        </div> <!-- Close widget-row -->
+            </div> <!-- Close widget-container -->
+        {% endfor %}
     {% endfor %}
 </div> <!-- Close dashboard-grid -->
 
@@ -847,13 +864,23 @@ window.csrfToken = '{{ csrf_token }}';
                 sortableInstance.destroy();
             }
             
-            // Make the entire dashboard grid sortable for widgets
+            console.log('Initializing sortable on dashboard grid');
+            
+            // Make widget containers sortable within the Bootstrap grid
             sortableInstance = new Sortable(dashboardGrid, {
-                animation: 150,
+                animation: 200,
                 ghostClass: 'sortable-ghost',
                 chosenClass: 'sortable-chosen',
-                draggable: '.widget-container',
+                dragClass: 'sortable-drag',
+                filter: '.widget-resize-controls',
+                preventOnFilter: false,
+                onStart: function(evt) {
+                    console.log('Drag started on:', evt.item.dataset.widgetId);
+                    evt.item.classList.add('dragging');
+                },
                 onEnd: function(evt) {
+                    console.log('Drag ended, updating positions');
+                    evt.item.classList.remove('dragging');
                     updateWidgetPositions();
                 }
             });
