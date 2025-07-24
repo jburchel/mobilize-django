@@ -125,124 +125,71 @@
 <!-- Bulk Operations Bar -->
 <div class="card mb-3" id="bulk-operations" style="display: none;">
     <div class="card-body py-2">
-                <!-- Mobile: Stack operations vertically -->
-                <div class="d-md-none">
-                    <div class="mb-2">
-                        <span class="text-muted"><span id="selected-count">0</span> selected</span>
-                    </div>
-                    
-                    <!-- Mobile bulk operations in rows -->
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <form method="post" action="{% url 'contacts:bulk_delete' %}" onsubmit="return confirm('Are you sure you want to delete the selected people?');">
-                                {% csrf_token %}
-                                <input type="hidden" name="contact_ids" id="bulk-delete-ids">
-                                <button type="submit" class="btn btn-danger btn-sm w-100">
-                                    <i class="fas fa-trash"></i> Delete
-                                </button>
-                            </form>
-                        </div>
-                        <div class="col-6">
-                            <form method="post" action="{% url 'contacts:bulk_update_priority' %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="contact_ids" id="bulk-priority-ids">
-                                <select name="priority" class="form-select form-select-sm" onchange="this.form.submit()">
-                                    <option value="">Change Priority...</option>
-                                    {% for priority_value, priority_label in priorities %}
-                                    <option value="{{ priority_value }}">{{ priority_label }}</option>
-                                    {% endfor %}
-                                </select>
-                            </form>
-                        </div>
-                        <div class="col-6">
-                            <select id="bulk-stage-select" class="form-select form-select-sm">
-                                <option value="">Change Stage...</option>
-                                {% for stage in pipeline_stages_objects %}
-                                <option value="{{ stage.id }}">{{ stage.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <form method="post" action="{% url 'contacts:bulk_assign_user' %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="contact_ids" id="bulk-user-ids">
-                                <select name="user_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                                    <option value="">Assign to User...</option>
-                                    {% for user in users %}
-                                    <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
-                                    {% endfor %}
-                                </select>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Desktop: Horizontal layout -->
-                <div class="d-none d-md-flex align-items-center gap-3 flex-wrap">
-                    <span class="text-muted"><span id="selected-count-desktop">0</span> selected</span>
-                    
-                    <!-- Bulk Delete -->
-                    <form method="post" action="{% url 'contacts:bulk_delete' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected people?');">
-                        {% csrf_token %}
-                        <input type="hidden" name="contact_ids" id="bulk-delete-ids-desktop">
-                        <button type="submit" class="btn btn-danger btn-sm">
-                            <i class="fas fa-trash"></i> Delete Selected
-                        </button>
-                    </form>
-                    
-                    <!-- Bulk Priority Update -->
-                    <form method="post" action="{% url 'contacts:bulk_update_priority' %}" style="display: inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="contact_ids" id="bulk-priority-ids-desktop">
-                        <select name="priority" class="form-select form-select-sm" style="width: auto; display: inline;">
-                            <option value="">Change Priority...</option>
-                            {% for priority_value, priority_label in priorities %}
-                            <option value="{{ priority_value }}">{{ priority_label }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>
-                    </form>
-                    
-                    <!-- Bulk Pipeline Stage Update -->
-                    <div style="display: inline;">
-                        <select id="bulk-stage-select-desktop" class="form-select form-select-sm" style="width: auto; display: inline;">
-                            <option value="">Change Stage...</option>
-                            {% for stage in pipeline_stages_objects %}
-                            <option value="{{ stage.id }}">{{ stage.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="button" id="bulk-update-stage-desktop" class="btn btn-outline-primary btn-sm" disabled>
-                            Update Stage
-                        </button>
-                    </div>
-                    
-                    <!-- Bulk User Assignment -->
-                    <form method="post" action="{% url 'contacts:bulk_assign_user' %}" style="display: inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="contact_ids" id="bulk-user-ids-desktop">
-                        <select name="user_id" class="form-select form-select-sm" style="width: auto; display: inline;">
-                            <option value="">Assign to User...</option>
-                            {% for user in users %}
-                            <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit" class="btn btn-outline-secondary btn-sm">Assign</button>
-                    </form>
-                    
-                    <!-- Bulk Office Assignment -->
-                    <form method="post" action="{% url 'contacts:bulk_assign_office' %}" style="display: inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="contact_ids" id="bulk-office-ids-desktop">
-                        <select name="office_id" class="form-select form-select-sm" style="width: auto; display: inline;">
-                            <option value="">Assign to Office...</option>
-                            {% for office in offices %}
-                            <option value="{{ office.id }}">{{ office.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit" class="btn btn-outline-secondary btn-sm">Assign</button>
-                    </form>
-                </div>
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <span class="text-muted"><span id="selected-count">0</span> selected</span>
+            
+            <!-- Bulk Delete -->
+            <form method="post" action="{% url 'contacts:bulk_delete' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected people?');">
+                {% csrf_token %}
+                <input type="hidden" name="contact_ids" id="bulk-delete-ids">
+                <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash"></i> Delete Selected
+                </button>
+            </form>
+            
+            <!-- Bulk Priority Update -->
+            <form method="post" action="{% url 'contacts:bulk_update_priority' %}" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="contact_ids" id="bulk-priority-ids">
+                <select name="priority" class="form-select form-select-sm" style="width: auto; display: inline;">
+                    <option value="">Change Priority...</option>
+                    {% for priority_value, priority_label in priorities %}
+                    <option value="{{ priority_value }}">{{ priority_label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>
+            </form>
+            
+            <!-- Bulk Pipeline Stage Update -->
+            <div style="display: inline;">
+                <select id="bulk-stage-select" class="form-select form-select-sm" style="width: auto; display: inline;">
+                    <option value="">Change Stage...</option>
+                    {% for stage in pipeline_stages_objects %}
+                    <option value="{{ stage.id }}">{{ stage.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" id="bulk-update-stage" class="btn btn-outline-primary btn-sm" disabled>
+                    Update Stage
+                </button>
             </div>
+            
+            <!-- Bulk User Assignment -->
+            <form method="post" action="{% url 'contacts:bulk_assign_user' %}" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="contact_ids" id="bulk-user-ids">
+                <select name="user_id" class="form-select form-select-sm" style="width: auto; display: inline;">
+                    <option value="">Assign to User...</option>
+                    {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Assign</button>
+            </form>
+            
+            <!-- Bulk Office Assignment -->
+            <form method="post" action="{% url 'contacts:bulk_assign_office' %}" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="contact_ids" id="bulk-office-ids">
+                <select name="office_id" class="form-select form-select-sm" style="width: auto; display: inline;">
+                    <option value="">Assign to Office...</option>
+                    {% for office in offices %}
+                    <option value="{{ office.id }}">{{ office.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Assign</button>
+            </form>
+        </div>
+    </div>
 </div>
 
 <div class="card mb-3">
@@ -403,24 +350,18 @@
 document.addEventListener('DOMContentLoaded', function() {
     const selectAll = document.getElementById('select-all');
     const bulkOpsBar = document.getElementById('bulk-operations');
-    const selectedCountMobile = document.getElementById('selected-count');
-    const selectedCountDesktop = document.getElementById('selected-count-desktop');
+    const selectedCount = document.getElementById('selected-count');
     const bulkStageSelect = document.getElementById('bulk-stage-select');
     const bulkUpdateStageBtn = document.getElementById('bulk-update-stage');
-    const bulkStageSelectDesktop = document.getElementById('bulk-stage-select-desktop');
-    const bulkUpdateStageBtnDesktop = document.getElementById('bulk-update-stage-desktop');
     
     // Update bulk operations visibility and selected count
     window.updateBulkOperations = function() {
         const selected = document.querySelectorAll('.contact-checkbox:checked');
         const count = selected.length;
         
-        // Update selected count for both mobile and desktop
-        if (selectedCountMobile) {
-            selectedCountMobile.textContent = count;
-        }
-        if (selectedCountDesktop) {
-            selectedCountDesktop.textContent = count;
+        // Update selected count
+        if (selectedCount) {
+            selectedCount.textContent = count;
         }
         
         // Show/hide bulk operations bar
@@ -436,36 +377,19 @@ document.addEventListener('DOMContentLoaded', function() {
         if (count === 0) {
             if (bulkStageSelect) bulkStageSelect.value = '';
             if (bulkUpdateStageBtn) bulkUpdateStageBtn.disabled = true;
-            if (bulkStageSelectDesktop) bulkStageSelectDesktop.value = '';
-            if (bulkUpdateStageBtnDesktop) bulkUpdateStageBtnDesktop.disabled = true;
         }
         
-        // Update hidden inputs for bulk operations (both mobile and desktop)
+        // Update hidden inputs for bulk operations
         const ids = Array.from(selected).map(cb => cb.value).join(',');
-        
-        // Mobile versions
         const deleteIds = document.getElementById('bulk-delete-ids');
         const priorityIds = document.getElementById('bulk-priority-ids');
         const userIds = document.getElementById('bulk-user-ids');
         const officeIds = document.getElementById('bulk-office-ids');
         
-        // Desktop versions
-        const deleteIdsDesktop = document.getElementById('bulk-delete-ids-desktop');
-        const priorityIdsDesktop = document.getElementById('bulk-priority-ids-desktop');
-        const userIdsDesktop = document.getElementById('bulk-user-ids-desktop');
-        const officeIdsDesktop = document.getElementById('bulk-office-ids-desktop');
-        
-        // Update mobile versions
         if (deleteIds) deleteIds.value = ids;
         if (priorityIds) priorityIds.value = ids;
         if (userIds) userIds.value = ids;
         if (officeIds) officeIds.value = ids;
-        
-        // Update desktop versions
-        if (deleteIdsDesktop) deleteIdsDesktop.value = ids;
-        if (priorityIdsDesktop) priorityIdsDesktop.value = ids;
-        if (userIdsDesktop) userIdsDesktop.value = ids;
-        if (officeIdsDesktop) officeIdsDesktop.value = ids;
         
         // Update select all checkbox state
         const checkboxes = document.querySelectorAll('.contact-checkbox');
