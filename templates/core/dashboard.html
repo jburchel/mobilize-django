@@ -29,6 +29,8 @@
     transition: all 0.3s ease;
     border-radius: 8px;
     margin-bottom: 20px;
+    /* Ensure proper Bootstrap column behavior */
+    min-height: 1px;
 }
 
 .widget-container.edit-mode {
@@ -879,6 +881,99 @@ window.csrfToken = '{{ csrf_token }}';
             console.error('Edit button not found!');
         }
         
+        function convertToSortableLayout() {
+            // Convert Bootstrap grid to sortable-friendly layout
+            dashboardGrid.style.display = 'flex';
+            dashboardGrid.style.flexDirection = 'column';
+            dashboardGrid.style.gap = '1rem';
+            
+            // Reset all widget containers to full width temporarily
+            const widgets = dashboardGrid.querySelectorAll('.widget-container');
+            widgets.forEach(widget => {
+                widget.style.width = '100%';
+                widget.style.marginBottom = '1rem';
+                widget.classList.remove('col-lg-1', 'col-lg-2', 'col-lg-3', 'col-lg-4', 
+                                         'col-lg-5', 'col-lg-6', 'col-lg-7', 'col-lg-8', 
+                                         'col-lg-9', 'col-lg-10', 'col-lg-11', 'col-lg-12');
+            });
+        }
+        
+        function restoreBootstrapLayout() {
+            // Restore Bootstrap grid layout
+            dashboardGrid.style.display = '';
+            dashboardGrid.style.flexDirection = '';
+            dashboardGrid.style.gap = '';
+            
+            // Organize widgets into proper rows first
+            organizeWidgetsIntoRows();
+            
+            // Restore column classes based on data attributes
+            const widgets = dashboardGrid.querySelectorAll('.widget-container');
+            widgets.forEach(widget => {
+                widget.style.width = '';
+                widget.style.marginBottom = '';
+                const columns = parseInt(widget.dataset.columns) || 4;
+                const colClass = getBootstrapColumnClass(columns);
+                
+                // Remove all existing column classes first
+                widget.classList.remove('col-lg-1', 'col-lg-2', 'col-lg-3', 'col-lg-4', 
+                                         'col-lg-5', 'col-lg-6', 'col-lg-7', 'col-lg-8', 
+                                         'col-lg-9', 'col-lg-10', 'col-lg-11', 'col-lg-12');
+                widget.classList.add(colClass);
+            });
+        }
+        
+        function getBootstrapColumnClass(columns) {
+            // Convert column count to Bootstrap class
+            switch(columns) {
+                case 1: return 'col-lg-3';   // 25% width
+                case 2: return 'col-lg-6';   // 50% width  
+                case 3: return 'col-lg-9';   // 75% width
+                case 4: return 'col-lg-12';  // 100% width
+                default: return 'col-lg-12';
+            }
+        }
+        
+        function organizeWidgetsIntoRows() {
+            // Organize widgets into rows based on their column widths
+            const widgets = Array.from(dashboardGrid.querySelectorAll('.widget-container'));
+            const rows = [];
+            let currentRow = [];
+            let currentRowWidth = 0;
+            
+            widgets.forEach((widget, index) => {
+                const columns = parseInt(widget.dataset.columns) || 4;
+                
+                // If adding this widget would exceed 4 columns, start a new row
+                if (currentRowWidth + columns > 4) {
+                    if (currentRow.length > 0) {
+                        rows.push(currentRow);
+                        currentRow = [];
+                        currentRowWidth = 0;
+                    }
+                }
+                
+                currentRow.push(widget);
+                currentRowWidth += columns;
+                widget.dataset.row = rows.length;
+                widget.dataset.position = currentRow.length - 1;
+                
+                // If we've reached exactly 4 columns, complete the row
+                if (currentRowWidth === 4) {
+                    rows.push(currentRow);
+                    currentRow = [];
+                    currentRowWidth = 0;
+                }
+            });
+            
+            // Add any remaining widgets in the last row
+            if (currentRow.length > 0) {
+                rows.push(currentRow);
+            }
+            
+            return rows;
+        }
+
         function enterEditMode() {
             console.log('enterEditMode called');
             editModeText.textContent = 'Save Layout';
@@ -915,6 +1010,9 @@ window.csrfToken = '{{ csrf_token }}';
                 sortableInstance = null;
             }
             
+            // Restore Bootstrap layout
+            restoreBootstrapLayout();
+            
             // Save layout
             saveLayout();
         }
@@ -926,7 +1024,10 @@ window.csrfToken = '{{ csrf_token }}';
             
             console.log('Initializing sortable on dashboard grid');
             
-            // Make widget containers sortable within the Bootstrap grid
+            // Convert to sortable-friendly layout temporarily
+            convertToSortableLayout();
+            
+            // Make widget containers sortable
             sortableInstance = new Sortable(dashboardGrid, {
                 animation: 200,
                 ghostClass: 'sortable-ghost',
@@ -936,13 +1037,27 @@ window.csrfToken = '{{ csrf_token }}';
                 preventOnFilter: false,
                 fallbackTolerance: 0,
                 delay: 100,
+                forceFallback: false,
+                scroll: true,
+                scrollSensitivity: 30,
+                scrollSpeed: 10,
                 onStart: function(evt) {
                     console.log('Drag started on:', evt.item.dataset.widgetId);
                     evt.item.classList.add('dragging');
+                    // Store original column classes temporarily
+                    const item = evt.item;
+                    item.dataset.originalClasses = item.className;
+                    // Remove Bootstrap column classes temporarily
+                    item.className = 'widget-container edit-mode dragging';
                 },
                 onEnd: function(evt) {
                     console.log('Drag ended, updating positions');
                     evt.item.classList.remove('dragging');
+                    // Restore original classes
+                    if (evt.item.dataset.originalClasses) {
+                        evt.item.className = evt.item.dataset.originalClasses.replace('dragging', '');
+                        delete evt.item.dataset.originalClasses;
+                    }
                     updateWidgetPositions();
                 },
                 onMove: function(evt) {
@@ -994,7 +1109,7 @@ window.csrfToken = '{{ csrf_token }}';
         function resizeWidget(widget, columns) {
             const widgetId = widget.dataset.widgetId;
             
-            // Update widget data and CSS class
+            // Update widget data
             widget.dataset.columns = columns;
             
             // Update CSS class
@@ -1002,13 +1117,20 @@ window.csrfToken = '{{ csrf_token }}';
                 1: 'col-lg-3',
                 2: 'col-lg-6', 
                 3: 'col-lg-9',
-                4: 'col-12'
+                4: 'col-lg-12'
             };
             
             // Remove old column classes
-            widget.className = widget.className.replace(/col-\S+/g, '');
+            widget.classList.remove('col-lg-1', 'col-lg-2', 'col-lg-3', 'col-lg-4', 
+                                   'col-lg-5', 'col-lg-6', 'col-lg-7', 'col-lg-8', 
+                                   'col-lg-9', 'col-lg-10', 'col-lg-11', 'col-lg-12');
             // Add new column class
             widget.classList.add(columnClasses[columns]);
+            
+            // Reorganize layout after resize
+            if (!editMode) {
+                restoreBootstrapLayout();
+            }
             
             // Update resize buttons
             updateResizeButtons(widget);
