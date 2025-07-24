@@ -55,26 +55,13 @@
         <div class="d-flex align-items-center gap-3 flex-wrap">
             <span class="text-muted"><span id="selected-count">0</span> selected</span>
             
-            <!-- Bulk Status Toggle (Active/Inactive) -->
-            <!-- Temporarily disabled until backend URLs are implemented -->
-            <form method="post" action="#" style="display: inline;">
+            <!-- Bulk Delete (Simplified - just delete for now) -->
+            <form method="post" action="{% url 'admin_panel:office_list' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete the selected offices? This action cannot be undone.');">
                 {% csrf_token %}
-                <input type="hidden" name="office_ids" id="bulk-status-ids">
-                <select name="status" class="form-select form-select-sm" style="width: auto; display: inline;" disabled>
-                    <option value="">Change Status...</option>
-                    <option value="active">Activate Offices</option>
-                    <option value="inactive">Deactivate Offices</option>
-                </select>
-                <button type="button" class="btn btn-outline-secondary btn-sm" disabled>Update (Coming Soon)</button>
-            </form>
-            
-            <!-- Bulk Delete -->
-            <!-- Temporarily disabled until backend URLs are implemented -->
-            <form method="post" action="#" style="display: inline;">
-                {% csrf_token %}
+                <input type="hidden" name="action" value="bulk_delete">
                 <input type="hidden" name="office_ids" id="bulk-delete-ids">
-                <button type="button" class="btn btn-danger btn-sm" disabled>
-                    <i class="fas fa-trash"></i> Delete Selected (Coming Soon)
+                <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash"></i> Delete Selected
                 </button>
             </form>
         </div>
@@ -82,13 +69,13 @@
 </div>
 {% endif %}
 
-<!-- Offices Grid - More Compact Layout -->
+<!-- Offices Grid - 3 Columns Layout -->
 <div class="row g-4">
     {% for office in offices %}
-    <div class="col-12 col-md-6 col-xl-4">
+    <div class="col-12 col-md-4">
         <div class="card h-100 shadow-sm border-0" style="transition: transform 0.2s ease; border-radius: 12px;">
             {% if user.role == 'super_admin' %}
-            <div class="position-absolute top-0 start-0 p-2">
+            <div class="position-absolute top-0 end-0 p-2">
                 <input type="checkbox" name="office_ids" value="{{ office.id }}" class="form-check-input office-checkbox">
             </div>
             {% endif %}
@@ -122,39 +109,40 @@
                     {% endif %}
                 </div>
                 
-                <!-- Office Details - Compact Layout -->
-                <div class="mb-3">
-                    <div class="row g-1 small text-muted">
-                        <div class="col-12">
-                            <i class="fas fa-code me-1"></i><strong>{{ office.code }}</strong>
-                        </div>
-                        {% if office.city and office.state %}
-                        <div class="col-12">
-                            <i class="fas fa-map-marker-alt me-1"></i>{{ office.city }}, {{ office.state }}
-                        </div>
-                        {% endif %}
-                        {% if office.timezone_name %}
-                        <div class="col-12">
-                            <i class="fas fa-clock me-1"></i>{{ office.timezone_name }}
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Statistics - Compact Row -->
-                <div class="row text-center mb-3 bg-light rounded p-2">
-                    <div class="col-6">
-                        <div class="d-flex align-items-center justify-content-center gap-1">
-                            <i class="fas fa-users text-primary small"></i>
-                            <span class="fw-bold text-primary">{{ office.user_count }}</span>
-                            <small class="text-muted">Users</small>
+                <!-- Office Details and Statistics Side by Side -->
+                <div class="row mb-3">
+                    <!-- Left Column: Office Details -->
+                    <div class="col-8">
+                        <div class="small text-muted">
+                            <div class="mb-1">
+                                <i class="fas fa-code me-1"></i><strong>{{ office.code|default:"No Code" }}</strong>
+                            </div>
+                            {% if office.city and office.state %}
+                            <div class="mb-1">
+                                <i class="fas fa-map-marker-alt me-1"></i>{{ office.city }}, {{ office.state }}
+                            </div>
+                            {% endif %}
+                            {% if office.timezone_name %}
+                            <div class="mb-1">
+                                <i class="fas fa-clock me-1"></i>{{ office.timezone_name }}
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
-                    <div class="col-6 border-start">
-                        <div class="d-flex align-items-center justify-content-center gap-1">
-                            <i class="fas fa-user-shield text-success small"></i>
-                            <span class="fw-bold text-success">{{ office.admin_count }}</span>
-                            <small class="text-muted">Admins</small>
+                    
+                    <!-- Right Column: Statistics -->
+                    <div class="col-4">
+                        <div class="bg-light rounded p-2 small">
+                            <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+                                <i class="fas fa-users text-primary"></i>
+                                <span class="fw-bold text-primary">{{ office.user_count }}</span>
+                                <small class="text-muted">Users</small>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center gap-1">
+                                <i class="fas fa-user-shield text-success"></i>
+                                <span class="fw-bold text-success">{{ office.admin_count }}</span>
+                                <small class="text-muted">Admins</small>
+                            </div>
                         </div>
                     </div>
                 </div>
