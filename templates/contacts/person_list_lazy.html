@@ -324,7 +324,8 @@ document.addEventListener('DOMContentLoaded', function() {
             q: '{{ query }}',
             priority: '{{ priority }}',
             pipeline_stage: '{{ pipeline_stage }}',
-            sort: '{{ sort_by }}'
+            sort: '{{ sort_by }}',
+            view_mode: '{{ current_view_mode }}'
         }
     });
     
@@ -537,7 +538,8 @@ document.addEventListener('DOMContentLoaded', function() {
             q: searchQuery,
             priority: priority,
             pipeline_stage: pipelineStage,
-            sort: ''
+            sort: '',
+            view_mode: '{{ current_view_mode }}'
         });
         // Reset and reload data with new filters
         personLoader.resetAndLoad();
@@ -589,21 +591,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
-    // Office selector for view mode (super admin only)
-    const officeSelector = document.getElementById('office-selector');
-    if (officeSelector) {
-        officeSelector.addEventListener('change', function() {
-            if (this.value) {
-                const currentParams = new URLSearchParams(window.location.search);
-                currentParams.set('view_mode', this.value);
-                window.location.href = '?' + currentParams.toString();
-            }
-        });
-    }
-    
-    // Initialize table sorting
-    initPeopleTableSorting();
 });
 
 // Table Sorting Function for People
