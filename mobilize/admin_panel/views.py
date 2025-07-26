@@ -541,6 +541,11 @@ class UserManagementView(LoginRequiredMixin, ListView):
             # Super admins see all users, office admins see only users in their office(s)
             if self.request.user.role == 'super_admin':
                 queryset = User.objects.select_related("person").order_by("username")
+                # Debug logging for super admin
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"Super admin {self.request.user.username} (ID: {self.request.user.id}) accessing user management")
+                logger.info(f"Total users queryset count: {queryset.count()}")
             elif self.request.user.role == 'office_admin':
                 # Get user's office assignments - fix string/int conversion issue
                 from .models import UserOffice
@@ -591,7 +596,7 @@ class UserManagementView(LoginRequiredMixin, ListView):
 
             logger = logging.getLogger(__name__)
             logger.error(
-                f"Error in UserManagementView.get_queryset: {e}", exc_info=True
+                f"Error in UserManagementView.get_queryset for user {self.request.user.username} (role: {self.request.user.role}): {e}", exc_info=True
             )
             # Return empty queryset to prevent 500 error
             return User.objects.none()
