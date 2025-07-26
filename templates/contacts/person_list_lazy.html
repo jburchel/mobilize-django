@@ -255,17 +255,17 @@
 
         <!-- Data Table with Lazy Loading -->
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table id="people-table" class="table table-hover" data-sortable-table>
                 <thead>
                     <tr>
                         <th width="40">
                             <input type="checkbox" id="select-all" class="form-check-input">
                         </th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>Priority</th>
-                        <th>Pipeline Stage</th>
+                        <th data-sortable="text">Name</th>
+                        <th data-sortable="text">Email</th>
+                        <th data-sortable="text">Phone</th>
+                        <th data-sortable="priority">Priority</th>
+                        <th data-sortable="badge">Pipeline Stage</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -377,6 +377,24 @@ document.addEventListener('DOMContentLoaded', function() {
         perPageCount.textContent = newPerPage;
         personLoader.resetAndLoad();
     });
+    
+    // Override the loadMore to reinitialize sorting after content loads
+    const originalLoadMore = personLoader.loadMore.bind(personLoader);
+    personLoader.loadMore = async function() {
+        console.log('DEBUG: loadMore called for people');
+        try {
+            const result = await originalLoadMore();
+            console.log('DEBUG: loadMore completed successfully for people');
+            // Reinitialize sorting after content loads
+            if (window.reinitializeSortableTables) {
+                window.reinitializeSortableTables();
+            }
+            return result;
+        } catch (error) {
+            console.error('DEBUG: loadMore failed for people:', error);
+            throw error;
+        }
+    };
     
     // Load initial data AFTER pagination controls are set up
     personLoader.loadMore();
@@ -535,7 +553,116 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Office selector for view mode (super admin only)
+    const officeSelector = document.getElementById('office-selector');
+    if (officeSelector) {
+        officeSelector.addEventListener('change', function() {
+            if (this.value) {
+                const currentParams = new URLSearchParams(window.location.search);
+                currentParams.set('view_mode', this.value);
+                window.location.href = '?' + currentParams.toString();
+            }
+        });
+    }
+    
+    // Initialize table sorting
+    initPeopleTableSorting();
 });
+
+// Table Sorting Function for People
+function initPeopleTableSorting() {
+    function sortTable(table, columnIndex, dataType) {
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        
+        if (rows.length === 0) return;
+        
+        // Get current sort state
+        const currentDir = table.dataset.sortDirection || 'asc';
+        const currentCol = table.dataset.sortColumn;
+        
+        // Toggle direction if same column, otherwise start with asc
+        let newDirection = 'asc';
+        if (currentCol == columnIndex && currentDir === 'asc') {
+            newDirection = 'desc';
+        }
+        
+        // Store sort state
+        table.dataset.sortDirection = newDirection;
+        table.dataset.sortColumn = columnIndex;
+        
+        // Sort rows
+        rows.sort((a, b) => {
+            const aCell = a.cells[columnIndex];
+            const bCell = b.cells[columnIndex];
+            
+            let aValue = aCell.textContent.trim().toLowerCase();
+            let bValue = bCell.textContent.trim().toLowerCase();
+            
+            // Handle priority sorting
+            if (dataType === 'priority') {
+                const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
+                aValue = priorityOrder[aValue] || 0;
+                bValue = priorityOrder[bValue] || 0;
+                return newDirection === 'asc' ? aValue - bValue : bValue - aValue;
+            }
+            
+            // Handle regular text sorting
+            const comparison = aValue.localeCompare(bValue, undefined, { numeric: true });
+            return newDirection === 'asc' ? comparison : -comparison;
+        });
+        
+        // Re-append sorted rows
+        rows.forEach(row => tbody.appendChild(row));
+        
+        console.log(`People: Sorted column ${columnIndex} in ${newDirection} direction`);
+    }
+
+    // Initialize sorting on people table
+    console.log('DEBUG: Initializing people table sorting...');
+    const table = document.querySelector('#people-table');
+    console.log('DEBUG: Table found:', !!table);
+    if (table) {
+        const allHeaders = table.querySelectorAll('thead th');
+        console.log('DEBUG: Headers found:', allHeaders.length);
+        allHeaders.forEach((header, index) => {
+            console.log(`DEBUG: Header ${index}: ${header.textContent}, has data-sortable: ${header.hasAttribute('data-sortable')}`);
+            if (header.hasAttribute('data-sortable')) {
+                // Remove existing listeners to avoid duplicates
+                header.removeEventListener('click', header.sortHandler);
+                
+                header.style.cursor = 'pointer';
+                header.style.userSelect = 'none';
+                
+                header.sortHandler = function() {
+                    console.log(`Clicked people header ${index}: ${header.textContent}`);
+                    sortTable(table, index, this.dataset.sortable);
+                };
+                
+                header.addEventListener('click', header.sortHandler);
+                console.log(`DEBUG: Added click listener to people header ${index}`);
+            }
+        });
+        console.log('People table sorting initialized');
+    } else {
+        console.error('ERROR: People table not found!');
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', initPeopleTableSorting);
+
+// Re-initialize after lazy loading (override existing function)
+if (window.reinitializeSortableTables) {
+    const originalReinit = window.reinitializeSortableTables;
+    window.reinitializeSortableTables = function() {
+        originalReinit();
+        initPeopleTableSorting();
+    };
+} else {
+    window.reinitializeSortableTables = initPeopleTableSorting;
+}
 
 // Handle email click - open Gmail compose in app
 function openEmailCompose(email, name, contactId) {
