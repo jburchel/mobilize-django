@@ -192,7 +192,7 @@
     </div>
 </div>
 
-<div class="card mb-3" data-debug="search-filter-fixed">
+<div class="card mb-3">
     <div class="card-body py-3">
         <!-- Search and Filter - UPDATED TO HORIZONTAL LAYOUT 2025-01-26 -->
         <form method="get">
@@ -211,7 +211,7 @@
                     </div>
                     <div class="col-6">
                         <label for="priority-mobile" class="form-label">Filter by Priority</label>
-                        <select class="form-select" id="priority-mobile" name="priority">
+                        <select class="form-select" id="priority-mobile" name="priority" onchange="this.form.submit()">
                             <option value="">All Priorities</option>
                             {% for priority_value, priority_label in priorities %}
                                 <option value="{{ priority_value }}" {% if priority == priority_value %}selected{% endif %}>
@@ -222,7 +222,7 @@
                     </div>
                     <div class="col-6">
                         <label for="pipeline-mobile" class="form-label">Filter by Pipeline Stage</label>
-                        <select class="form-select" id="pipeline-mobile" name="pipeline_stage">
+                        <select class="form-select" id="pipeline-mobile" name="pipeline_stage" onchange="this.form.submit()">
                             <option value="">All Pipeline Stages</option>
                             {% for stage_value, stage_label in pipeline_stages %}
                                 <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>
