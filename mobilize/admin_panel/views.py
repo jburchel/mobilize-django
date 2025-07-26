@@ -615,6 +615,9 @@ class UserManagementView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         try:
+            # Import UserOffice at the top to avoid scoping issues
+            from .models import UserOffice
+            
             # Ensure required attributes are set before calling super()
             if not hasattr(self, "object_list"):
                 self.object_list = self.get_queryset()
@@ -644,7 +647,6 @@ class UserManagementView(LoginRequiredMixin, ListView):
                 context["first_office"] = Office.objects.first()
             elif self.request.user.role == 'office_admin':
                 # Office admins see statistics only for their office(s) - fix string/int conversion
-                from .models import UserOffice
                 user_offices = UserOffice.objects.filter(user_id=str(self.request.user.id)).values_list('office_id', flat=True)
                 office_user_ids = UserOffice.objects.filter(office_id__in=user_offices).values_list('user_id', flat=True)
                 # Convert string user_ids back to integers for User.objects.filter
