@@ -354,6 +354,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Add callback to reinitialize sorting after content loads
+    const originalLoadMore = taskLoader.loadMore.bind(taskLoader);
+    taskLoader.loadMore = async function() {
+        try {
+            const result = await originalLoadMore();
+            // Reinitialize sorting after content loads
+            if (window.reinitializeSortableTables) {
+                window.reinitializeSortableTables();
+            }
+            return result;
+        } catch (error) {
+            throw error;
+        }
+    };
+    
     // Override the row template for task-specific rendering
     taskLoader.getRowTemplate = function(item) {
         return `

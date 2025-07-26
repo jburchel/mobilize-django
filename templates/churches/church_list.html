@@ -563,6 +563,10 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const result = await originalLoadMore();
             console.log('DEBUG: loadMore completed successfully');
+            // Reinitialize sorting after content loads
+            if (window.reinitializeSortableTables) {
+                window.reinitializeSortableTables();
+            }
             return result;
         } catch (error) {
             console.error('DEBUG: loadMore failed:', error);
