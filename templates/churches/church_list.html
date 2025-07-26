@@ -974,8 +974,34 @@ function initChurchTableSorting() {
             const aCell = a.cells[columnIndex];
             const bCell = b.cells[columnIndex];
             
-            let aValue = aCell.textContent.trim().toLowerCase();
-            let bValue = bCell.textContent.trim().toLowerCase();
+            // Extract text from badges if present
+            let aValue = aCell.textContent.trim();
+            let bValue = bCell.textContent.trim();
+            
+            // Check if cells contain badges and extract the text
+            const aBadge = aCell.querySelector('.badge');
+            const bBadge = bCell.querySelector('.badge');
+            if (aBadge) aValue = aBadge.textContent.trim();
+            if (bBadge) bValue = bBadge.textContent.trim();
+            
+            // Convert to lowercase for comparison
+            aValue = aValue.toLowerCase();
+            bValue = bValue.toLowerCase();
+            
+            // Handle priority sorting
+            if (dataType === 'priority') {
+                const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
+                const aPriority = priorityOrder[aValue] || 0;
+                const bPriority = priorityOrder[bValue] || 0;
+                return newDirection === 'asc' ? aPriority - bPriority : bPriority - aPriority;
+            }
+            
+            // Handle badge sorting (for pipeline stages)
+            if (dataType === 'badge') {
+                // Just use regular text comparison for badge content
+                const comparison = aValue.localeCompare(bValue, undefined, { numeric: true });
+                return newDirection === 'asc' ? comparison : -comparison;
+            }
             
             // Handle regular text sorting
             const comparison = aValue.localeCompare(bValue, undefined, { numeric: true });

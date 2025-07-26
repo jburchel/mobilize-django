@@ -387,8 +387,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await originalLoadMore();
             console.log('DEBUG: loadMore completed successfully for people');
             // Reinitialize sorting after content loads
+            console.log('🔥 About to reinitialize sorting after lazy load');
             if (window.reinitializeSortableTables) {
+                console.log('🔥 Calling reinitializeSortableTables');
                 window.reinitializeSortableTables();
+            } else {
+                console.warn('🔥 reinitializeSortableTables function not found!');
             }
             return result;
         } catch (error) {
@@ -620,15 +624,33 @@ function initPeopleTableSorting() {
             const aCell = a.cells[columnIndex];
             const bCell = b.cells[columnIndex];
             
-            let aValue = aCell.textContent.trim().toLowerCase();
-            let bValue = bCell.textContent.trim().toLowerCase();
+            // Extract text from badges if present
+            let aValue = aCell.textContent.trim();
+            let bValue = bCell.textContent.trim();
+            
+            // Check if cells contain badges and extract the text
+            const aBadge = aCell.querySelector('.badge');
+            const bBadge = bCell.querySelector('.badge');
+            if (aBadge) aValue = aBadge.textContent.trim();
+            if (bBadge) bValue = bBadge.textContent.trim();
+            
+            // Convert to lowercase for comparison
+            aValue = aValue.toLowerCase();
+            bValue = bValue.toLowerCase();
             
             // Handle priority sorting
             if (dataType === 'priority') {
                 const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
-                aValue = priorityOrder[aValue] || 0;
-                bValue = priorityOrder[bValue] || 0;
-                return newDirection === 'asc' ? aValue - bValue : bValue - aValue;
+                const aPriority = priorityOrder[aValue] || 0;
+                const bPriority = priorityOrder[bValue] || 0;
+                return newDirection === 'asc' ? aPriority - bPriority : bPriority - aPriority;
+            }
+            
+            // Handle badge sorting (for pipeline stages)
+            if (dataType === 'badge') {
+                // Just use regular text comparison for badge content
+                const comparison = aValue.localeCompare(bValue, undefined, { numeric: true });
+                return newDirection === 'asc' ? comparison : -comparison;
             }
             
             // Handle regular text sorting
@@ -639,7 +661,7 @@ function initPeopleTableSorting() {
         // Re-append sorted rows
         rows.forEach(row => tbody.appendChild(row));
         
-        console.log(`People: Sorted column ${columnIndex} in ${newDirection} direction`);
+        console.log(`🔥 People: Sorted column ${columnIndex} in ${newDirection} direction - reordered ${rows.length} rows`);
     }
 
     // Initialize sorting on people table
@@ -657,9 +679,18 @@ function initPeopleTableSorting() {
                 
                 header.style.cursor = 'pointer';
                 header.style.userSelect = 'none';
+                header.style.backgroundColor = '#e3f2fd'; // Blue tint to show it's sortable
+                header.title = `Click to sort by ${header.textContent}`;
                 
                 header.sortHandler = function() {
-                    console.log(`Clicked people header ${index}: ${header.textContent}`);
+                    console.log(`🔥 CLICKED people header ${index}: "${header.textContent}" with data-sortable="${this.dataset.sortable}"`);
+                    const tbody = table.querySelector('tbody');
+                    const rows = tbody.querySelectorAll('tr');
+                    console.log(`🔥 Found ${rows.length} rows to sort`);
+                    if (rows.length === 0) {
+                        console.warn('🔥 No rows found - cannot sort empty table');
+                        return;
+                    }
                     sortTable(table, index, this.dataset.sortable);
                 };
                 
@@ -668,6 +699,21 @@ function initPeopleTableSorting() {
             }
         });
         console.log('People table sorting initialized');
+        
+        // Add a test button for debugging
+        const testButton = document.createElement('button');
+        testButton.textContent = 'TEST SORT NAME COLUMN';
+        testButton.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 9999; background: red; color: white; padding: 10px;';
+        testButton.onclick = function() {
+            console.log('🔥 TEST BUTTON CLICKED - manually triggering sort');
+            const nameHeader = table.querySelector('th[data-sortable="text"]');
+            if (nameHeader && nameHeader.sortHandler) {
+                nameHeader.sortHandler();
+            } else {
+                console.error('🔥 Name header or sortHandler not found');
+            }
+        };
+        document.body.appendChild(testButton);
     } else {
         console.error('ERROR: People table not found!');
     }
@@ -678,12 +724,16 @@ document.addEventListener('DOMContentLoaded', initPeopleTableSorting);
 
 // Re-initialize after lazy loading (override existing function)
 if (window.reinitializeSortableTables) {
+    console.log('🔥 Found existing reinitializeSortableTables - overriding it');
     const originalReinit = window.reinitializeSortableTables;
     window.reinitializeSortableTables = function() {
+        console.log('🔥 reinitializeSortableTables called - running original first');
         originalReinit();
+        console.log('🔥 Now running initPeopleTableSorting');
         initPeopleTableSorting();
     };
 } else {
+    console.log('🔥 No existing reinitializeSortableTables - creating new one');
     window.reinitializeSortableTables = initPeopleTableSorting;
 }
 

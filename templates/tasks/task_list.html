@@ -750,30 +750,48 @@ document.addEventListener('DOMContentLoaded', function() {
             const aCell = a.cells[columnIndex];
             const bCell = b.cells[columnIndex];
             
-            let aValue = aCell.textContent.trim().toLowerCase();
-            let bValue = bCell.textContent.trim().toLowerCase();
+            // Extract text from badges if present
+            let aValue = aCell.textContent.trim();
+            let bValue = bCell.textContent.trim();
+            
+            // Check if cells contain badges and extract the text
+            const aBadge = aCell.querySelector('.badge');
+            const bBadge = bCell.querySelector('.badge');
+            if (aBadge) aValue = aBadge.textContent.trim();
+            if (bBadge) bValue = bBadge.textContent.trim();
+            
+            // Convert to lowercase for comparison
+            aValue = aValue.toLowerCase();
+            bValue = bValue.toLowerCase();
             
             // Handle priority sorting
             if (dataType === 'priority') {
                 const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
-                aValue = priorityOrder[aValue] || 0;
-                bValue = priorityOrder[bValue] || 0;
-                return newDirection === 'asc' ? aValue - bValue : bValue - aValue;
+                const aPriority = priorityOrder[aValue] || 0;
+                const bPriority = priorityOrder[bValue] || 0;
+                return newDirection === 'asc' ? aPriority - bPriority : bPriority - aPriority;
             }
             
             // Handle status sorting
             if (dataType === 'status') {
                 const statusOrder = { 'completed': 3, 'in progress': 2, 'pending': 1 };
-                aValue = statusOrder[aValue] || 0;
-                bValue = statusOrder[bValue] || 0;
-                return newDirection === 'asc' ? aValue - bValue : bValue - aValue;
+                const aStatus = statusOrder[aValue] || 0;
+                const bStatus = statusOrder[bValue] || 0;
+                return newDirection === 'asc' ? aStatus - bStatus : bStatus - aStatus;
+            }
+            
+            // Handle badge sorting (for any badge fields)
+            if (dataType === 'badge') {
+                // Just use regular text comparison for badge content
+                const comparison = aValue.localeCompare(bValue, undefined, { numeric: true });
+                return newDirection === 'asc' ? comparison : -comparison;
             }
             
             // Handle date sorting
             if (dataType === 'date') {
-                aValue = new Date(aValue);
-                bValue = new Date(bValue);
-                return newDirection === 'asc' ? aValue - bValue : bValue - aValue;
+                const aDate = new Date(aValue);
+                const bDate = new Date(bValue);
+                return newDirection === 'asc' ? aDate - bDate : bDate - aDate;
             }
             
             // Handle regular text sorting
