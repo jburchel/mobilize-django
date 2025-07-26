@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: mobilize-crm
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn mobilize.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: DJANGO_SETTINGS_MODULE
+        value: mobilize.settings
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DJANGO_SUPERUSER_USERNAME
+        value: admin
+      - key: DJANGO_SUPERUSER_EMAIL
+        value: admin@example.com
+      - key: DJANGO_SUPERUSER_PASSWORD
+        generateValue: true
