@@ -240,9 +240,13 @@ class CommunicationListView(LoginRequiredMixin, ListView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        # Simplified queryset to ensure it works
+        # Filter communications by user - each user sees only their own communications
         try:
-            queryset = Communication.objects.all()
+            # Super admins see all communications, everyone else sees only their own
+            if self.request.user.role == 'super_admin':
+                queryset = Communication.objects.all()
+            else:
+                queryset = Communication.objects.filter(user=self.request.user)
 
             # Apply basic filters from GET parameters
             type_filter = self.request.GET.get("type")
@@ -2091,8 +2095,11 @@ def communication_list_api(request):
     logger = logging.getLogger(__name__)
 
     try:
-        # Start with all communications
-        queryset = Communication.objects.all()
+        # Filter communications by user - each user sees only their own communications
+        if request.user.role == 'super_admin':
+            queryset = Communication.objects.all()
+        else:
+            queryset = Communication.objects.filter(user=request.user)
         
         # Get query parameters
         search_query = request.GET.get("search", "")
