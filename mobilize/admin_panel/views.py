@@ -542,12 +542,23 @@ class UserManagementView(LoginRequiredMixin, ListView):
             if self.request.user.role == 'super_admin':
                 queryset = User.objects.select_related("person").order_by("username")
             elif self.request.user.role == 'office_admin':
-                # Get user's office assignments
+                # Get user's office assignments - fix string/int conversion issue
                 from .models import UserOffice
-                user_offices = UserOffice.objects.filter(user=self.request.user).values_list('office_id', flat=True)
+                user_offices = UserOffice.objects.filter(user_id=str(self.request.user.id)).values_list('office_id', flat=True)
                 # Filter to users who are in the same office(s)
                 office_user_ids = UserOffice.objects.filter(office_id__in=user_offices).values_list('user_id', flat=True)
+                # Convert string user_ids back to integers for User.objects.filter
+                office_user_ids = [int(uid) for uid in office_user_ids if uid.isdigit()]
                 queryset = User.objects.filter(id__in=office_user_ids).select_related("person").order_by("username")
+                
+                # Debug logging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"Office admin {self.request.user.username} (ID: {self.request.user.id})")
+                logger.info(f"User offices: {list(user_offices)}")
+                logger.info(f"Office user IDs (strings): {list(UserOffice.objects.filter(office_id__in=user_offices).values_list('user_id', flat=True))}")
+                logger.info(f"Office user IDs (converted): {office_user_ids}")
+                logger.info(f"Queryset count: {queryset.count()}")
             else:
                 queryset = User.objects.none()
 
@@ -615,10 +626,12 @@ class UserManagementView(LoginRequiredMixin, ListView):
                 context["all_offices"] = Office.objects.all().order_by("name")
                 context["first_office"] = Office.objects.first()
             elif self.request.user.role == 'office_admin':
-                # Office admins see statistics only for their office(s)
+                # Office admins see statistics only for their office(s) - fix string/int conversion
                 from .models import UserOffice
-                user_offices = UserOffice.objects.filter(user=self.request.user).values_list('office_id', flat=True)
+                user_offices = UserOffice.objects.filter(user_id=str(self.request.user.id)).values_list('office_id', flat=True)
                 office_user_ids = UserOffice.objects.filter(office_id__in=user_offices).values_list('user_id', flat=True)
+                # Convert string user_ids back to integers for User.objects.filter
+                office_user_ids = [int(uid) for uid in office_user_ids if uid.isdigit()]
                 office_users = User.objects.filter(id__in=office_user_ids)
                 
                 context["stats"] = {
@@ -696,10 +709,10 @@ class UserDetailView(LoginRequiredMixin, DetailView):
         if request.user.role == 'office_admin':
             user_to_view = self.get_object()
             from .models import UserOffice
-            # Get requesting user's offices
-            admin_offices = UserOffice.objects.filter(user=request.user).values_list('office_id', flat=True)
+            # Get requesting user's offices - fix string/int conversion
+            admin_offices = UserOffice.objects.filter(user_id=str(request.user.id)).values_list('office_id', flat=True)
             # Get target user's offices  
-            target_user_offices = UserOffice.objects.filter(user=user_to_view).values_list('office_id', flat=True)
+            target_user_offices = UserOffice.objects.filter(user_id=str(user_to_view.id)).values_list('office_id', flat=True)
             # Check if there's any overlap
             if not set(admin_offices).intersection(set(target_user_offices)):
                 raise PermissionDenied("You can only view users in your office.")
@@ -723,9 +736,9 @@ class UserDetailView(LoginRequiredMixin, DetailView):
                 id__in=assigned_office_ids
             )
         elif self.request.user.role == 'office_admin':
-            # Office admins can only assign to their own offices
+            # Office admins can only assign to their own offices - fix string/int conversion
             from .models import UserOffice
-            admin_offices = UserOffice.objects.filter(user=self.request.user).values_list('office_id', flat=True)
+            admin_offices = UserOffice.objects.filter(user_id=str(self.request.user.id)).values_list('office_id', flat=True)
             context["available_offices"] = Office.objects.filter(
                 is_active=True, id__in=admin_offices
             ).exclude(id__in=assigned_office_ids)
@@ -756,10 +769,10 @@ class UserUpdateView(LoginRequiredMixin, UpdateView):
         if request.user.role == 'office_admin':
             user_to_edit = self.get_object()
             from .models import UserOffice
-            # Get requesting user's offices
-            admin_offices = UserOffice.objects.filter(user=request.user).values_list('office_id', flat=True)
+            # Get requesting user's offices - fix string/int conversion
+            admin_offices = UserOffice.objects.filter(user_id=str(request.user.id)).values_list('office_id', flat=True)
             # Get target user's offices  
-            target_user_offices = UserOffice.objects.filter(user=user_to_edit).values_list('office_id', flat=True)
+            target_user_offices = UserOffice.objects.filter(user_id=str(user_to_edit.id)).values_list('office_id', flat=True)
             # Check if there's any overlap
             if not set(admin_offices).intersection(set(target_user_offices)):
                 raise PermissionDenied("You can only edit users in your office.")
