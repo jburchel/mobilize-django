@@ -741,18 +741,20 @@ document.addEventListener('DOMContentLoaded', function() {
     window.initializeTaskSorting = function() {
         const table = document.querySelector('#tasks-table');
         if (table) {
-            const headers = table.querySelectorAll('thead th[data-sortable]');
-            headers.forEach((header, index) => {
-                // Remove existing listeners to prevent duplicates
-                const newHeader = header.cloneNode(true);
-                header.parentNode.replaceChild(newHeader, header);
-                
-                newHeader.style.cursor = 'pointer';
-                newHeader.style.userSelect = 'none';
-                newHeader.addEventListener('click', function() {
-                    console.log(`Clicked tasks table header ${index}: ${newHeader.textContent}`);
-                    sortTable(table, index, this.dataset.sortable);
-                });
+            const allHeaders = table.querySelectorAll('thead th');
+            allHeaders.forEach((header, index) => {
+                if (header.hasAttribute('data-sortable')) {
+                    // Remove existing listeners to prevent duplicates
+                    const newHeader = header.cloneNode(true);
+                    header.parentNode.replaceChild(newHeader, header);
+                    
+                    newHeader.style.cursor = 'pointer';
+                    newHeader.style.userSelect = 'none';
+                    newHeader.addEventListener('click', function() {
+                        console.log(`Clicked tasks table header ${index}: ${newHeader.textContent}`);
+                        sortTable(table, index, this.dataset.sortable);
+                    });
+                }
             });
             console.log('Tasks table sorting initialized');
         }

@@ -657,14 +657,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize sorting on people table
     const table = document.querySelector('#people-table');
     if (table) {
-        const headers = table.querySelectorAll('thead th[data-sortable]');
-        headers.forEach((header, index) => {
-            header.style.cursor = 'pointer';
-            header.style.userSelect = 'none';
-            header.addEventListener('click', function() {
-                console.log(`Clicked header ${index}: ${header.textContent}`);
-                sortTable(table, index, this.dataset.sortable);
-            });
+        const allHeaders = table.querySelectorAll('thead th');
+        allHeaders.forEach((header, index) => {
+            if (header.hasAttribute('data-sortable')) {
+                header.style.cursor = 'pointer';
+                header.style.userSelect = 'none';
+                header.addEventListener('click', function() {
+                    console.log(`Clicked header ${index}: ${header.textContent}`);
+                    sortTable(table, index, this.dataset.sortable);
+                });
+            }
         });
         console.log('People table sorting initialized');
     }

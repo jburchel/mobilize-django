@@ -922,20 +922,22 @@ function initChurchTableSorting() {
     // Initialize sorting on churches table
     const table = document.querySelector('#churches-table');
     if (table) {
-        const headers = table.querySelectorAll('thead th[data-sortable]');
-        headers.forEach((header, index) => {
-            // Remove existing listeners to avoid duplicates
-            header.removeEventListener('click', header.sortHandler);
-            
-            header.style.cursor = 'pointer';
-            header.style.userSelect = 'none';
-            
-            header.sortHandler = function() {
-                console.log(`Clicked church header ${index}: ${header.textContent}`);
-                sortTable(table, index, this.dataset.sortable);
-            };
-            
-            header.addEventListener('click', header.sortHandler);
+        const allHeaders = table.querySelectorAll('thead th');
+        allHeaders.forEach((header, index) => {
+            if (header.hasAttribute('data-sortable')) {
+                // Remove existing listeners to avoid duplicates
+                header.removeEventListener('click', header.sortHandler);
+                
+                header.style.cursor = 'pointer';
+                header.style.userSelect = 'none';
+                
+                header.sortHandler = function() {
+                    console.log(`Clicked church header ${index}: ${header.textContent}`);
+                    sortTable(table, index, this.dataset.sortable);
+                };
+                
+                header.addEventListener('click', header.sortHandler);
+            }
         });
         console.log('Church table sorting initialized');
     }
