@@ -974,6 +974,17 @@ function initChurchTableSorting() {
             const aCell = a.cells[columnIndex];
             const bCell = b.cells[columnIndex];
             
+            // Safety check for undefined cells
+            if (!aCell || !bCell) {
+                console.error(`🔥 CHURCHES: Missing cell at column ${columnIndex}:`, {
+                    rowA: a.outerHTML.substring(0, 100) + '...',
+                    rowB: b.outerHTML.substring(0, 100) + '...',
+                    aCellCount: a.cells.length,
+                    bCellCount: b.cells.length
+                });
+                return 0; // Keep original order for problematic rows
+            }
+            
             // Extract text from badges if present
             let aValue = aCell.textContent.trim();
             let bValue = bCell.textContent.trim();

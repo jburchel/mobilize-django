@@ -728,8 +728,15 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     function sortTable(table, columnIndex, dataType) {
+        console.log(`🔥 TASKS: sortTable called - column ${columnIndex}, dataType ${dataType}`);
         const tbody = table.querySelector('tbody');
         const rows = Array.from(tbody.querySelectorAll('tr'));
+        
+        console.log(`🔥 TASKS: Found ${rows.length} rows to sort`);
+        if (rows.length === 0) {
+            console.warn('🔥 TASKS: No rows to sort');
+            return;
+        }
         
         // Get current sort state
         const currentDir = table.dataset.sortDirection || 'asc';
@@ -749,6 +756,17 @@ document.addEventListener('DOMContentLoaded', function() {
         rows.sort((a, b) => {
             const aCell = a.cells[columnIndex];
             const bCell = b.cells[columnIndex];
+            
+            // Safety check for undefined cells
+            if (!aCell || !bCell) {
+                console.error(`🔥 Missing cell at column ${columnIndex}:`, {
+                    rowA: a.outerHTML.substring(0, 100) + '...',
+                    rowB: b.outerHTML.substring(0, 100) + '...',
+                    aCellCount: a.cells.length,
+                    bCellCount: b.cells.length
+                });
+                return 0; // Keep original order for problematic rows
+            }
             
             // Extract text from badges if present
             let aValue = aCell.textContent.trim();
