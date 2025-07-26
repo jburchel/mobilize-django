@@ -6,10 +6,10 @@
 {% block page_title %}Dashboard{% endblock %}
 
 {% block page_actions %}
-    <button id="edit-dashboard-btn" class="btn btn-outline-primary btn-sm me-2">
+    <button id="edit-dashboard-btn" class="btn btn-primary btn-sm me-2">
         <i class="fas fa-edit me-1"></i> <span id="edit-mode-text">Edit Layout</span>
     </button>
-    <a href="{% url 'core:customize_dashboard' %}" class="btn btn-outline-primary btn-sm">
+    <a href="{% url 'core:customize_dashboard' %}" class="btn btn-secondary btn-sm">
         <i class="fas fa-cog me-1"></i> Customize
     </a>
 {% endblock %}
@@ -1005,7 +1005,7 @@ window.csrfToken = '{{ csrf_token }}';
         
         function exitEditMode() {
             editModeText.textContent = 'Edit Layout';
-            editBtn.className = 'btn btn-outline-primary btn-sm me-2';
+            editBtn.className = 'btn btn-primary btn-sm me-2';
             editOverlay.classList.remove('active');
             editInstructions.classList.remove('active');
             
