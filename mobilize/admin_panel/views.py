@@ -538,14 +538,26 @@ class UserManagementView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         try:
+            # Basic debugging to check if User model is accessible
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"UserManagementView.get_queryset called for user: {self.request.user.username}, role: {self.request.user.role}")
+            
+            # Test User model access
+            try:
+                total_users = User.objects.count()
+                logger.info(f"User model accessible, total users: {total_users}")
+            except Exception as user_error:
+                logger.error(f"Error accessing User model: {user_error}")
+                raise user_error
             # Super admins see all users, office admins see only users in their office(s)
             if self.request.user.role == 'super_admin':
-                queryset = User.objects.select_related("person").order_by("username")
-                # Debug logging for super admin
-                import logging
-                logger = logging.getLogger(__name__)
+                # Simplify the queryset temporarily to debug
+                logger.info("Creating queryset for super admin...")
+                queryset = User.objects.all().order_by("username")
                 logger.info(f"Super admin {self.request.user.username} (ID: {self.request.user.id}) accessing user management")
                 logger.info(f"Total users queryset count: {queryset.count()}")
+                logger.info("Super admin queryset created successfully")
             elif self.request.user.role == 'office_admin':
                 # Get user's office assignments - fix string/int conversion issue
                 from .models import UserOffice
