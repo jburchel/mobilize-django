@@ -517,11 +517,12 @@ class CrossOfficeReportView(LoginRequiredMixin, View):
         )
 
 
-class UserManagementView(SuperAdminRequiredMixin, ListView):
+class UserManagementView(LoginRequiredMixin, ListView):
     """
-    Comprehensive user management view for super admins.
-
-    Provides centralized management of all users across all offices.
+    User management view for super admins and office admins.
+    
+    Super admins see all users across all offices.
+    Office admins see only users in their office(s).
     """
 
     model = User
@@ -529,9 +530,26 @@ class UserManagementView(SuperAdminRequiredMixin, ListView):
     context_object_name = "users"
     paginate_by = 25
 
+    def dispatch(self, request, *args, **kwargs):
+        # Allow both super_admin and office_admin
+        if request.user.role not in ['super_admin', 'office_admin']:
+            raise PermissionDenied("You don't have permission to access user management.")
+        return super().dispatch(request, *args, **kwargs)
+
     def get_queryset(self):
         try:
-            queryset = User.objects.select_related("person").order_by("username")
+            # Super admins see all users, office admins see only users in their office(s)
+            if self.request.user.role == 'super_admin':
+                queryset = User.objects.select_related("person").order_by("username")
+            elif self.request.user.role == 'office_admin':
+                # Get user's office assignments
+                from .models import UserOffice
+                user_offices = UserOffice.objects.filter(user=self.request.user).values_list('office_id', flat=True)
+                # Filter to users who are in the same office(s)
+                office_user_ids = UserOffice.objects.filter(office_id__in=user_offices).values_list('user_id', flat=True)
+                queryset = User.objects.filter(id__in=office_user_ids).select_related("person").order_by("username")
+            else:
+                queryset = User.objects.none()
 
             # Filter by role if specified
             role_filter = self.request.GET.get("role")
@@ -582,21 +600,41 @@ class UserManagementView(SuperAdminRequiredMixin, ListView):
             context["current_active"] = self.request.GET.get("active", "")
             context["current_search"] = self.request.GET.get("search", "")
 
-            # Add statistics
-            context["stats"] = {
-                "total_users": User.objects.count(),
-                "active_users": User.objects.filter(is_active=True).count(),
-                "super_admins": User.objects.filter(role="super_admin").count(),
-                "office_admins": User.objects.filter(role="office_admin").count(),
-                "standard_users": User.objects.filter(role="standard_user").count(),
-                "limited_users": User.objects.filter(role="limited_user").count(),
-            }
-
-            # Get first office for create user link
-            context["first_office"] = Office.objects.first()
-
-            # Get all offices for batch operations
-            context["all_offices"] = Office.objects.all().order_by("name")
+            # Add statistics based on user role
+            if self.request.user.role == 'super_admin':
+                # Super admins see global statistics
+                context["stats"] = {
+                    "total_users": User.objects.count(),
+                    "active_users": User.objects.filter(is_active=True).count(),
+                    "super_admins": User.objects.filter(role="super_admin").count(),
+                    "office_admins": User.objects.filter(role="office_admin").count(),
+                    "standard_users": User.objects.filter(role="standard_user").count(),
+                    "limited_users": User.objects.filter(role="limited_user").count(),
+                }
+                # Super admins see all offices
+                context["all_offices"] = Office.objects.all().order_by("name")
+                context["first_office"] = Office.objects.first()
+            elif self.request.user.role == 'office_admin':
+                # Office admins see statistics only for their office(s)
+                from .models import UserOffice
+                user_offices = UserOffice.objects.filter(user=self.request.user).values_list('office_id', flat=True)
+                office_user_ids = UserOffice.objects.filter(office_id__in=user_offices).values_list('user_id', flat=True)
+                office_users = User.objects.filter(id__in=office_user_ids)
+                
+                context["stats"] = {
+                    "total_users": office_users.count(),
+                    "active_users": office_users.filter(is_active=True).count(),
+                    "super_admins": office_users.filter(role="super_admin").count(),
+                    "office_admins": office_users.filter(role="office_admin").count(),
+                    "standard_users": office_users.filter(role="standard_user").count(),
+                    "limited_users": office_users.filter(role="limited_user").count(),
+                }
+                # Office admins see only their offices
+                context["all_offices"] = Office.objects.filter(id__in=user_offices).order_by("name")
+                context["first_office"] = context["all_offices"].first()
+            
+            # Add user role context for template
+            context["user_role"] = self.request.user.role
 
             # Add office assignments to each user object
             for user in context["users"]:
@@ -637,16 +675,36 @@ class UserManagementView(SuperAdminRequiredMixin, ListView):
             }
 
 
-class UserDetailView(SuperAdminRequiredMixin, DetailView):
+class UserDetailView(LoginRequiredMixin, DetailView):
     """
-    Detailed view of a specific user for super admins.
-
-    Shows user information, office assignments, and management options.
+    Detailed view of a specific user for super admins and office admins.
+    
+    Super admins see all user details.
+    Office admins see only users in their office(s).
     """
 
     model = User
     template_name = "admin_panel/user_detail.html"
     context_object_name = "user_detail"
+
+    def dispatch(self, request, *args, **kwargs):
+        # Allow both super_admin and office_admin
+        if request.user.role not in ['super_admin', 'office_admin']:
+            raise PermissionDenied("You don't have permission to view user details.")
+            
+        # For office admins, check if they can access this specific user
+        if request.user.role == 'office_admin':
+            user_to_view = self.get_object()
+            from .models import UserOffice
+            # Get requesting user's offices
+            admin_offices = UserOffice.objects.filter(user=request.user).values_list('office_id', flat=True)
+            # Get target user's offices  
+            target_user_offices = UserOffice.objects.filter(user=user_to_view).values_list('office_id', flat=True)
+            # Check if there's any overlap
+            if not set(admin_offices).intersection(set(target_user_offices)):
+                raise PermissionDenied("You can only view users in your office.")
+                
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -657,23 +715,71 @@ class UserDetailView(SuperAdminRequiredMixin, DetailView):
         ).select_related("office")
         context["user_offices"] = user_offices
 
-        # Get offices not assigned to this user
+        # Get available offices based on user role
         assigned_office_ids = user_offices.values_list("office_id", flat=True)
-        context["available_offices"] = Office.objects.filter(is_active=True).exclude(
-            id__in=assigned_office_ids
-        )
+        if self.request.user.role == 'super_admin':
+            # Super admins can assign to any office
+            context["available_offices"] = Office.objects.filter(is_active=True).exclude(
+                id__in=assigned_office_ids
+            )
+        elif self.request.user.role == 'office_admin':
+            # Office admins can only assign to their own offices
+            from .models import UserOffice
+            admin_offices = UserOffice.objects.filter(user=self.request.user).values_list('office_id', flat=True)
+            context["available_offices"] = Office.objects.filter(
+                is_active=True, id__in=admin_offices
+            ).exclude(id__in=assigned_office_ids)
+        
+        # Add user role context
+        context["user_role"] = self.request.user.role
 
         return context
 
 
-class UserUpdateView(SuperAdminRequiredMixin, UpdateView):
+class UserUpdateView(LoginRequiredMixin, UpdateView):
     """
-    Update user information for super admins.
+    Update user information for super admins and office admins.
+    
+    Super admins can edit all fields for all users.
+    Office admins can edit limited fields for users in their office(s).
     """
 
     model = User
     template_name = "admin_panel/user_form.html"
-    fields = ["username", "email", "first_name", "last_name", "role", "is_active"]
+
+    def dispatch(self, request, *args, **kwargs):
+        # Allow both super_admin and office_admin
+        if request.user.role not in ['super_admin', 'office_admin']:
+            raise PermissionDenied("You don't have permission to edit users.")
+            
+        # For office admins, check if they can access this specific user
+        if request.user.role == 'office_admin':
+            user_to_edit = self.get_object()
+            from .models import UserOffice
+            # Get requesting user's offices
+            admin_offices = UserOffice.objects.filter(user=request.user).values_list('office_id', flat=True)
+            # Get target user's offices  
+            target_user_offices = UserOffice.objects.filter(user=user_to_edit).values_list('office_id', flat=True)
+            # Check if there's any overlap
+            if not set(admin_offices).intersection(set(target_user_offices)):
+                raise PermissionDenied("You can only edit users in your office.")
+                
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_fields(self):
+        """Get form fields based on user role"""
+        if self.request.user.role == 'super_admin':
+            # Super admins can edit all fields
+            return ["username", "email", "first_name", "last_name", "role", "is_active"]
+        elif self.request.user.role == 'office_admin':
+            # Office admins can edit basic fields but not role or active status
+            return ["username", "email", "first_name", "last_name"]
+        return []
+
+    def get_form(self, form_class=None):
+        """Override to set fields dynamically"""
+        self.fields = self.get_form_fields()
+        return super().get_form(form_class)
 
     def get_success_url(self):
         return reverse("admin_panel:user_detail", kwargs={"pk": self.object.pk})
