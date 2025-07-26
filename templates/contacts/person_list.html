@@ -604,72 +604,76 @@ function showMessage(type, message) {
         }
     }, 5000);
 }
-</script>
 
-<!-- Inline Table Sorting -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    function sortTable(table, columnIndex, dataType) {
-        const tbody = table.querySelector('tbody');
-        const rows = Array.from(tbody.querySelectorAll('tr'));
-        
-        // Get current sort state
-        const currentDir = table.dataset.sortDirection || 'asc';
-        const currentCol = table.dataset.sortColumn;
-        
-        // Toggle direction if same column, otherwise start with asc
-        let newDirection = 'asc';
-        if (currentCol == columnIndex && currentDir === 'asc') {
-            newDirection = 'desc';
-        }
-        
-        // Store sort state
-        table.dataset.sortDirection = newDirection;
-        table.dataset.sortColumn = columnIndex;
-        
-        // Sort rows
-        rows.sort((a, b) => {
-            const aCell = a.cells[columnIndex];
-            const bCell = b.cells[columnIndex];
-            
-            let aValue = aCell.textContent.trim().toLowerCase();
-            let bValue = bCell.textContent.trim().toLowerCase();
-            
-            // Handle priority sorting
-            if (dataType === 'priority') {
-                const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
-                aValue = priorityOrder[aValue] || 0;
-                bValue = priorityOrder[bValue] || 0;
-                return newDirection === 'asc' ? aValue - bValue : bValue - aValue;
-            }
-            
-            // Handle regular text sorting
-            const comparison = aValue.localeCompare(bValue, undefined, { numeric: true });
-            return newDirection === 'asc' ? comparison : -comparison;
-        });
-        
-        // Re-append sorted rows
-        rows.forEach(row => tbody.appendChild(row));
-        
-        console.log(`Sorted column ${columnIndex} in ${newDirection} direction`);
+// Table Sorting Functionality
+function sortTable(table, columnIndex, dataType) {
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    // Get current sort state
+    const currentDir = table.dataset.sortDirection || 'asc';
+    const currentCol = table.dataset.sortColumn;
+    
+    // Toggle direction if same column, otherwise start with asc
+    let newDirection = 'asc';
+    if (currentCol == columnIndex && currentDir === 'asc') {
+        newDirection = 'desc';
     }
     
-    // Initialize sorting on people table
-    const table = document.querySelector('#people-table');
-    if (table) {
-        const allHeaders = table.querySelectorAll('thead th');
-        allHeaders.forEach((header, index) => {
-            if (header.hasAttribute('data-sortable')) {
-                header.style.cursor = 'pointer';
-                header.style.userSelect = 'none';
-                header.addEventListener('click', function() {
-                    console.log(`Clicked header ${index}: ${header.textContent}`);
-                    sortTable(table, index, this.dataset.sortable);
-                });
-            }
-        });
-        console.log('People table sorting initialized');
-    }
-});
+    // Store sort state
+    table.dataset.sortDirection = newDirection;
+    table.dataset.sortColumn = columnIndex;
+    
+    // Sort rows
+    rows.sort((a, b) => {
+        const aCell = a.cells[columnIndex];
+        const bCell = b.cells[columnIndex];
+        
+        let aValue = aCell.textContent.trim().toLowerCase();
+        let bValue = bCell.textContent.trim().toLowerCase();
+        
+        // Handle priority sorting
+        if (dataType === 'priority') {
+            const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
+            aValue = priorityOrder[aValue] || 0;
+            bValue = priorityOrder[bValue] || 0;
+            return newDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+        
+        // Handle regular text sorting
+        const comparison = aValue.localeCompare(bValue, undefined, { numeric: true });
+        return newDirection === 'asc' ? comparison : -comparison;
+    });
+    
+    // Re-append sorted rows
+    rows.forEach(row => tbody.appendChild(row));
+    
+    console.log(`People: Sorted column ${columnIndex} in ${newDirection} direction`);
+}
+
+// Initialize sorting on people table
+console.log('DEBUG: Initializing table sorting...');
+const table = document.querySelector('#people-table');
+console.log('DEBUG: Table found:', !!table);
+if (table) {
+    const allHeaders = table.querySelectorAll('thead th');
+    console.log('DEBUG: Headers found:', allHeaders.length);
+    allHeaders.forEach((header, index) => {
+        console.log(`DEBUG: Header ${index}: ${header.textContent}, has data-sortable: ${header.hasAttribute('data-sortable')}`);
+        if (header.hasAttribute('data-sortable')) {
+            header.style.cursor = 'pointer';
+            header.style.userSelect = 'none';
+            header.style.backgroundColor = '#f8f9fa'; // Visual debug indicator
+            header.addEventListener('click', function() {
+                console.log(`Clicked header ${index}: ${header.textContent}`);
+                sortTable(table, index, this.dataset.sortable);
+            });
+            console.log(`DEBUG: Added click listener to header ${index}`);
+        }
+    });
+    console.log('People table sorting initialized');
+} else {
+    console.error('ERROR: People table not found!');
+}
 </script>
 {% endblock %}
