@@ -25,5 +25,14 @@ python manage.py fix_people_table_schema
 echo "🔍 Running production queryset debugging..."
 python manage.py debug_production_queryset
 
+echo "Creating default superuser..."
+python manage.py create_default_superuser
+
+# Promote specific user to superuser if email is provided
+if [ ! -z "$PROMOTE_USER_EMAIL" ]; then
+    echo "Promoting user $PROMOTE_USER_EMAIL to superuser..."
+    python manage.py make_user_superuser "$PROMOTE_USER_EMAIL" || true
+fi
+
 echo "Starting gunicorn server..."
 gunicorn mobilize.wsgi:application
