@@ -359,9 +359,9 @@ document.addEventListener('DOMContentLoaded', function() {
     taskLoader.loadMore = async function() {
         try {
             const result = await originalLoadMore();
-            // Reinitialize sorting after content loads
-            if (window.reinitializeSortableTables) {
-                window.reinitializeSortableTables();
+            // Reinitialize task sorting after content loads
+            if (window.initializeTaskSorting) {
+                window.initializeTaskSorting();
             }
             return result;
         } catch (error) {
@@ -674,6 +674,92 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- Sortable Table JavaScript -->
-<script src="{% static 'js/sortable-table.js' %}"></script>
+<!-- Inline Table Sorting for Tasks -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function sortTable(table, columnIndex, dataType) {
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        
+        // Get current sort state
+        const currentDir = table.dataset.sortDirection || 'asc';
+        const currentCol = table.dataset.sortColumn;
+        
+        // Toggle direction if same column, otherwise start with asc
+        let newDirection = 'asc';
+        if (currentCol == columnIndex && currentDir === 'asc') {
+            newDirection = 'desc';
+        }
+        
+        // Store sort state
+        table.dataset.sortDirection = newDirection;
+        table.dataset.sortColumn = columnIndex;
+        
+        // Sort rows
+        rows.sort((a, b) => {
+            const aCell = a.cells[columnIndex];
+            const bCell = b.cells[columnIndex];
+            
+            let aValue = aCell.textContent.trim().toLowerCase();
+            let bValue = bCell.textContent.trim().toLowerCase();
+            
+            // Handle priority sorting
+            if (dataType === 'priority') {
+                const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
+                aValue = priorityOrder[aValue] || 0;
+                bValue = priorityOrder[bValue] || 0;
+                return newDirection === 'asc' ? aValue - bValue : bValue - aValue;
+            }
+            
+            // Handle status sorting
+            if (dataType === 'status') {
+                const statusOrder = { 'completed': 3, 'in progress': 2, 'pending': 1 };
+                aValue = statusOrder[aValue] || 0;
+                bValue = statusOrder[bValue] || 0;
+                return newDirection === 'asc' ? aValue - bValue : bValue - aValue;
+            }
+            
+            // Handle date sorting
+            if (dataType === 'date') {
+                aValue = new Date(aValue);
+                bValue = new Date(bValue);
+                return newDirection === 'asc' ? aValue - bValue : bValue - aValue;
+            }
+            
+            // Handle regular text sorting
+            const comparison = aValue.localeCompare(bValue, undefined, { numeric: true });
+            return newDirection === 'asc' ? comparison : -comparison;
+        });
+        
+        // Re-append sorted rows
+        rows.forEach(row => tbody.appendChild(row));
+        
+        console.log(`Sorted tasks table column ${columnIndex} in ${newDirection} direction`);
+    }
+    
+    // Function to initialize sorting on tasks table
+    window.initializeTaskSorting = function() {
+        const table = document.querySelector('#tasks-table');
+        if (table) {
+            const headers = table.querySelectorAll('thead th[data-sortable]');
+            headers.forEach((header, index) => {
+                // Remove existing listeners to prevent duplicates
+                const newHeader = header.cloneNode(true);
+                header.parentNode.replaceChild(newHeader, header);
+                
+                newHeader.style.cursor = 'pointer';
+                newHeader.style.userSelect = 'none';
+                newHeader.addEventListener('click', function() {
+                    console.log(`Clicked tasks table header ${index}: ${newHeader.textContent}`);
+                    sortTable(table, index, this.dataset.sortable);
+                });
+            });
+            console.log('Tasks table sorting initialized');
+        }
+    };
+    
+    // Initialize immediately
+    setTimeout(window.initializeTaskSorting, 1000);
+});
+</script>
 {% endblock %}
