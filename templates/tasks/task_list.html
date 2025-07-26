@@ -281,18 +281,18 @@
 
         <!-- Task List with Dynamic Loading -->
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table id="tasks-table" class="table table-hover" data-sortable-table>
                 <thead>
                     <tr>
                         <th width="40">
                             <input type="checkbox" id="select-all" class="form-check-input">
                         </th>
-                        <th>Task</th>
-                        <th>Contact</th>
-                        <th>Status</th>
-                        <th>Priority</th>
-                        <th>Due Date</th>
-                        <th>Assigned To</th>
+                        <th data-sortable="text">Task</th>
+                        <th data-sortable="text">Contact</th>
+                        <th data-sortable="status">Status</th>
+                        <th data-sortable="priority">Priority</th>
+                        <th data-sortable="date">Due Date</th>
+                        <th data-sortable="text">Assigned To</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -658,4 +658,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
+<!-- Sortable Table JavaScript -->
+<script src="{% static 'js/sortable-table.js' %}"></script>
 {% endblock %}

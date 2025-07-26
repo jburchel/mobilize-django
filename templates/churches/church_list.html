@@ -126,18 +126,18 @@
 
 <div class="w-100">
     <div class="table-responsive w-100">
-        <table class="table table-hover church-list-table w-100">
+        <table id="churches-table" class="table table-hover church-list-table w-100" data-sortable-table>
             <thead>
                 <tr>
                     <th width="40">
                         <input type="checkbox" id="select-all" class="form-check-input">
                     </th>
-                    <th>Name{% if sort_by == 'name' %} ↑{% elif sort_by == '-name' %} ↓{% endif %}</th>
-                    <th>Primary Contact</th>
-                    <th>Phone</th>
-                    <th>Email</th>
-                    <th>Pipeline Stage</th>
-                    <th>Assigned To{% if sort_by == 'assigned_to' %} ↑{% elif sort_by == '-assigned_to' %} ↓{% endif %}</th>
+                    <th data-sortable="text">Name</th>
+                    <th data-sortable="text">Primary Contact</th>
+                    <th data-sortable="text">Phone</th>
+                    <th data-sortable="text">Email</th>
+                    <th data-sortable="badge">Pipeline Stage</th>
+                    <th data-sortable="text">Assigned To</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -872,4 +872,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
+<!-- Sortable Table JavaScript -->
+<script src="{% static 'js/sortable-table.js' %}"></script>
 {% endblock %}

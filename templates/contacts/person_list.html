@@ -238,18 +238,18 @@
         <div class="card">
             <div class="card-body">
                 <div class="table-responsive">
-            <table class="table table-hover">
+            <table id="people-table" class="table table-hover" data-sortable-table>
                 <thead>
                     <tr>
                         <th width="40">
                             <input type="checkbox" id="select-all" class="form-check-input">
                         </th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>Priority</th>
-                        <th>Pipeline Stage</th>
-                        <th>Assigned To</th>
+                        <th data-sortable="text">Name</th>
+                        <th data-sortable="text">Email</th>
+                        <th data-sortable="text">Phone</th>
+                        <th data-sortable="priority">Priority</th>
+                        <th data-sortable="badge">Pipeline Stage</th>
+                        <th data-sortable="text">Assigned To</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -605,4 +605,7 @@ function showMessage(type, message) {
     }, 5000);
 }
 </script>
+
+<!-- Sortable Table JavaScript -->
+<script src="{% static 'js/sortable-table.js' %}"></script>
 {% endblock %}
