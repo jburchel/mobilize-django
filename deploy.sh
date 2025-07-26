@@ -34,5 +34,11 @@ if [ ! -z "$PROMOTE_USER_EMAIL" ]; then
     python manage.py make_user_superuser "$PROMOTE_USER_EMAIL" || true
 fi
 
+# Assign user to office if email and office are provided
+if [ ! -z "$ASSIGN_USER_EMAIL" ] && [ ! -z "$ASSIGN_USER_OFFICE" ]; then
+    echo "Assigning user $ASSIGN_USER_EMAIL to office $ASSIGN_USER_OFFICE..."
+    python manage.py assign_user_to_office "$ASSIGN_USER_EMAIL" --office-name="$ASSIGN_USER_OFFICE" --role="${ASSIGN_USER_ROLE:-standard_user}" || true
+fi
+
 echo "Starting gunicorn server..."
 gunicorn mobilize.wsgi:application
