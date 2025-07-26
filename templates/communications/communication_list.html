@@ -280,7 +280,7 @@
                     <span class="input-group-text bg-light">
                         <i class="fas fa-search text-muted"></i>
                     </span>
-                    <input type="text" name="search" class="form-control" placeholder="Search communications..." 
+                    <input type="text" name="search" class="form-control" id="search-input" placeholder="Search communications..." 
                            value="{{ request.GET.search }}" autocomplete="off">
                 </div>
                 <select name="type" class="form-select" style="min-width: 120px; width: auto;" onchange="this.form.submit()">
@@ -1247,6 +1247,94 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (error) {
         console.error('loadMore() failed:', error);
     }
+    
+    // Dynamic Search Functionality
+    const searchInput = document.getElementById('search-input');
+    const searchMobile = document.getElementById('search-mobile');
+    const typeSelects = document.querySelectorAll('select[name="type"]');
+    const directionSelects = document.querySelectorAll('select[name="direction"]');
+    const statusSelects = document.querySelectorAll('select[name="status"]');
+    
+    // Debounce function for dynamic search
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    function updateCommFilters() {
+        // Get the active search input value
+        const searchQuery = searchInput ? searchInput.value : (searchMobile ? searchMobile.value : '');
+        let type = '';
+        let direction = '';
+        let status = '';
+        
+        // Find visible selects
+        typeSelects.forEach(select => {
+            if (select.offsetParent !== null) type = select.value;
+        });
+        directionSelects.forEach(select => {
+            if (select.offsetParent !== null) direction = select.value;
+        });
+        statusSelects.forEach(select => {
+            if (select.offsetParent !== null) status = select.value;
+        });
+        
+        console.log('Dynamic communication search:', { searchQuery, type, direction, status });
+        
+        communicationLoader.updateFilters({
+            search: searchQuery,
+            type: type,
+            direction: direction,
+            status: status
+        });
+        
+        // Reset and reload data with new filters
+        communicationLoader.resetAndLoad();
+    }
+    
+    // Add dynamic search to inputs
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(updateCommFilters, 300));
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateCommFilters();
+            }
+        });
+    }
+    
+    if (searchMobile) {
+        searchMobile.addEventListener('input', debounce(updateCommFilters, 300));
+        searchMobile.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateCommFilters();
+            }
+        });
+    }
+    
+    // Remove onchange submit and add dynamic filtering
+    typeSelects.forEach(select => {
+        select.removeAttribute('onchange');
+        select.addEventListener('change', updateCommFilters);
+    });
+    
+    directionSelects.forEach(select => {
+        select.removeAttribute('onchange');
+        select.addEventListener('change', updateCommFilters);
+    });
+    
+    statusSelects.forEach(select => {
+        select.removeAttribute('onchange');
+        select.addEventListener('change', updateCommFilters);
+    });
 });
 </script>
 {% endblock %}

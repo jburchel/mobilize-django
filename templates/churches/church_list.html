@@ -140,7 +140,7 @@
                     <span class="input-group-text bg-light">
                         <i class="fas fa-search text-muted"></i>
                     </span>
-                    <input type="text" name="q" class="form-control" placeholder="Search churches..." 
+                    <input type="text" name="q" class="form-control" id="search-input" placeholder="Search churches..." 
                            value="{{ query }}">
                 </div>
                 <select name="priority" class="form-select" style="min-width: 140px; width: auto;" onchange="this.form.submit()">
@@ -819,9 +819,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Dynamic Search Functionality
-    const mainSearchInput = document.getElementById('main-search-input');
-    const quickPriorityFilter = document.getElementById('quick-priority-filter');
-    const quickPipelineFilter = document.getElementById('quick-pipeline-filter');
+    const searchInput = document.getElementById('search-input');
+    const searchMobile = document.getElementById('search-mobile');
+    const prioritySelect = document.querySelector('select[name="priority"]');
+    const pipelineSelect = document.querySelector('select[name="pipeline_stage"]');
     
     // Debounce function for dynamic search
     function debounce(func, wait) {
@@ -836,11 +837,14 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
     
-    // Update filters and reload data
+    // Update filters and reload data dynamically
     function updateFilters() {
-        const searchQuery = mainSearchInput ? mainSearchInput.value : '';
-        const priority = quickPriorityFilter ? quickPriorityFilter.value : '';
-        const pipelineStage = quickPipelineFilter ? quickPipelineFilter.value : '';
+        // Get the active search input value
+        const searchQuery = searchInput ? searchInput.value : (searchMobile ? searchMobile.value : '');
+        const priority = prioritySelect ? prioritySelect.value : '';
+        const pipelineStage = pipelineSelect ? pipelineSelect.value : '';
+        
+        console.log('Dynamic search update:', { searchQuery, priority, pipelineStage });
         
         churchLoader.updateFilters({
             q: searchQuery,
@@ -853,10 +857,11 @@ document.addEventListener('DOMContentLoaded', function() {
         churchLoader.resetAndLoad();
     }
     
-    // Add event listeners for dynamic search
-    if (mainSearchInput) {
-        mainSearchInput.addEventListener('input', debounce(updateFilters, 300));
-        mainSearchInput.addEventListener('keydown', function(e) {
+    // Add event listeners for dynamic search on desktop
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(updateFilters, 300));
+        // Remove form submission on Enter
+        searchInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 updateFilters();
@@ -864,12 +869,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    if (quickPriorityFilter) {
-        quickPriorityFilter.addEventListener('change', updateFilters);
+    // Add event listeners for dynamic search on mobile
+    if (searchMobile) {
+        searchMobile.addEventListener('input', debounce(updateFilters, 300));
+        searchMobile.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateFilters();
+            }
+        });
     }
     
-    if (quickPipelineFilter) {
-        quickPipelineFilter.addEventListener('change', updateFilters);
+    // Update priority and pipeline filters to NOT submit form
+    if (prioritySelect) {
+        // Remove the onchange attribute that submits the form
+        prioritySelect.removeAttribute('onchange');
+        prioritySelect.addEventListener('change', updateFilters);
+    }
+    
+    if (pipelineSelect) {
+        // Remove the onchange attribute that submits the form
+        pipelineSelect.removeAttribute('onchange');
+        pipelineSelect.addEventListener('change', updateFilters);
     }
     
     // Add event listeners for data-attribute based handlers (safer than onclick)

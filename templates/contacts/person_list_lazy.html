@@ -198,7 +198,7 @@
                     <span class="input-group-text bg-light">
                         <i class="fas fa-search text-muted"></i>
                     </span>
-                    <input type="text" name="q" class="form-control" placeholder="Search people..." 
+                    <input type="text" name="q" class="form-control" id="search-input" placeholder="Search people..." 
                            value="{{ query }}">
                 </div>
                 <select name="priority" class="form-select" style="min-width: 140px; width: auto;" onchange="this.form.submit()">
@@ -493,21 +493,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    function updateFilters() {
-        personLoader.updateFilters({
-            q: mainSearchInput ? mainSearchInput.value : '',
-            priority: quickPriorityFilter ? quickPriorityFilter.value : '',
-            pipeline_stage: quickPipelineFilter ? quickPipelineFilter.value : '',
-            sort: ''
-        });
-        // Reset and reload data with new filters
-        personLoader.resetAndLoad();
-    }
-    
-    // Add event listeners for search input and quick filters
-    const mainSearchInput = document.getElementById('main-search-input');
-    const quickPriorityFilter = document.getElementById('quick-priority-filter');
-    const quickPipelineFilter = document.getElementById('quick-pipeline-filter');
+    // Dynamic Search Functionality
+    const searchInput = document.getElementById('search-input');
+    const searchMobile = document.getElementById('search-mobile');
+    const prioritySelects = document.querySelectorAll('select[name="priority"]');
+    const pipelineSelects = document.querySelectorAll('select[name="pipeline_stage"]');
     
     // Debounce function for dynamic search
     function debounce(func, wait) {
@@ -522,10 +512,41 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
     
-    // Add event listeners to main search input
-    if (mainSearchInput) {
-        mainSearchInput.addEventListener('input', debounce(updateFilters, 300));
-        mainSearchInput.addEventListener('keydown', function(e) {
+    function updateFilters() {
+        // Get the active search input value
+        const searchQuery = searchInput ? searchInput.value : (searchMobile ? searchMobile.value : '');
+        // Find the visible priority and pipeline selects
+        let priority = '';
+        let pipelineStage = '';
+        
+        prioritySelects.forEach(select => {
+            if (select.offsetParent !== null) { // Check if visible
+                priority = select.value;
+            }
+        });
+        
+        pipelineSelects.forEach(select => {
+            if (select.offsetParent !== null) { // Check if visible
+                pipelineStage = select.value;
+            }
+        });
+        
+        console.log('Dynamic search update:', { searchQuery, priority, pipelineStage });
+        
+        personLoader.updateFilters({
+            q: searchQuery,
+            priority: priority,
+            pipeline_stage: pipelineStage,
+            sort: ''
+        });
+        // Reset and reload data with new filters
+        personLoader.resetAndLoad();
+    }
+    
+    // Add event listeners for dynamic search on desktop
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(updateFilters, 300));
+        searchInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 updateFilters();
@@ -533,14 +554,29 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Add event listeners to quick filter dropdowns
-    if (quickPriorityFilter) {
-        quickPriorityFilter.addEventListener('change', updateFilters);
+    // Add event listeners for dynamic search on mobile
+    if (searchMobile) {
+        searchMobile.addEventListener('input', debounce(updateFilters, 300));
+        searchMobile.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateFilters();
+            }
+        });
     }
     
-    if (quickPipelineFilter) {
-        quickPipelineFilter.addEventListener('change', updateFilters);
-    }
+    // Update priority and pipeline filters to NOT submit form
+    prioritySelects.forEach(select => {
+        // Remove the onchange attribute that submits the form
+        select.removeAttribute('onchange');
+        select.addEventListener('change', updateFilters);
+    });
+    
+    pipelineSelects.forEach(select => {
+        // Remove the onchange attribute that submits the form
+        select.removeAttribute('onchange');
+        select.addEventListener('change', updateFilters);
+    });
     
     // Office selector for view mode (super admin only)
     const officeSelector = document.getElementById('office-selector');

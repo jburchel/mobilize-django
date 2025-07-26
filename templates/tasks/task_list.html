@@ -199,7 +199,7 @@
                     <span class="input-group-text bg-light">
                         <i class="fas fa-search text-muted"></i>
                     </span>
-                    <input type="text" name="search" class="form-control" placeholder="Search tasks..." 
+                    <input type="text" name="search" class="form-control" id="search-input" placeholder="Search tasks..." 
                            value="{{ search_query }}" autocomplete="off">
                 </div>
                 <select name="status" class="form-select" style="min-width: 130px; width: auto;" onchange="this.form.submit()">
@@ -812,6 +812,99 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize immediately
     setTimeout(window.initializeTaskSorting, 1000);
+    
+    // Dynamic Search Functionality
+    const searchInput = document.getElementById('search-input');
+    const searchMobile = document.getElementById('search-mobile');
+    const statusSelects = document.querySelectorAll('select[name="status"]');
+    const prioritySelects = document.querySelectorAll('select[name="priority"]');
+    const dueSelects = document.querySelectorAll('select[name="due"]');
+    
+    // Debounce function for dynamic search
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    function updateTaskFilters() {
+        // Get the current form values
+        const searchQuery = searchInput ? searchInput.value : (searchMobile ? searchMobile.value : '');
+        let status = '';
+        let priority = '';
+        let due = '';
+        
+        // Find visible selects
+        statusSelects.forEach(select => {
+            if (select.offsetParent !== null) status = select.value;
+        });
+        prioritySelects.forEach(select => {
+            if (select.offsetParent !== null) priority = select.value;
+        });
+        dueSelects.forEach(select => {
+            if (select.offsetParent !== null) due = select.value;
+        });
+        
+        console.log('Dynamic task search:', { searchQuery, status, priority, due });
+        
+        // Build query string
+        const params = new URLSearchParams();
+        if (searchQuery) params.set('search', searchQuery);
+        if (status) params.set('status', status);
+        if (priority) params.set('priority', priority);
+        if (due) params.set('due', due);
+        
+        // Update URL without page reload
+        const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+        window.history.replaceState({}, '', newUrl);
+        
+        // Reload the page content dynamically (this assumes the page uses AJAX/fetch)
+        // For now, we'll do a simple page reload with the new parameters
+        window.location.href = newUrl;
+    }
+    
+    // Add dynamic search to inputs
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(updateTaskFilters, 500));
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateTaskFilters();
+            }
+        });
+    }
+    
+    if (searchMobile) {
+        searchMobile.addEventListener('input', debounce(updateTaskFilters, 500));
+        searchMobile.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateTaskFilters();
+            }
+        });
+    }
+    
+    // Remove onchange submit and add dynamic filtering
+    statusSelects.forEach(select => {
+        select.removeAttribute('onchange');
+        select.addEventListener('change', updateTaskFilters);
+    });
+    
+    prioritySelects.forEach(select => {
+        select.removeAttribute('onchange');
+        select.addEventListener('change', updateTaskFilters);
+    });
+    
+    dueSelects.forEach(select => {
+        select.removeAttribute('onchange');
+        select.addEventListener('change', updateTaskFilters);
+    });
 });
 </script>
 {% endblock %}
