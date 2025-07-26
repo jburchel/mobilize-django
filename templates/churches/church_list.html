@@ -86,37 +86,85 @@
 
 <div class="card mb-3">
     <div class="card-body py-3">
-        <!-- Search and Filter -->
+        <!-- Search and Filter - UPDATED TO HORIZONTAL LAYOUT 2025-01-26 -->
         <form method="get">
-            <div class="row g-3">
-                <!-- Search Bar Column -->
-                <div class="col-md-6">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light">
-                            <i class="fas fa-search text-muted"></i>
-                        </span>
-                        <input type="text" name="q" value="{{ query }}" placeholder="Search churches..." class="form-control form-control-lg">
+            <!-- Mobile: stacked layout -->
+            <div class="d-md-none">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="search-mobile" class="form-label">Search Churches</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                            <input type="text" class="form-control" id="search-mobile" name="q" 
+                                   value="{{ query }}" placeholder="Search churches...">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <label for="priority-mobile" class="form-label">Filter by Priority</label>
+                        <select class="form-select" id="priority-mobile" name="priority">
+                            <option value="">All Priorities</option>
+                            <option value="low" {% if priority == 'low' %}selected{% endif %}>Low</option>
+                            <option value="medium" {% if priority == 'medium' %}selected{% endif %}>Medium</option>
+                            <option value="high" {% if priority == 'high' %}selected{% endif %}>High</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label for="pipeline-mobile" class="form-label">Filter by Pipeline Stage</label>
+                        <select class="form-select" id="pipeline-mobile" name="pipeline_stage">
+                            <option value="">All Pipeline Stages</option>
+                            {% for stage_value, stage_label in pipeline_stages %}
+                                <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>
+                                    {{ stage_label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i>Search
+                            </button>
+                            <a href="{% url 'churches:church_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Clear
+                            </a>
+                        </div>
                     </div>
                 </div>
-                <!-- Priority Filter Column -->
-                <div class="col-md-3">
-                    <select name="priority" class="form-select form-select-lg" onchange="this.form.submit()">
-                        <option value="">All Priorities</option>
-                        <option value="low" {% if priority == 'low' %}selected{% endif %}>Low</option>
-                        <option value="medium" {% if priority == 'medium' %}selected{% endif %}>Medium</option>
-                        <option value="high" {% if priority == 'high' %}selected{% endif %}>High</option>
-                    </select>
-                </div>
-                <!-- Pipeline Stage Filter Column -->
-                <div class="col-md-3">
-                    <select name="pipeline_stage" class="form-select form-select-lg" onchange="this.form.submit()">
-                        <option value="">All Pipeline Stages</option>
-                        {% for stage_value, stage_label in pipeline_stages %}
-                        <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
             </div>
+            
+            <!-- Desktop: single line layout -->
+            <div class="d-none d-md-flex align-items-center gap-2 flex-nowrap">
+                <div class="input-group" style="min-width: 250px; flex: 1;">
+                    <span class="input-group-text bg-light">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" name="q" class="form-control" placeholder="Search churches..." 
+                           value="{{ query }}">
+                </div>
+                <select name="priority" class="form-select" style="min-width: 140px; width: auto;" onchange="this.form.submit()">
+                    <option value="">All Priorities</option>
+                    <option value="low" {% if priority == 'low' %}selected{% endif %}>Low</option>
+                    <option value="medium" {% if priority == 'medium' %}selected{% endif %}>Medium</option>
+                    <option value="high" {% if priority == 'high' %}selected{% endif %}>High</option>
+                </select>
+                <select name="pipeline_stage" class="form-select" style="min-width: 160px; width: auto;" onchange="this.form.submit()">
+                    <option value="">All Pipeline Stages</option>
+                    {% for stage_value, stage_label in pipeline_stages %}
+                        <option value="{{ stage_value }}" {% if pipeline_stage == stage_value %}selected{% endif %}>
+                            {{ stage_label }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary px-3">
+                    <i class="fas fa-search"></i>
+                </button>
+                <a href="{% url 'churches:church_list' %}" class="btn btn-outline-secondary px-3">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+            
             <!-- Keep query and filters when changing the view mode or pagination -->
             {% if current_view_mode %}
                 <input type="hidden" name="view_mode" value="{{ current_view_mode }}">

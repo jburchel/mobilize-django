@@ -213,47 +213,108 @@
 <!-- Search and Filter Bar -->
 <div class="card mb-3">
     <div class="card-body py-3">
+        <!-- Search and Filter - UPDATED TO HORIZONTAL LAYOUT 2025-01-26 -->
         <form method="get">
-            <div class="row g-3">
-                <!-- Search Bar Column -->
-                <div class="col-md-3">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light">
-                            <i class="fas fa-search text-muted"></i>
-                        </span>
-                        <input type="text" name="search" class="form-control form-control-lg" 
-                               placeholder="Search communications..." 
-                               value="{{ request.GET.search }}" autocomplete="off">
+            <!-- Mobile: stacked layout -->
+            <div class="d-md-none">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="search-mobile" class="form-label">Search Communications</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                            <input type="text" class="form-control" id="search-mobile" name="search" 
+                                   value="{{ request.GET.search }}" placeholder="Search communications..." autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <label for="type-mobile" class="form-label">Filter by Type</label>
+                        <select class="form-select" id="type-mobile" name="type">
+                            <option value="">All Types</option>
+                            {% for type_value, type_label in type_choices %}
+                                <option value="{{ type_value }}" {% if request.GET.type == type_value %}selected{% endif %}>
+                                    {{ type_label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label for="direction-mobile" class="form-label">Filter by Direction</label>
+                        <select class="form-select" id="direction-mobile" name="direction">
+                            <option value="">All Directions</option>
+                            {% for direction_value, direction_label in direction_choices %}
+                                <option value="{{ direction_value }}" {% if request.GET.direction == direction_value %}selected{% endif %}>
+                                    {{ direction_label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label for="status-mobile" class="form-label">Filter by Status</label>
+                        <select class="form-select" id="status-mobile" name="status">
+                            <option value="">All Status</option>
+                            {% for status_value, status_label in status_choices %}
+                                <option value="{{ status_value }}" {% if request.GET.status == status_value %}selected{% endif %}>
+                                    {{ status_label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i>Search
+                            </button>
+                            <a href="{% url 'communications:communication_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Clear
+                            </a>
+                        </div>
                     </div>
                 </div>
-                <!-- Type Filter Column -->
-                <div class="col-md-3">
-                    <select name="type" class="form-select form-select-lg" onchange="this.form.submit()">
-                        <option value="">All Types</option>
-                        {% for type_value, type_label in type_choices %}
-                        <option value="{{ type_value }}" {% if request.GET.type == type_value %}selected{% endif %}>{{ type_label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <!-- Direction Filter Column -->
-                <div class="col-md-3">
-                    <select name="direction" class="form-select form-select-lg" onchange="this.form.submit()">
-                        <option value="">All Directions</option>
-                        {% for direction_value, direction_label in direction_choices %}
-                        <option value="{{ direction_value }}" {% if request.GET.direction == direction_value %}selected{% endif %}>{{ direction_label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <!-- Status Filter Column -->
-                <div class="col-md-3">
-                    <select name="status" class="form-select form-select-lg" onchange="this.form.submit()">
-                        <option value="">All Status</option>
-                        {% for status_value, status_label in status_choices %}
-                        <option value="{{ status_value }}" {% if request.GET.status == status_value %}selected{% endif %}>{{ status_label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
             </div>
+            
+            <!-- Desktop: single line layout -->
+            <div class="d-none d-md-flex align-items-center gap-2 flex-nowrap">
+                <div class="input-group" style="min-width: 200px; flex: 1;">
+                    <span class="input-group-text bg-light">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" name="search" class="form-control" placeholder="Search communications..." 
+                           value="{{ request.GET.search }}" autocomplete="off">
+                </div>
+                <select name="type" class="form-select" style="min-width: 120px; width: auto;" onchange="this.form.submit()">
+                    <option value="">All Types</option>
+                    {% for type_value, type_label in type_choices %}
+                        <option value="{{ type_value }}" {% if request.GET.type == type_value %}selected{% endif %}>
+                            {{ type_label }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <select name="direction" class="form-select" style="min-width: 130px; width: auto;" onchange="this.form.submit()">
+                    <option value="">All Directions</option>
+                    {% for direction_value, direction_label in direction_choices %}
+                        <option value="{{ direction_value }}" {% if request.GET.direction == direction_value %}selected{% endif %}>
+                            {{ direction_label }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <select name="status" class="form-select" style="min-width: 120px; width: auto;" onchange="this.form.submit()">
+                    <option value="">All Status</option>
+                    {% for status_value, status_label in status_choices %}
+                        <option value="{{ status_value }}" {% if request.GET.status == status_value %}selected{% endif %}>
+                            {{ status_label }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary px-3">
+                    <i class="fas fa-search"></i>
+                </button>
+                <a href="{% url 'communications:communication_list' %}" class="btn btn-outline-secondary px-3">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+            
             <!-- Keep other parameters when changing filters -->
             {% if current_view_mode %}
                 <input type="hidden" name="view_mode" value="{{ current_view_mode }}">

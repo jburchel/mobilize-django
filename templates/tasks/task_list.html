@@ -137,48 +137,98 @@
 <!-- Search and Filter Bar -->
 <div class="card mb-3">
     <div class="card-body py-3">
+        <!-- Search and Filter - UPDATED TO HORIZONTAL LAYOUT 2025-01-26 -->
         <form method="get">
-            <div class="row g-3">
-                <!-- Search Bar Column -->
-                <div class="col-md-3">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light">
-                            <i class="fas fa-search text-muted"></i>
-                        </span>
-                        <input type="text" name="search" class="form-control form-control-lg" 
-                               placeholder="Search tasks..." 
-                               value="{{ search_query }}" autocomplete="off">
+            <!-- Mobile: stacked layout -->
+            <div class="d-md-none">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="search-mobile" class="form-label">Search Tasks</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                            <input type="text" class="form-control" id="search-mobile" name="search" 
+                                   value="{{ search_query }}" placeholder="Search tasks..." autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <label for="status-mobile" class="form-label">Filter by Status</label>
+                        <select class="form-select" id="status-mobile" name="status">
+                            <option value="">All Statuses</option>
+                            <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                            <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label for="priority-mobile" class="form-label">Filter by Priority</label>
+                        <select class="form-select" id="priority-mobile" name="priority">
+                            <option value="">All Priorities</option>
+                            <option value="high" {% if current_priority == 'high' %}selected{% endif %}>High</option>
+                            <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
+                            <option value="low" {% if current_priority == 'low' %}selected{% endif %}>Low</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label for="due-mobile" class="form-label">Filter by Due Date</label>
+                        <select class="form-select" id="due-mobile" name="due">
+                            <option value="">All Dates</option>
+                            <option value="overdue" {% if current_due == 'overdue' %}selected{% endif %}>Overdue</option>
+                            <option value="today" {% if current_due == 'today' %}selected{% endif %}>Today</option>
+                            <option value="week" {% if current_due == 'week' %}selected{% endif %}>This Week</option>
+                            <option value="month" {% if current_due == 'month' %}selected{% endif %}>This Month</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i>Search
+                            </button>
+                            <a href="{% url 'tasks:task_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Clear
+                            </a>
+                        </div>
                     </div>
                 </div>
-                <!-- Status Filter Column -->
-                <div class="col-md-3">
-                    <select name="status" class="form-select form-select-lg" onchange="this.form.submit()">
-                        <option value="">All Statuses</option>
-                        <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
-                        <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>In Progress</option>
-                        <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
-                    </select>
-                </div>
-                <!-- Priority Filter Column -->
-                <div class="col-md-3">
-                    <select name="priority" class="form-select form-select-lg" onchange="this.form.submit()">
-                        <option value="">All Priorities</option>
-                        <option value="high" {% if current_priority == 'high' %}selected{% endif %}>High</option>
-                        <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
-                        <option value="low" {% if current_priority == 'low' %}selected{% endif %}>Low</option>
-                    </select>
-                </div>
-                <!-- Due Date Filter Column -->
-                <div class="col-md-3">
-                    <select name="due" class="form-select form-select-lg" onchange="this.form.submit()">
-                        <option value="">All Dates</option>
-                        <option value="overdue" {% if current_due == 'overdue' %}selected{% endif %}>Overdue</option>
-                        <option value="today" {% if current_due == 'today' %}selected{% endif %}>Today</option>
-                        <option value="week" {% if current_due == 'week' %}selected{% endif %}>This Week</option>
-                        <option value="month" {% if current_due == 'month' %}selected{% endif %}>This Month</option>
-                    </select>
-                </div>
             </div>
+            
+            <!-- Desktop: single line layout -->
+            <div class="d-none d-md-flex align-items-center gap-2 flex-nowrap">
+                <div class="input-group" style="min-width: 200px; flex: 1;">
+                    <span class="input-group-text bg-light">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" name="search" class="form-control" placeholder="Search tasks..." 
+                           value="{{ search_query }}" autocomplete="off">
+                </div>
+                <select name="status" class="form-select" style="min-width: 130px; width: auto;" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+                </select>
+                <select name="priority" class="form-select" style="min-width: 130px; width: auto;" onchange="this.form.submit()">
+                    <option value="">All Priorities</option>
+                    <option value="high" {% if current_priority == 'high' %}selected{% endif %}>High</option>
+                    <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
+                    <option value="low" {% if current_priority == 'low' %}selected{% endif %}>Low</option>
+                </select>
+                <select name="due" class="form-select" style="min-width: 130px; width: auto;" onchange="this.form.submit()">
+                    <option value="">All Dates</option>
+                    <option value="overdue" {% if current_due == 'overdue' %}selected{% endif %}>Overdue</option>
+                    <option value="today" {% if current_due == 'today' %}selected{% endif %}>Today</option>
+                    <option value="week" {% if current_due == 'week' %}selected{% endif %}>This Week</option>
+                    <option value="month" {% if current_due == 'month' %}selected{% endif %}>This Month</option>
+                </select>
+                <button type="submit" class="btn btn-primary px-3">
+                    <i class="fas fa-search"></i>
+                </button>
+                <a href="{% url 'tasks:task_list' %}" class="btn btn-outline-secondary px-3">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+            
             <!-- Keep view mode when changing filters -->
             {% if current_view_mode %}
                 <input type="hidden" name="view_mode" value="{{ current_view_mode }}">
