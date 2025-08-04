@@ -2322,11 +2322,13 @@ def sync_person_emails(request):
                 status=401,
             )
 
-        # Use Celery background task to prevent timeout issues
-        from .tasks import sync_gmail_emails
-
+        # Try to use Celery background task, fallback to direct sync if unavailable
         try:
-            # Start the background sync task
+            from .tasks import sync_gmail_emails
+            from celery.exceptions import Retry
+            from kombu.exceptions import OperationalError
+
+            # Test if Celery/Redis is available
             task = sync_gmail_emails.delay(
                 user_id=request.user.id,
                 days_back=3650,  # 10 years back - effectively all history
@@ -2341,6 +2343,49 @@ def sync_person_emails(request):
                     "status": "started",
                 }
             )
+
+        except (ConnectionError, OperationalError, OSError) as e:
+            # Celery/Redis not available, use direct sync with shorter timeout
+            logger.warning(
+                f"Celery not available ({e}), using direct sync with limited scope"
+            )
+
+            try:
+                # Use direct Gmail service sync with reduced scope to prevent timeout
+                result = gmail_service.sync_emails_to_communications(
+                    days_back=30,  # Only 30 days to prevent timeout
+                    contacts_only=True,
+                    specific_emails=[contact_email],
+                )
+
+                if result["success"]:
+                    return JsonResponse(
+                        {
+                            "success": True,
+                            "synced_count": result.get("synced_count", 0),
+                            "skipped_count": result.get("skipped_count", 0),
+                            "message": f"Successfully synced {result.get('synced_count', 0)} emails from the last 30 days with {contact_email}. Note: For full history sync, Celery setup is required.",
+                            "fallback_mode": True,
+                        }
+                    )
+                else:
+                    return JsonResponse(
+                        {
+                            "success": False,
+                            "error": result.get("error", "Failed to sync emails"),
+                        },
+                        status=500,
+                    )
+
+            except Exception as direct_error:
+                logger.error(f"Direct sync also failed: {direct_error}")
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": f"Email sync failed: {str(direct_error)}",
+                    },
+                    status=500,
+                )
 
         except Exception as e:
             logger.error(f"Error starting email sync task: {e}")

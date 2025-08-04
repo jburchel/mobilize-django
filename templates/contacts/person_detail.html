@@ -1799,13 +1799,27 @@ function syncPersonEmails(contactId, contactEmail, contactName) {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.success && data.task_id) {
-            // Show initial success message
-            showMessage('info', data.message || 'Email sync started. Please wait...');
-            syncButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing emails...';
-            
-            // Poll for task completion
-            pollTaskStatus(data.task_id, syncButton, originalContent, contactEmail);
+        if (data.success) {
+            if (data.task_id && !data.fallback_mode) {
+                // Celery task started - show progress and poll for completion
+                showMessage('info', data.message || 'Email sync started. Please wait...');
+                syncButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing emails...';
+                
+                // Poll for task completion
+                pollTaskStatus(data.task_id, syncButton, originalContent, contactEmail);
+            } else {
+                // Direct sync completed (fallback mode) or immediate completion
+                showMessage('success', data.message || `Successfully synced ${data.synced_count || 0} emails`);
+                
+                // Re-enable the button
+                syncButton.disabled = false;
+                syncButton.innerHTML = originalContent;
+                
+                // Reload the page to show new communications
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }
         } else {
             showMessage('error', data.error || 'Failed to start email sync');
             
