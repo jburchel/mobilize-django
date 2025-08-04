@@ -274,7 +274,7 @@ class GmailService:
                     pass
 
             Communication.objects.create(
-                type="email",
+                type="Email",  # Use capitalized "Email" to match model choices
                 subject=kwargs["subject"],
                 message=kwargs["body"],
                 direction="outbound",
@@ -524,7 +524,7 @@ class GmailService:
                 email_datetime = timezone.now()
 
             Communication.objects.create(
-                type="email",
+                type="Email",  # Use capitalized "Email" to match model choices
                 subject=message["subject"],
                 message=message["body"][:250],  # Truncate for database field
                 direction=direction,

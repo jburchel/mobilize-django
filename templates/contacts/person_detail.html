@@ -513,7 +513,7 @@
                     <button type="button" class="btn btn-sm btn-outline-success" onclick="syncPersonEmails({{ person.contact.id }}, '{{ person.contact.email }}', '{{ person.name|escapejs }}')" title="Sync all email history with this contact">
                         <i class="fas fa-sync"></i> Sync Emails
                     </button>
-                    <a href="/communications/?contact_id={{ person.contact.id }}" class="btn btn-sm btn-outline-primary">
+                    <a href="/communications/?contact_id={{ person.contact.id }}&person_id={{ person.id }}" class="btn btn-sm btn-outline-primary">
                         <i class="fas fa-list"></i> View All
                     </a>
                 </div>

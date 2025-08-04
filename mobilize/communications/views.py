@@ -286,9 +286,14 @@ class CommunicationListView(LoginRequiredMixin, ListView):
 
                 queryset = queryset.filter(search_conditions)
 
-            # Filter by contact_id if provided (for "View All" button functionality)
+            # Filter by contact_id or person_id if provided (for "View All" button functionality)
             contact_id = self.request.GET.get("contact_id")
-            if contact_id:
+            person_id = self.request.GET.get("person_id")
+
+            if person_id:
+                # Direct person ID filtering is more precise
+                queryset = queryset.filter(person_id=person_id)
+            elif contact_id:
                 from django.db.models import Q
 
                 queryset = queryset.filter(
@@ -2117,6 +2122,8 @@ def communication_list_api(request):
         type_filter = request.GET.get("type", "")
         direction_filter = request.GET.get("direction", "")
         status_filter = request.GET.get("status", "")
+        contact_id = request.GET.get("contact_id", "")
+        person_id = request.GET.get("person_id", "")
         page = int(request.GET.get("page", 1))
         per_page = int(request.GET.get("per_page", 25))
 
@@ -2129,6 +2136,17 @@ def communication_list_api(request):
 
         if status_filter:
             queryset = queryset.filter(status=status_filter)
+
+        # Filter by contact_id or person_id if provided (for "View All" button functionality)
+        if person_id:
+            # Direct person ID filtering is more precise
+            queryset = queryset.filter(person_id=person_id)
+        elif contact_id:
+            from django.db.models import Q
+
+            queryset = queryset.filter(
+                Q(person__contact_id=contact_id) | Q(church__contact_id=contact_id)
+            )
 
         # General search across people, church, subject, type
         if search_query:
