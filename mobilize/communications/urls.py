@@ -92,6 +92,7 @@ urlpatterns = [
     path("gmail/sync/", views.GmailSyncView.as_view(), name="gmail_sync"),
     path("gmail/status/", views.gmail_status, name="gmail_status"),
     path("gmail/disconnect/", views.gmail_disconnect, name="gmail_disconnect"),
+    path("gmail/sync-person/", views.sync_person_emails, name="sync_person_emails"),
     # Google Contacts sync
     path("contacts/sync/", views.ContactSyncView.as_view(), name="contact_sync"),
     path(

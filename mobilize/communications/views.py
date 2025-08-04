@@ -1886,54 +1886,55 @@ def native_sms_log_view(request):
     if request.method == "POST":
         try:
             from .native_sms_service import native_sms_service
-            
+
             # Get form data
             phone_number = request.POST.get("phone_number", "").strip()
             message_body = request.POST.get("message_body", "").strip()
             direction = request.POST.get("direction", "inbound")
-            
+
             if not phone_number or not message_body:
-                return JsonResponse({
-                    "success": False,
-                    "error": "Phone number and message are required"
-                }, status=400)
-            
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "Phone number and message are required",
+                    },
+                    status=400,
+                )
+
             # Log the SMS
             if direction == "inbound":
                 result = native_sms_service.log_incoming_sms(
                     from_number=phone_number,
                     message_body=message_body,
-                    user=request.user
+                    user=request.user,
                 )
             else:
                 result = native_sms_service.log_outgoing_sms(
-                    to_number=phone_number,
-                    message_body=message_body,
-                    user=request.user
+                    to_number=phone_number, message_body=message_body, user=request.user
                 )
-            
+
             if result["success"]:
-                return JsonResponse({
-                    "success": True,
-                    "message": f"SMS logged successfully",
-                    "contact_found": result["contact_found"],
-                    "contact_name": result.get("contact_name"),
-                    "normalized_phone": result.get("normalized_phone"),
-                    "communication_id": result["communication"].id
-                })
+                return JsonResponse(
+                    {
+                        "success": True,
+                        "message": f"SMS logged successfully",
+                        "contact_found": result["contact_found"],
+                        "contact_name": result.get("contact_name"),
+                        "normalized_phone": result.get("normalized_phone"),
+                        "communication_id": result["communication"].id,
+                    }
+                )
             else:
-                return JsonResponse({
-                    "success": False,
-                    "error": result["error"]
-                }, status=400)
-                
+                return JsonResponse(
+                    {"success": False, "error": result["error"]}, status=400
+                )
+
         except Exception as e:
             logger.error(f"Error in native_sms_log_view: {e}")
-            return JsonResponse({
-                "success": False,
-                "error": "An unexpected error occurred"
-            }, status=500)
-    
+            return JsonResponse(
+                {"success": False, "error": "An unexpected error occurred"}, status=500
+            )
+
     # GET request - show the form
     return render(request, "communications/native_sms_log.html")
 
@@ -1945,43 +1946,43 @@ def sms_quick_log_api(request):
         try:
             from .native_sms_service import native_sms_service
             import json
-            
+
             # Parse JSON data
             data = json.loads(request.body)
-            
+
             phone_number = data.get("phone_number", "").strip()
             message_body = data.get("message_body", "").strip()
             direction = data.get("direction", "inbound")
-            
+
             if not phone_number or not message_body:
-                return JsonResponse({
-                    "success": False,
-                    "error": "Phone number and message are required"
-                }, status=400)
-            
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "Phone number and message are required",
+                    },
+                    status=400,
+                )
+
             # Log the SMS
             if direction == "inbound":
                 result = native_sms_service.log_incoming_sms(
                     from_number=phone_number,
                     message_body=message_body,
-                    user=request.user
+                    user=request.user,
                 )
             else:
                 result = native_sms_service.log_outgoing_sms(
-                    to_number=phone_number,
-                    message_body=message_body,
-                    user=request.user
+                    to_number=phone_number, message_body=message_body, user=request.user
                 )
-            
+
             return JsonResponse(result)
-            
+
         except Exception as e:
             logger.error(f"Error in sms_quick_log_api: {e}")
-            return JsonResponse({
-                "success": False,
-                "error": "An unexpected error occurred"
-            }, status=500)
-    
+            return JsonResponse(
+                {"success": False, "error": "An unexpected error occurred"}, status=500
+            )
+
     return JsonResponse({"error": "Method not allowed"}, status=405)
 
 
@@ -1990,44 +1991,50 @@ def sms_contact_search_api(request):
     """API endpoint for searching contacts by phone number"""
     try:
         from .native_sms_service import native_sms_service
-        
+
         phone_number = request.GET.get("phone", "").strip()
-        
+
         if not phone_number:
-            return JsonResponse({
-                "success": False,
-                "error": "Phone number is required"
-            }, status=400)
-        
+            return JsonResponse(
+                {"success": False, "error": "Phone number is required"}, status=400
+            )
+
         # Normalize and search for contact
         normalized_phone = native_sms_service.normalize_phone_number(phone_number)
         contact = native_sms_service._find_contact_by_phone(normalized_phone)
-        
+
         if contact:
             contact_name = native_sms_service._get_contact_name(contact)
-            contact_type = "person" if hasattr(contact, 'person_details') and contact.person_details else "church"
-            
-            return JsonResponse({
-                "success": True,
-                "contact_found": True,
-                "contact_name": contact_name,
-                "contact_type": contact_type,
-                "normalized_phone": normalized_phone,
-                "contact_id": contact.id
-            })
+            contact_type = (
+                "person"
+                if hasattr(contact, "person_details") and contact.person_details
+                else "church"
+            )
+
+            return JsonResponse(
+                {
+                    "success": True,
+                    "contact_found": True,
+                    "contact_name": contact_name,
+                    "contact_type": contact_type,
+                    "normalized_phone": normalized_phone,
+                    "contact_id": contact.id,
+                }
+            )
         else:
-            return JsonResponse({
-                "success": True,
-                "contact_found": False,
-                "normalized_phone": normalized_phone
-            })
-            
+            return JsonResponse(
+                {
+                    "success": True,
+                    "contact_found": False,
+                    "normalized_phone": normalized_phone,
+                }
+            )
+
     except Exception as e:
         logger.error(f"Error in sms_contact_search_api: {e}")
-        return JsonResponse({
-            "success": False,
-            "error": "An unexpected error occurred"
-        }, status=500)
+        return JsonResponse(
+            {"success": False, "error": "An unexpected error occurred"}, status=500
+        )
 
 
 @login_required
@@ -2035,52 +2042,56 @@ def sms_history_api(request):
     """API endpoint for getting SMS history with a contact"""
     try:
         from .native_sms_service import native_sms_service
-        
+
         phone_number = request.GET.get("phone", "").strip()
-        
+
         if not phone_number:
-            return JsonResponse({
-                "success": False,
-                "error": "Phone number is required"
-            }, status=400)
-        
+            return JsonResponse(
+                {"success": False, "error": "Phone number is required"}, status=400
+            )
+
         # Find contact and get SMS history
         normalized_phone = native_sms_service.normalize_phone_number(phone_number)
         contact = native_sms_service._find_contact_by_phone(normalized_phone)
-        
+
         if contact:
-            recent_sms = native_sms_service.get_recent_sms_for_contact(contact, limit=20)
-            
+            recent_sms = native_sms_service.get_recent_sms_for_contact(
+                contact, limit=20
+            )
+
             sms_history = []
             for sms in recent_sms:
-                sms_history.append({
-                    "id": sms.id,
-                    "direction": sms.direction,
-                    "message": sms.message,
-                    "date_sent": sms.date_sent.isoformat() if sms.date_sent else None,
-                    "sender": sms.sender,
-                    "user": sms.user.get_full_name() if sms.user else None,
-                })
-            
-            return JsonResponse({
-                "success": True,
-                "contact_found": True,
-                "contact_name": native_sms_service._get_contact_name(contact),
-                "sms_history": sms_history
-            })
+                sms_history.append(
+                    {
+                        "id": sms.id,
+                        "direction": sms.direction,
+                        "message": sms.message,
+                        "date_sent": (
+                            sms.date_sent.isoformat() if sms.date_sent else None
+                        ),
+                        "sender": sms.sender,
+                        "user": sms.user.get_full_name() if sms.user else None,
+                    }
+                )
+
+            return JsonResponse(
+                {
+                    "success": True,
+                    "contact_found": True,
+                    "contact_name": native_sms_service._get_contact_name(contact),
+                    "sms_history": sms_history,
+                }
+            )
         else:
-            return JsonResponse({
-                "success": True,
-                "contact_found": False,
-                "sms_history": []
-            })
-            
+            return JsonResponse(
+                {"success": True, "contact_found": False, "sms_history": []}
+            )
+
     except Exception as e:
         logger.error(f"Error in sms_history_api: {e}")
-        return JsonResponse({
-            "success": False,
-            "error": "An unexpected error occurred"
-        }, status=500)
+        return JsonResponse(
+            {"success": False, "error": "An unexpected error occurred"}, status=500
+        )
 
 
 @login_required
@@ -2145,7 +2156,7 @@ def communication_list_api(request):
             queryset = queryset.filter(search_conditions)
 
         # Apply sorting: most recent first
-        queryset = queryset.order_by('-date', '-created_at')
+        queryset = queryset.order_by("-date", "-created_at")
 
         # Get total count
         total_count = queryset.count()
@@ -2162,56 +2173,154 @@ def communication_list_api(request):
             contact_name = None
             contact_url = None
             contact_icon = "fas fa-user"
-            
+
             if comm.person:
                 contact_name = f"{comm.person.contact.first_name} {comm.person.contact.last_name}".strip()
-                contact_url = reverse('contacts:person_detail', args=[comm.person.id])
+                contact_url = reverse("contacts:person_detail", args=[comm.person.id])
                 contact_icon = "fas fa-user"
             elif comm.church:
                 contact_name = comm.church.name or comm.church.contact.church_name
-                contact_url = reverse('churches:church_detail', args=[comm.church.id])
+                contact_url = reverse("churches:church_detail", args=[comm.church.id])
                 contact_icon = "fas fa-church"
 
             # Format date
-            date_formatted = comm.date.strftime("%b %d, %Y at %I:%M %p") if comm.date else "No date"
+            date_formatted = (
+                comm.date.strftime("%b %d, %Y at %I:%M %p") if comm.date else "No date"
+            )
 
-            results.append({
-                'id': comm.id,
-                'type': comm.type,
-                'subject': comm.subject or 'No subject',
-                'sender': comm.sender or '',
-                'message': comm.message or comm.content or '',
-                'direction': comm.direction,
-                'date': date_formatted,
-                'contact_name': contact_name,
-                'contact_url': contact_url,
-                'contact_icon': contact_icon,
-                'detail_url': reverse('communications:communication_detail', args=[comm.id]),
-                'edit_url': reverse('communications:communication_update', args=[comm.id]),
-                'delete_url': reverse('communications:communication_delete', args=[comm.id]),
-            })
+            results.append(
+                {
+                    "id": comm.id,
+                    "type": comm.type,
+                    "subject": comm.subject or "No subject",
+                    "sender": comm.sender or "",
+                    "message": comm.message or comm.content or "",
+                    "direction": comm.direction,
+                    "date": date_formatted,
+                    "contact_name": contact_name,
+                    "contact_url": contact_url,
+                    "contact_icon": contact_icon,
+                    "detail_url": reverse(
+                        "communications:communication_detail", args=[comm.id]
+                    ),
+                    "edit_url": reverse(
+                        "communications:communication_update", args=[comm.id]
+                    ),
+                    "delete_url": reverse(
+                        "communications:communication_delete", args=[comm.id]
+                    ),
+                }
+            )
 
         # Calculate pagination info
         has_next = end < total_count
         has_previous = page > 1
 
-        return JsonResponse({
-            'results': results,
-            'page': page,
-            'per_page': per_page,
-            'total': total_count,
-            'has_next': has_next,
-            'has_previous': has_previous,
-        })
+        return JsonResponse(
+            {
+                "results": results,
+                "page": page,
+                "per_page": per_page,
+                "total": total_count,
+                "has_next": has_next,
+                "has_previous": has_previous,
+            }
+        )
 
     except Exception as e:
         logger.error(f"Communication API error: {e}")
-        return JsonResponse({
-            "results": [],
-            "page": page,
-            "per_page": per_page,
-            "total": 0,
-            "has_next": False,
-            "has_previous": False,
-            "error": str(e),
-        })
+        return JsonResponse(
+            {
+                "results": [],
+                "page": page,
+                "per_page": per_page,
+                "total": 0,
+                "has_next": False,
+                "has_previous": False,
+                "error": str(e),
+            }
+        )
+
+
+@login_required
+@require_POST
+def sync_person_emails(request):
+    """Sync emails for a specific contact person"""
+    import json
+
+    try:
+        # Parse JSON body
+        data = json.loads(request.body)
+        contact_id = data.get("contact_id")
+        contact_email = data.get("contact_email")
+
+        if not contact_id or not contact_email:
+            return JsonResponse(
+                {"success": False, "error": "Contact ID and email are required"},
+                status=400,
+            )
+
+        # Verify the contact exists and user has permission
+        from mobilize.contacts.models import Contact
+
+        try:
+            contact = Contact.objects.get(id=contact_id)
+            # Check if user has permission to view this contact
+            if contact.office and contact.office != request.user.office:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "You don't have permission to sync emails for this contact",
+                    },
+                    status=403,
+                )
+        except Contact.DoesNotExist:
+            return JsonResponse(
+                {"success": False, "error": "Contact not found"}, status=404
+            )
+
+        # Initialize Gmail service
+        gmail_service = GmailService(request.user)
+
+        if not gmail_service.is_authenticated():
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Gmail not authenticated. Please connect your Gmail account first.",
+                },
+                status=401,
+            )
+
+        # Sync emails for this specific contact
+        # Using the sync_emails_to_communications method with specific_emails parameter
+        result = gmail_service.sync_emails_to_communications(
+            days_back=3650,  # 10 years back - effectively all history
+            contacts_only=True,
+            specific_emails=[contact_email],
+        )
+
+        if result["success"]:
+            return JsonResponse(
+                {
+                    "success": True,
+                    "synced_count": result.get("synced_count", 0),
+                    "skipped_count": result.get("skipped_count", 0),
+                    "message": f"Successfully synced {result.get('synced_count', 0)} emails with {contact_email}",
+                }
+            )
+        else:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": result.get("error", "Failed to sync emails"),
+                },
+                status=500,
+            )
+
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"success": False, "error": "Invalid JSON data"}, status=400
+        )
+    except Exception as e:
+        logger.error(f"Error syncing person emails: {e}")
+        return JsonResponse({"success": False, "error": str(e)}, status=500)

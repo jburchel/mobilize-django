@@ -509,9 +509,14 @@
                 <h5 class="card-title mb-0">
                     <i class="fas fa-comments me-2 text-info"></i>Recent Communications
                 </h5>
-                <a href="/communications/?contact_id={{ person.contact.id }}" class="btn btn-sm btn-outline-primary">
-                    <i class="fas fa-list"></i> View All
-                </a>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="syncPersonEmails({{ person.contact.id }}, '{{ person.contact.email }}', '{{ person.name|escapejs }}')" title="Sync all email history with this contact">
+                        <i class="fas fa-sync"></i> Sync Emails
+                    </button>
+                    <a href="/communications/?contact_id={{ person.contact.id }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-list"></i> View All
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 {% if recent_communications %}
@@ -1761,5 +1766,62 @@ function debugPhoneIntegration(message, data = {}) {
 // Enable debug mode by default for SMS troubleshooting
 // To disable, run: window.phoneIntegrationDebug = false; in console
 window.phoneIntegrationDebug = true;
+
+// Individual contact email sync functionality
+function syncPersonEmails(contactId, contactEmail, contactName) {
+    if (!contactEmail) {
+        showMessage('error', 'This contact does not have an email address');
+        return;
+    }
+    
+    // Show confirmation dialog
+    if (!confirm(`This will sync all email history with ${contactName} (${contactEmail}). This may take a few moments. Continue?`)) {
+        return;
+    }
+    
+    // Get the sync button and disable it
+    const syncButton = event.target.closest('button');
+    const originalContent = syncButton.innerHTML;
+    syncButton.disabled = true;
+    syncButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+    
+    // Make AJAX request to sync emails
+    fetch('{% url "communications:sync_person_emails" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value || getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            contact_id: contactId,
+            contact_email: contactEmail
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('success', data.message || `Successfully synced ${data.synced_count || 0} emails`);
+            
+            // Reload the page to show new communications
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } else {
+            showMessage('error', data.error || 'Failed to sync emails');
+            
+            // Re-enable the button
+            syncButton.disabled = false;
+            syncButton.innerHTML = originalContent;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('error', 'An error occurred while syncing emails');
+        
+        // Re-enable the button
+        syncButton.disabled = false;
+        syncButton.innerHTML = originalContent;
+    });
+}
 </script>
 {% endblock %}
