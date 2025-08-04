@@ -2345,17 +2345,18 @@ def sync_person_emails(request):
             )
 
         except (ConnectionError, OperationalError, OSError) as e:
-            # Celery/Redis not available, use direct sync with shorter timeout
+            # Celery/Redis not available, use direct sync with individual contact optimization
             logger.warning(
-                f"Celery not available ({e}), using direct sync with limited scope"
+                f"Celery not available ({e}), using direct sync with individual contact focus"
             )
 
             try:
-                # Use direct Gmail service sync with reduced scope to prevent timeout
+                # Use direct Gmail service sync with 4+ years of history
+                # Since this is individual contact sync (not bulk), we can handle more history
                 result = gmail_service.sync_emails_to_communications(
-                    days_back=30,  # Only 30 days to prevent timeout
+                    days_back=1460,  # 4 years of history (as requested)
                     contacts_only=True,
-                    specific_emails=[contact_email],
+                    specific_emails=[contact_email],  # Only this specific contact for efficiency
                 )
 
                 if result["success"]:
@@ -2364,7 +2365,7 @@ def sync_person_emails(request):
                             "success": True,
                             "synced_count": result.get("synced_count", 0),
                             "skipped_count": result.get("skipped_count", 0),
-                            "message": f"Successfully synced {result.get('synced_count', 0)} emails from the last 30 days with {contact_email}. Note: For full history sync, Celery setup is required.",
+                            "message": f"Successfully synced {result.get('synced_count', 0)} emails from the last 4 years with {contact_email}.",
                             "fallback_mode": True,
                         }
                     )

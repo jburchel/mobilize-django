@@ -415,12 +415,23 @@ class GmailService:
         since_date = (datetime.now() - timedelta(days=days_back)).strftime("%Y/%m/%d")
 
         # Get both inbox and sent emails
-        inbox_query = f"in:inbox after:{since_date}"
-        sent_query = f"in:sent after:{since_date}"
+        # If syncing specific emails, optimize queries for those contacts
+        if specific_emails and len(specific_emails) == 1:
+            # Individual contact sync - use more specific queries for better performance
+            contact_email = specific_emails[0]
+            inbox_query = f"from:{contact_email} after:{since_date}"
+            sent_query = f"to:{contact_email} after:{since_date}"
+            # Increase max_results for individual sync since we're being specific
+            max_results = 500
+        else:
+            # Bulk sync - use broader queries
+            inbox_query = f"in:inbox after:{since_date}"
+            sent_query = f"in:sent after:{since_date}"
+            max_results = 250
 
         # Combine both queries
-        inbox_messages = self.get_messages(query=inbox_query, max_results=250)
-        sent_messages = self.get_messages(query=sent_query, max_results=250)
+        inbox_messages = self.get_messages(query=inbox_query, max_results=max_results)
+        sent_messages = self.get_messages(query=sent_query, max_results=max_results)
 
         # Combine and deduplicate messages
         all_message_ids = set()
