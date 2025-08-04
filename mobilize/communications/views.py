@@ -243,7 +243,7 @@ class CommunicationListView(LoginRequiredMixin, ListView):
         # Filter communications by user - each user sees only their own communications
         try:
             # Super admins see all communications, everyone else sees only their own
-            if self.request.user.role == 'super_admin':
+            if self.request.user.role == "super_admin":
                 queryset = Communication.objects.all()
             else:
                 queryset = Communication.objects.filter(user=self.request.user)
@@ -2107,11 +2107,11 @@ def communication_list_api(request):
 
     try:
         # Filter communications by user - each user sees only their own communications
-        if request.user.role == 'super_admin':
+        if request.user.role == "super_admin":
             queryset = Communication.objects.all()
         else:
             queryset = Communication.objects.filter(user=request.user)
-        
+
         # Get query parameters
         search_query = request.GET.get("search", "")
         type_filter = request.GET.get("type", "")
@@ -2266,14 +2266,27 @@ def sync_person_emails(request):
         try:
             contact = Contact.objects.get(id=contact_id)
             # Check if user has permission to view this contact
-            if contact.office and contact.office != request.user.office:
-                return JsonResponse(
-                    {
-                        "success": False,
-                        "error": "You don't have permission to sync emails for this contact",
-                    },
-                    status=403,
-                )
+            # Users can access contacts from offices they belong to
+            if contact.office:
+                # Get user's office assignments
+                from mobilize.admin_panel.models import UserOffice
+
+                user_offices = UserOffice.objects.filter(
+                    user_id=str(request.user.id)
+                ).values_list("office_id", flat=True)
+
+                # Super admins can access all contacts
+                if (
+                    request.user.role != "super_admin"
+                    and contact.office.id not in user_offices
+                ):
+                    return JsonResponse(
+                        {
+                            "success": False,
+                            "error": "You don't have permission to sync emails for this contact",
+                        },
+                        status=403,
+                    )
         except Contact.DoesNotExist:
             return JsonResponse(
                 {"success": False, "error": "Contact not found"}, status=404
