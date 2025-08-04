@@ -201,7 +201,7 @@ def sync_gmail_emails(
 
         # Override contacts_only if specific emails are provided
         if specific_emails:
-            contacts_only = False  # We want to sync regardless of contact existence
+            contacts_only = True  # Keep contacts_only=True but use specific_emails list
             logger.info(
                 f"Syncing emails for {len(specific_emails)} specific email addresses"
             )

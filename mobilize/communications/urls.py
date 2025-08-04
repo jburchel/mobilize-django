@@ -93,6 +93,11 @@ urlpatterns = [
     path("gmail/status/", views.gmail_status, name="gmail_status"),
     path("gmail/disconnect/", views.gmail_disconnect, name="gmail_disconnect"),
     path("gmail/sync-person/", views.sync_person_emails, name="sync_person_emails"),
+    path(
+        "gmail/sync-task-status/<str:task_id>/",
+        views.sync_task_status,
+        name="sync_task_status",
+    ),
     # Google Contacts sync
     path("contacts/sync/", views.ContactSyncView.as_view(), name="contact_sync"),
     path(
@@ -143,7 +148,11 @@ urlpatterns = [
     # Native SMS logging
     path("sms/log/", views.native_sms_log_view, name="native_sms_log"),
     path("sms/quick-log/", views.sms_quick_log_api, name="sms_quick_log_api"),
-    path("sms/contact-search/", views.sms_contact_search_api, name="sms_contact_search_api"),
+    path(
+        "sms/contact-search/",
+        views.sms_contact_search_api,
+        name="sms_contact_search_api",
+    ),
     path("sms/history/", views.sms_history_api, name="sms_history_api"),
     # API endpoints
     path("api/contacts/", views.get_contacts_json, name="get_contacts_json"),

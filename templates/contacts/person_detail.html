@@ -1783,9 +1783,9 @@ function syncPersonEmails(contactId, contactEmail, contactName) {
     const syncButton = event.target.closest('button');
     const originalContent = syncButton.innerHTML;
     syncButton.disabled = true;
-    syncButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+    syncButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting sync...';
     
-    // Make AJAX request to sync emails
+    // Make AJAX request to start sync task
     fetch('{% url "communications:sync_person_emails" %}', {
         method: 'POST',
         headers: {
@@ -1799,15 +1799,15 @@ function syncPersonEmails(contactId, contactEmail, contactName) {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.success) {
-            showMessage('success', data.message || `Successfully synced ${data.synced_count || 0} emails`);
+        if (data.success && data.task_id) {
+            // Show initial success message
+            showMessage('info', data.message || 'Email sync started. Please wait...');
+            syncButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing emails...';
             
-            // Reload the page to show new communications
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
+            // Poll for task completion
+            pollTaskStatus(data.task_id, syncButton, originalContent, contactEmail);
         } else {
-            showMessage('error', data.error || 'Failed to sync emails');
+            showMessage('error', data.error || 'Failed to start email sync');
             
             // Re-enable the button
             syncButton.disabled = false;
@@ -1816,12 +1816,70 @@ function syncPersonEmails(contactId, contactEmail, contactName) {
     })
     .catch(error => {
         console.error('Error:', error);
-        showMessage('error', 'An error occurred while syncing emails');
+        showMessage('error', 'An error occurred while starting email sync');
         
         // Re-enable the button
         syncButton.disabled = false;
         syncButton.innerHTML = originalContent;
     });
+}
+
+function pollTaskStatus(taskId, syncButton, originalContent, contactEmail) {
+    const checkStatus = () => {
+        fetch(`/communications/gmail/sync-task-status/${taskId}/`, {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value || getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'completed' && data.success) {
+                showMessage('success', data.message || `Successfully synced ${data.synced_count || 0} emails with ${contactEmail}`);
+                
+                // Re-enable the button
+                syncButton.disabled = false;
+                syncButton.innerHTML = originalContent;
+                
+                // Reload the page to show new communications
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+                
+            } else if (data.status === 'failed') {
+                showMessage('error', data.error || 'Email sync failed');
+                
+                // Re-enable the button
+                syncButton.disabled = false;
+                syncButton.innerHTML = originalContent;
+                
+            } else if (data.status === 'pending') {
+                // Still processing, show progress message
+                syncButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing emails...';
+                
+                // Continue polling
+                setTimeout(checkStatus, 3000); // Check every 3 seconds
+                
+            } else {
+                showMessage('error', 'Unknown task status');
+                
+                // Re-enable the button
+                syncButton.disabled = false;
+                syncButton.innerHTML = originalContent;
+            }
+        })
+        .catch(error => {
+            console.error('Error checking task status:', error);
+            showMessage('error', 'Error checking sync status');
+            
+            // Re-enable the button
+            syncButton.disabled = false;
+            syncButton.innerHTML = originalContent;
+        });
+    };
+    
+    // Start polling after a short delay
+    setTimeout(checkStatus, 2000);
 }
 </script>
 {% endblock %}

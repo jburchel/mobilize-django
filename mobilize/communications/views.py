@@ -2322,28 +2322,32 @@ def sync_person_emails(request):
                 status=401,
             )
 
-        # Sync emails for this specific contact
-        # Using the sync_emails_to_communications method with specific_emails parameter
-        result = gmail_service.sync_emails_to_communications(
-            days_back=3650,  # 10 years back - effectively all history
-            contacts_only=True,
-            specific_emails=[contact_email],
-        )
+        # Use Celery background task to prevent timeout issues
+        from .tasks import sync_gmail_emails
 
-        if result["success"]:
+        try:
+            # Start the background sync task
+            task = sync_gmail_emails.delay(
+                user_id=request.user.id,
+                days_back=3650,  # 10 years back - effectively all history
+                specific_emails=[contact_email],
+            )
+
             return JsonResponse(
                 {
                     "success": True,
-                    "synced_count": result.get("synced_count", 0),
-                    "skipped_count": result.get("skipped_count", 0),
-                    "message": f"Successfully synced {result.get('synced_count', 0)} emails with {contact_email}",
+                    "task_id": task.id,
+                    "message": f"Email sync started for {contact_email}. This may take a few moments.",
+                    "status": "started",
                 }
             )
-        else:
+
+        except Exception as e:
+            logger.error(f"Error starting email sync task: {e}")
             return JsonResponse(
                 {
                     "success": False,
-                    "error": result.get("error", "Failed to sync emails"),
+                    "error": "Failed to start email sync task",
                 },
                 status=500,
             )
@@ -2355,3 +2359,45 @@ def sync_person_emails(request):
     except Exception as e:
         logger.error(f"Error syncing person emails: {e}")
         return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+@login_required
+def sync_task_status(request, task_id):
+    """Check the status of a sync task"""
+    from celery.result import AsyncResult
+
+    try:
+        task_result = AsyncResult(task_id)
+
+        if task_result.ready():
+            if task_result.successful():
+                result = task_result.result
+                return JsonResponse(
+                    {
+                        "status": "completed",
+                        "success": True,
+                        "synced_count": result.get("synced_count", 0),
+                        "skipped_count": result.get("skipped_count", 0),
+                        "message": f"Successfully synced {result.get('synced_count', 0)} emails",
+                    }
+                )
+            else:
+                return JsonResponse(
+                    {
+                        "status": "failed",
+                        "success": False,
+                        "error": str(task_result.result),
+                    }
+                )
+        else:
+            return JsonResponse(
+                {
+                    "status": "pending",
+                    "success": False,
+                    "message": "Email sync is still in progress...",
+                }
+            )
+
+    except Exception as e:
+        logger.error(f"Error checking task status: {e}")
+        return JsonResponse({"status": "error", "success": False, "error": str(e)})
