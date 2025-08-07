@@ -13,6 +13,7 @@ urlpatterns = [
     path("reports/", views.reports, name="reports"),
     path("export/<str:report_type>/", views.export_report, name="export_report"),
     path("customize-dashboard/", views.customize_dashboard, name="customize_dashboard"),
+    path("user-guide/", views.user_guide, name="user_guide"),
     # Widget layout API endpoints
     path("api/widget-layout/", views.update_widget_layout_api, name="update_widget_layout_api"),
     path("api/widget-resize/", views.resize_widget_api, name="resize_widget_api"),

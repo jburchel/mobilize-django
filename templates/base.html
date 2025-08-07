@@ -950,6 +950,11 @@
                         </li>
                         {% endif %}
                         <li>
+                            <a href="{% url 'core:user_guide' %}" class="nav-link {% if request.resolver_match.url_name == 'user_guide' %}active{% endif %}">
+                                <i class="fas fa-question-circle"></i> <span class="sidebar-text">User Guide</span>
+                            </a>
+                        </li>
+                        <li>
                             <a href="{% url 'core:settings' %}" class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
                                 <i class="fas fa-cog"></i> <span class="sidebar-text">Settings</span>
                             </a>
@@ -979,6 +984,9 @@
                             </a></li>
                             <li><a class="dropdown-item" href="{% url 'core:settings' %}">
                                 <i class="fas fa-cog me-2"></i> Settings
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'core:user_guide' %}">
+                                <i class="fas fa-question-circle me-2"></i> User Guide
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'authentication:logout' %}">
@@ -1025,6 +1033,9 @@
                                     <ul class="dropdown-menu dropdown-menu-end">
                                         <li><a class="dropdown-item" href="{% url 'core:profile' %}">
                                             <i class="fas fa-user me-2"></i> View Profile
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{% url 'core:user_guide' %}">
+                                            <i class="fas fa-question-circle me-2"></i> User Guide
                                         </a></li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item" href="{% url 'authentication:logout' %}">

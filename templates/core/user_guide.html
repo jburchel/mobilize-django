@@ -1,0 +1,1441 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}User Guide - Mobilize CRM{% endblock %}
+{% block page_title %}User Guide{% endblock %}
+{% block mobile_title %}User Guide{% endblock %}
+
+{% block page_actions %}
+    <div class="d-flex gap-2">
+        <button id="printGuide" class="btn btn-secondary btn-sm">
+            <i class="fas fa-print me-1"></i> Print Guide
+        </button>
+        <button id="toggleToc" class="btn btn-primary btn-sm d-lg-none">
+            <i class="fas fa-list me-1"></i> Table of Contents
+        </button>
+    </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* User Guide Specific Styles */
+.user-guide-container {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    min-height: calc(100vh - 200px);
+}
+
+.user-guide-content {
+    flex: 1;
+    max-width: 100%;
+    padding-right: 1rem;
+}
+
+/* Table of Contents Styles */
+.toc-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 1.5rem;
+    border: 1px solid #e9ecef;
+}
+
+.toc-sidebar h5 {
+    color: #183963;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #39A949;
+}
+
+.toc-search {
+    margin-bottom: 1rem;
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.toc-search:focus {
+    outline: none;
+    border-color: #39A949;
+    box-shadow: 0 0 0 2px rgba(57, 169, 73, 0.2);
+}
+
+.toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.toc-list li {
+    margin-bottom: 0.25rem;
+}
+
+.toc-list a {
+    color: #6c757d;
+    text-decoration: none;
+    display: block;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    line-height: 1.3;
+}
+
+.toc-list a:hover {
+    background: #f8f9fa;
+    color: #183963;
+    transform: translateX(4px);
+}
+
+.toc-list a.active {
+    background: linear-gradient(135deg, #183963, #39A949);
+    color: white;
+    font-weight: 500;
+}
+
+.toc-list .toc-subsection {
+    padding-left: 1rem;
+    font-size: 0.85rem;
+}
+
+.toc-list .toc-subsection a {
+    padding: 0.3rem 0.75rem;
+}
+
+/* Content Sections */
+.guide-section {
+    margin-bottom: 3rem;
+    scroll-margin-top: 100px;
+}
+
+.guide-section h2 {
+    color: #183963;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #39A949;
+    font-size: 1.8rem;
+}
+
+.guide-section h3 {
+    color: #2a4f7a;
+    font-weight: 600;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+}
+
+.guide-section h4 {
+    color: #495057;
+    font-weight: 600;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.2rem;
+}
+
+.guide-section p {
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    color: #495057;
+}
+
+.guide-section ul, .guide-section ol {
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+}
+
+.guide-section li {
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+/* Code and Examples */
+.code-example {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.9rem;
+    overflow-x: auto;
+}
+
+.code-example code {
+    color: #e83e8c;
+    background: none;
+    padding: 0;
+}
+
+/* Feature Highlights */
+.feature-highlight {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-left: 4px solid #39A949;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    border-radius: 0 8px 8px 0;
+}
+
+.feature-highlight h4 {
+    color: #183963;
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+}
+
+.feature-highlight p:last-child {
+    margin-bottom: 0;
+}
+
+/* Tips and Notes */
+.tip-box {
+    background: #e3f2fd;
+    border: 1px solid #2196f3;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.tip-box .tip-icon {
+    color: #2196f3;
+    margin-right: 0.5rem;
+    font-weight: 600;
+}
+
+.warning-box {
+    background: #fff3e0;
+    border: 1px solid #ff9800;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.warning-box .warning-icon {
+    color: #ff9800;
+    margin-right: 0.5rem;
+    font-weight: 600;
+}
+
+/* Screenshots and Images */
+.screenshot {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin: 1rem 0;
+}
+
+.screenshot-caption {
+    text-align: center;
+    font-style: italic;
+    color: #6c757d;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* Quick Reference Cards */
+.quick-ref-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.quick-ref-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.quick-ref-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+.quick-ref-card h5 {
+    color: #183963;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+}
+
+.quick-ref-card h5 i {
+    margin-right: 0.5rem;
+    color: #39A949;
+}
+
+.quick-ref-card ul {
+    padding-left: 1rem;
+    margin-bottom: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 991px) {
+    .user-guide-container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .toc-sidebar {
+        width: 100%;
+        position: static;
+        max-height: none;
+        margin-bottom: 2rem;
+        display: none;
+    }
+    
+    .toc-sidebar.show {
+        display: block;
+    }
+    
+    .user-guide-content {
+        padding-right: 0;
+    }
+    
+    .guide-section h2 {
+        font-size: 1.5rem;
+    }
+    
+    .guide-section h3 {
+        font-size: 1.3rem;
+    }
+    
+    .quick-ref-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .toc-sidebar {
+        display: none;
+    }
+    
+    .user-guide-container {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .guide-section {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        margin-bottom: 2rem;
+    }
+    
+    .guide-section h2 {
+        page-break-after: avoid;
+    }
+    
+    .feature-highlight, .tip-box, .warning-box {
+        page-break-inside: avoid;
+    }
+    
+    .screenshot {
+        max-width: 4in;
+        page-break-inside: avoid;
+    }
+    
+    .page-header, .bottom-nav, .sidebar-container {
+        display: none !important;
+    }
+    
+    body {
+        background: white !important;
+        padding: 0 !important;
+    }
+    
+    .main-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+}
+
+/* Search Highlight */
+.search-highlight {
+    background-color: #ffeb3b;
+    padding: 0.1em 0.2em;
+    border-radius: 3px;
+}
+
+/* Smooth Scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Back to Top Button */
+.back-to-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: linear-gradient(135deg, #183963, #39A949);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    cursor: pointer;
+}
+
+.back-to-top:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+.back-to-top.show {
+    display: flex;
+}
+
+@media (max-width: 768px) {
+    .back-to-top {
+        bottom: 5rem;
+        right: 1rem;
+        width: 45px;
+        height: 45px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="user-guide-container">
+    <!-- Table of Contents Sidebar -->
+    <aside class="toc-sidebar" id="tocSidebar">
+        <h5><i class="fas fa-list me-2"></i>Table of Contents</h5>
+        
+        <!-- Search Box -->
+        <input type="text" class="toc-search" id="tocSearch" placeholder="Search guide...">
+        
+        <ul class="toc-list">
+            <li><a href="#getting-started" data-section="getting-started">1. Getting Started</a>
+                <ul class="toc-subsection">
+                    <li><a href="#logging-in" data-section="logging-in">Logging In</a></li>
+                    <li><a href="#dashboard-overview" data-section="dashboard-overview">Dashboard Overview</a></li>
+                    <li><a href="#navigation" data-section="navigation">Navigation</a></li>
+                </ul>
+            </li>
+            <li><a href="#managing-people" data-section="managing-people">2. Managing People</a>
+                <ul class="toc-subsection">
+                    <li><a href="#adding-people" data-section="adding-people">Adding New People</a></li>
+                    <li><a href="#editing-people" data-section="editing-people">Editing People</a></li>
+                    <li><a href="#importing-contacts" data-section="importing-contacts">Importing Contacts</a></li>
+                    <li><a href="#pipeline-stages" data-section="pipeline-stages">Pipeline Stages</a></li>
+                </ul>
+            </li>
+            <li><a href="#managing-churches" data-section="managing-churches">3. Managing Churches</a>
+                <ul class="toc-subsection">
+                    <li><a href="#adding-churches" data-section="adding-churches">Adding Churches</a></li>
+                    <li><a href="#church-contacts" data-section="church-contacts">Church Contacts</a></li>
+                    <li><a href="#church-interactions" data-section="church-interactions">Tracking Interactions</a></li>
+                </ul>
+            </li>
+            <li><a href="#task-management" data-section="task-management">4. Task Management</a>
+                <ul class="toc-subsection">
+                    <li><a href="#creating-tasks" data-section="creating-tasks">Creating Tasks</a></li>
+                    <li><a href="#task-priorities" data-section="task-priorities">Setting Priorities</a></li>
+                    <li><a href="#recurring-tasks" data-section="recurring-tasks">Recurring Tasks</a></li>
+                    <li><a href="#task-reminders" data-section="task-reminders">Reminders</a></li>
+                </ul>
+            </li>
+            <li><a href="#communications" data-section="communications">5. Communications</a>
+                <ul class="toc-subsection">
+                    <li><a href="#gmail-integration" data-section="gmail-integration">Gmail Integration</a></li>
+                    <li><a href="#email-templates" data-section="email-templates">Email Templates</a></li>
+                    <li><a href="#communication-history" data-section="communication-history">Communication History</a></li>
+                </ul>
+            </li>
+            <li><a href="#reports-analytics" data-section="reports-analytics">6. Reports & Analytics</a>
+                <ul class="toc-subsection">
+                    <li><a href="#dashboard-widgets" data-section="dashboard-widgets">Dashboard Widgets</a></li>
+                    <li><a href="#export-reports" data-section="export-reports">Exporting Reports</a></li>
+                    <li><a href="#custom-filters" data-section="custom-filters">Custom Filters</a></li>
+                </ul>
+            </li>
+            <li><a href="#settings-administration" data-section="settings-administration">7. Settings & Administration</a>
+                <ul class="toc-subsection">
+                    <li><a href="#user-settings" data-section="user-settings">User Settings</a></li>
+                    <li><a href="#office-management" data-section="office-management">Office Management</a></li>
+                    <li><a href="#user-roles" data-section="user-roles">User Roles</a></li>
+                </ul>
+            </li>
+            <li><a href="#tips-troubleshooting" data-section="tips-troubleshooting">8. Tips & Troubleshooting</a>
+                <ul class="toc-subsection">
+                    <li><a href="#best-practices" data-section="best-practices">Best Practices</a></li>
+                    <li><a href="#common-issues" data-section="common-issues">Common Issues</a></li>
+                    <li><a href="#keyboard-shortcuts" data-section="keyboard-shortcuts">Keyboard Shortcuts</a></li>
+                </ul>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="user-guide-content">
+        <!-- Getting Started -->
+        <section class="guide-section" id="getting-started">
+            <h2><i class="fas fa-rocket me-2"></i>Getting Started</h2>
+            
+            <p>Welcome to Mobilize CRM! This comprehensive guide will help you get started with managing your missionary contacts, church relationships, and tasks efficiently.</p>
+
+            <h3 id="logging-in">Logging In</h3>
+            <p>Mobilize CRM uses Google OAuth for secure authentication. You'll need a Google account to access the system.</p>
+            
+            <div class="feature-highlight">
+                <h4><i class="fas fa-shield-alt me-2"></i>Secure Authentication</h4>
+                <p>Your account is protected by Google's enterprise-grade security. No passwords to remember - just use your existing Google account.</p>
+            </div>
+
+            <ol>
+                <li>Visit the Mobilize CRM login page</li>
+                <li>Click "Sign in with Google"</li>
+                <li>Choose your Google account or sign in if prompted</li>
+                <li>Grant necessary permissions for Gmail and Contacts integration</li>
+                <li>You'll be redirected to your personalized dashboard</li>
+            </ol>
+
+            <h3 id="dashboard-overview">Dashboard Overview</h3>
+            <p>Your dashboard provides a comprehensive overview of your missionary activities:</p>
+
+            <div class="quick-ref-grid">
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-users"></i>People Metrics</h5>
+                    <ul>
+                        <li>Total contacts in your database</li>
+                        <li>New contacts added this week</li>
+                        <li>Pipeline stage distribution</li>
+                    </ul>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-church"></i>Church Metrics</h5>
+                    <ul>
+                        <li>Total churches being tracked</li>
+                        <li>Churches with active contacts</li>
+                        <li>Recent church activities</li>
+                    </ul>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-tasks"></i>Task Overview</h5>
+                    <ul>
+                        <li>Pending tasks requiring attention</li>
+                        <li>Overdue tasks (highlighted in red)</li>
+                        <li>Tasks completed this week</li>
+                    </ul>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-chart-line"></i>Activity Timeline</h5>
+                    <ul>
+                        <li>Daily activity over the past week</li>
+                        <li>Communications sent</li>
+                        <li>Task completion trends</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3 id="navigation">Navigation</h3>
+            <p>The sidebar provides quick access to all major sections:</p>
+            
+            <div class="tip-box">
+                <span class="tip-icon"><i class="fas fa-lightbulb"></i>Pro Tip:</span>
+                On desktop, you can collapse the sidebar by clicking the arrow button at the bottom. On mobile, use the bottom navigation for quick access.
+            </div>
+
+            <ul>
+                <li><strong>Dashboard</strong> - Your main overview and metrics</li>
+                <li><strong>People</strong> - Manage individual contacts</li>
+                <li><strong>Churches</strong> - Manage church relationships</li>
+                <li><strong>Tasks</strong> - Create and track your to-do items</li>
+                <li><strong>Communications</strong> - Email history and templates</li>
+                <li><strong>Reports</strong> - Export data and generate reports</li>
+                <li><strong>Settings</strong> - Configure your preferences</li>
+            </ul>
+        </section>
+
+        <!-- Managing People -->
+        <section class="guide-section" id="managing-people">
+            <h2><i class="fas fa-users me-2"></i>Managing People</h2>
+            
+            <p>The People section is where you manage all individual contacts in your missionary database. Each person can be tracked through various pipeline stages representing their journey.</p>
+
+            <h3 id="adding-people">Adding New People</h3>
+            <p>There are several ways to add new people to your database:</p>
+
+            <h4>Manual Entry</h4>
+            <ol>
+                <li>Navigate to the People section</li>
+                <li>Click the "Add Person" button</li>
+                <li>Fill in the required information:
+                    <ul>
+                        <li>First Name (required)</li>
+                        <li>Last Name (required)</li>
+                        <li>Email address</li>
+                        <li>Phone number</li>
+                        <li>Address information</li>
+                        <li>Notes and additional details</li>
+                    </ul>
+                </li>
+                <li>Select the appropriate pipeline stage</li>
+                <li>Choose associated churches (if applicable)</li>
+                <li>Click "Save" to add the person</li>
+            </ol>
+
+            <h4 id="importing-contacts">Importing from Google Contacts</h4>
+            <p>If you've granted Google Contacts permissions, you can sync your existing contacts:</p>
+
+            <div class="warning-box">
+                <span class="warning-icon"><i class="fas fa-exclamation-triangle"></i>Important:</span>
+                Contact syncing requires proper Google permissions. If you skipped this during login, you can re-authorize in Settings.
+            </div>
+
+            <ol>
+                <li>Go to Settings</li>
+                <li>Navigate to the "Contact Sync" section</li>
+                <li>Choose your sync preference:
+                    <ul>
+                        <li><strong>CRM Only</strong> - Keep contacts separate</li>
+                        <li><strong>Two-way Sync</strong> - Sync both directions</li>
+                        <li><strong>Import from Google</strong> - One-time import</li>
+                    </ul>
+                </li>
+                <li>Click "Sync Now" to begin the process</li>
+            </ol>
+
+            <h3 id="editing-people">Editing People</h3>
+            <p>To modify existing contact information:</p>
+            
+            <ol>
+                <li>Find the person using search or browse</li>
+                <li>Click on their name or the "Edit" button</li>
+                <li>Update the necessary information</li>
+                <li>Use the "Notes" section to track important details</li>
+                <li>Save your changes</li>
+            </ol>
+
+            <h3 id="pipeline-stages">Pipeline Stages</h3>
+            <p>Mobilize CRM uses a pipeline system to track where each person is in their spiritual journey:</p>
+
+            <div class="quick-ref-grid">
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-bullhorn"></i>Promotion</h5>
+                    <p>Initial awareness and interest generation phase.</p>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-info-circle"></i>Information</h5>
+                    <p>Providing detailed information about your ministry.</p>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-hand-paper"></i>Invitation</h5>
+                    <p>Actively inviting to participate or commit.</p>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-check-circle"></i>Confirmation</h5>
+                    <p>Confirming commitment and next steps.</p>
+                </div>
+            </div>
+
+            <p>To move someone between pipeline stages:</p>
+            <ol>
+                <li>Open their contact profile</li>
+                <li>Click on the current pipeline stage</li>
+                <li>Select the new appropriate stage</li>
+                <li>Add notes about why they're moving stages</li>
+                <li>Save the changes</li>
+            </ol>
+        </section>
+
+        <!-- Managing Churches -->
+        <section class="guide-section" id="managing-churches">
+            <h2><i class="fas fa-church me-2"></i>Managing Churches</h2>
+            
+            <p>The Churches section helps you manage relationships with supporting churches, partner organizations, and potential supporters.</p>
+
+            <h3 id="adding-churches">Adding Churches</h3>
+            <p>To add a new church to your database:</p>
+
+            <ol>
+                <li>Navigate to Churches → Add Church</li>
+                <li>Enter basic information:
+                    <ul>
+                        <li>Church Name (required)</li>
+                        <li>Address</li>
+                        <li>Phone and website</li>
+                        <li>Denomination (if applicable)</li>
+                        <li>Size/membership estimate</li>
+                    </ul>
+                </li>
+                <li>Set the initial pipeline stage</li>
+                <li>Add any relevant notes</li>
+                <li>Save the church profile</li>
+            </ol>
+
+            <h3 id="church-contacts">Church Contacts</h3>
+            <p>Each church can have multiple associated contacts (pastors, staff, key members):</p>
+
+            <div class="feature-highlight">
+                <h4><i class="fas fa-link me-2"></i>Connecting People and Churches</h4>
+                <p>You can link existing people in your database to churches, or create new contacts directly from a church profile. This helps maintain the relationship network.</p>
+            </div>
+
+            <ol>
+                <li>Open a church profile</li>
+                <li>Go to the "Contacts" section</li>
+                <li>Click "Add Contact" to:
+                    <ul>
+                        <li>Link an existing person from your database</li>
+                        <li>Create a new contact for this church</li>
+                    </ul>
+                </li>
+                <li>Specify their role (Pastor, Staff, Member, etc.)</li>
+                <li>Set them as the main contact if appropriate</li>
+            </ol>
+
+            <h3 id="church-interactions">Tracking Interactions</h3>
+            <p>Document your interactions with churches to maintain relationship history:</p>
+
+            <ol>
+                <li>From a church profile, click "Add Interaction"</li>
+                <li>Choose interaction type:
+                    <ul>
+                        <li>Phone Call</li>
+                        <li>Email</li>
+                        <li>In-person Meeting</li>
+                        <li>Presentation/Speaking</li>
+                        <li>Other</li>
+                    </ul>
+                </li>
+                <li>Set the date and participants</li>
+                <li>Write detailed notes about the interaction</li>
+                <li>Mark any follow-up actions needed</li>
+                <li>Save the interaction record</li>
+            </ol>
+        </section>
+
+        <!-- Task Management -->
+        <section class="guide-section" id="task-management">
+            <h2><i class="fas fa-tasks me-2"></i>Task Management</h2>
+            
+            <p>Stay organized and accountable with Mobilize CRM's comprehensive task management system.</p>
+
+            <h3 id="creating-tasks">Creating Tasks</h3>
+            <p>To create a new task:</p>
+
+            <ol>
+                <li>Navigate to Tasks → Create Task</li>
+                <li>Fill in task details:
+                    <ul>
+                        <li>Title (required)</li>
+                        <li>Detailed description</li>
+                        <li>Due date</li>
+                        <li>Priority level (High, Medium, Low)</li>
+                        <li>Related contact (person or church)</li>
+                        <li>Category/tags</li>
+                    </ul>
+                </li>
+                <li>Assign to yourself or team member</li>
+                <li>Set reminder preferences</li>
+                <li>Save the task</li>
+            </ol>
+
+            <h3 id="task-priorities">Setting Priorities</h3>
+            <p>Use the priority system effectively to focus on what matters most:</p>
+
+            <div class="quick-ref-grid">
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-exclamation-triangle text-danger"></i>High Priority</h5>
+                    <ul>
+                        <li>Urgent deadlines</li>
+                        <li>Critical relationship maintenance</li>
+                        <li>Time-sensitive opportunities</li>
+                    </ul>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-exclamation-circle text-warning"></i>Medium Priority</h5>
+                    <ul>
+                        <li>Important but not urgent</li>
+                        <li>Regular follow-ups</li>
+                        <li>Planned activities</li>
+                    </ul>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-info-circle text-info"></i>Low Priority</h5>
+                    <ul>
+                        <li>Nice to have tasks</li>
+                        <li>Long-term projects</li>
+                        <li>Administrative items</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3 id="recurring-tasks">Recurring Tasks</h3>
+            <p>Set up tasks that repeat automatically:</p>
+
+            <ol>
+                <li>When creating or editing a task, check "Make Recurring"</li>
+                <li>Choose recurrence pattern:
+                    <ul>
+                        <li>Daily</li>
+                        <li>Weekly (specify days)</li>
+                        <li>Monthly (specific date or relative)</li>
+                        <li>Yearly</li>
+                    </ul>
+                </li>
+                <li>Set end date or number of occurrences</li>
+                <li>Save to create the recurring series</li>
+            </ol>
+
+            <h3 id="task-reminders">Reminders</h3>
+            <p>Never miss important tasks with automated reminders:</p>
+
+            <div class="tip-box">
+                <span class="tip-icon"><i class="fas fa-bell"></i>Reminder Tip:</span>
+                Set reminders for different intervals - one week before for major tasks, and same-day for quick actions.
+            </div>
+
+            <ul>
+                <li>Email reminders sent to your registered email</li>
+                <li>Dashboard notifications for overdue tasks</li>
+                <li>Weekly digest emails with upcoming tasks</li>
+                <li>Customizable reminder timing for each task</li>
+            </ul>
+        </section>
+
+        <!-- Communications -->
+        <section class="guide-section" id="communications">
+            <h2><i class="fas fa-envelope me-2"></i>Communications</h2>
+            
+            <p>Mobilize CRM integrates with your Gmail account to track communications and streamline email management.</p>
+
+            <h3 id="gmail-integration">Gmail Integration</h3>
+            <p>Connect your Gmail account for automatic email tracking:</p>
+
+            <div class="feature-highlight">
+                <h4><i class="fas fa-sync me-2"></i>Automatic Email Sync</h4>
+                <p>Once connected, Mobilize CRM automatically syncs your Gmail inbox and tracks emails sent to contacts in your database.</p>
+            </div>
+
+            <h4>Setting Up Gmail Sync</h4>
+            <ol>
+                <li>Go to Settings → Gmail Integration</li>
+                <li>Click "Connect Gmail Account"</li>
+                <li>Grant the necessary permissions:
+                    <ul>
+                        <li>Read emails (to track communications)</li>
+                        <li>Send emails (for templates and campaigns)</li>
+                        <li>Compose emails (for direct sending)</li>
+                    </ul>
+                </li>
+                <li>Choose sync preferences:
+                    <ul>
+                        <li>Sync all emails or only specific labels</li>
+                        <li>Set sync frequency</li>
+                        <li>Choose which folders to monitor</li>
+                    </ul>
+                </li>
+                <li>Save settings and initiate first sync</li>
+            </ol>
+
+            <h4>What Gets Synced</h4>
+            <ul>
+                <li>Emails to/from contacts in your database</li>
+                <li>Email metadata (subject, date, recipients)</li>
+                <li>Attachment information (not content)</li>
+                <li>Read/unread status</li>
+                <li>Gmail labels and categories</li>
+            </ul>
+
+            <h3 id="email-templates">Email Templates</h3>
+            <p>Create reusable email templates for common communications:</p>
+
+            <ol>
+                <li>Go to Communications → Templates</li>
+                <li>Click "Create Template"</li>
+                <li>Design your template:
+                    <ul>
+                        <li>Template name and description</li>
+                        <li>Subject line (can include variables)</li>
+                        <li>Email body with placeholders</li>
+                        <li>Signature block</li>
+                    </ul>
+                </li>
+                <li>Use variables for personalization:
+                    <ul>
+                        <li>{{first_name}} - Contact's first name</li>
+                        <li>{{last_name}} - Contact's last name</li>
+                        <li>{{church_name}} - Associated church</li>
+                        <li>{{custom_field}} - Any custom field</li>
+                    </ul>
+                </li>
+                <li>Save and test the template</li>
+            </ol>
+
+            <div class="code-example">
+Subject: Following up on our conversation, {{first_name}}
+
+Hi {{first_name}},
+
+Thank you for taking time to speak with me yesterday about {{topic}}. 
+
+I wanted to follow up with the information we discussed about our ministry in {{location}}.
+
+[Continue with template content...]
+
+Best regards,
+{{your_name}}
+            </div>
+
+            <h3 id="communication-history">Communication History</h3>
+            <p>Track all communications with contacts and churches:</p>
+
+            <ul>
+                <li><strong>Automatic Tracking</strong> - Emails are automatically logged when synced</li>
+                <li><strong>Manual Entries</strong> - Log phone calls, meetings, and other interactions</li>
+                <li><strong>Contact Timeline</strong> - See chronological history on each contact's profile</li>
+                <li><strong>Search and Filter</strong> - Find specific communications quickly</li>
+                <li><strong>Bulk Operations</strong> - Mark multiple communications or export data</li>
+            </ul>
+
+            <h4>Adding Manual Communication Records</h4>
+            <ol>
+                <li>From a contact's profile, click "Add Communication"</li>
+                <li>Choose communication type</li>
+                <li>Enter details and notes</li>
+                <li>Set follow-up reminders if needed</li>
+                <li>Save the record</li>
+            </ol>
+        </section>
+
+        <!-- Reports & Analytics -->
+        <section class="guide-section" id="reports-analytics">
+            <h2><i class="fas fa-chart-bar me-2"></i>Reports & Analytics</h2>
+            
+            <p>Generate insights about your ministry effectiveness and contact engagement with comprehensive reporting tools.</p>
+
+            <h3 id="dashboard-widgets">Dashboard Widgets</h3>
+            <p>Customize your dashboard to show the metrics that matter most to you:</p>
+
+            <h4>Available Widgets</h4>
+            <div class="quick-ref-grid">
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-chart-pie"></i>Metrics Summary</h5>
+                    <p>People, churches, tasks, and overdue items at a glance.</p>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-chart-line"></i>Activity Timeline</h5>
+                    <p>Daily activity trends over the past week.</p>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-funnel-dollar"></i>Pipeline Distribution</h5>
+                    <p>Visual breakdown of contacts by pipeline stage.</p>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-tasks"></i>Pending Tasks</h5>
+                    <p>Upcoming and overdue tasks requiring attention.</p>
+                </div>
+            </div>
+
+            <h4>Customizing Your Dashboard</h4>
+            <ol>
+                <li>Click "Edit Layout" on your dashboard</li>
+                <li>Drag widgets to reorder them</li>
+                <li>Use resize controls to change widget sizes</li>
+                <li>Click "Save Layout" when satisfied</li>
+                <li>Visit "Customize Dashboard" for advanced options</li>
+            </ol>
+
+            <h3 id="export-reports">Exporting Reports</h3>
+            <p>Generate detailed reports for analysis or sharing:</p>
+
+            <h4>Available Report Types</h4>
+            <ul>
+                <li><strong>People Report</strong> - Complete contact database export</li>
+                <li><strong>Churches Report</strong> - Church information and relationships</li>
+                <li><strong>Tasks Report</strong> - Task completion and performance metrics</li>
+                <li><strong>Communications Report</strong> - Email activity and engagement</li>
+                <li><strong>Summary Dashboard</strong> - High-level overview metrics</li>
+            </ul>
+
+            <h4>Export Process</h4>
+            <ol>
+                <li>Navigate to Reports section</li>
+                <li>Select the report type</li>
+                <li>Choose export format (CSV, Excel, PDF)</li>
+                <li>Apply filters if needed:
+                    <ul>
+                        <li>Date ranges</li>
+                        <li>Pipeline stages</li>
+                        <li>Task status</li>
+                        <li>Contact types</li>
+                    </ul>
+                </li>
+                <li>Click "Generate Report"</li>
+                <li>Download the file when ready</li>
+            </ol>
+
+            <h3 id="custom-filters">Custom Filters</h3>
+            <p>Use filtering to focus on specific subsets of your data:</p>
+
+            <div class="tip-box">
+                <span class="tip-icon"><i class="fas fa-filter"></i>Filter Tip:</span>
+                Save frequently used filter combinations as "Quick Filters" for easy access later.
+            </div>
+
+            <h4>Common Filter Scenarios</h4>
+            <ul>
+                <li>People in specific pipeline stages</li>
+                <li>Tasks due in the next week</li>
+                <li>Churches without recent contact</li>
+                <li>High-priority overdue items</li>
+                <li>Communications from specific time periods</li>
+            </ul>
+        </section>
+
+        <!-- Settings & Administration -->
+        <section class="guide-section" id="settings-administration">
+            <h2><i class="fas fa-cog me-2"></i>Settings & Administration</h2>
+            
+            <p>Configure Mobilize CRM to match your workflow and manage user access.</p>
+
+            <h3 id="user-settings">User Settings</h3>
+            <p>Personalize your Mobilize CRM experience:</p>
+
+            <h4>Profile Settings</h4>
+            <ul>
+                <li>Update your name and contact information</li>
+                <li>Set timezone for accurate scheduling</li>
+                <li>Choose language preferences</li>
+                <li>Upload a profile picture</li>
+            </ul>
+
+            <h4>Notification Preferences</h4>
+            <ul>
+                <li>Email notification frequency</li>
+                <li>Task reminder timing</li>
+                <li>Dashboard alert preferences</li>
+                <li>Weekly summary reports</li>
+            </ul>
+
+            <h4>Contact Sync Settings</h4>
+            <div class="quick-ref-grid">
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-database"></i>CRM Only</h5>
+                    <p>Keep Mobilize contacts separate from Google Contacts.</p>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-sync-alt"></i>Two-way Sync</h5>
+                    <p>Synchronize changes in both directions automatically.</p>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-download"></i>Import Only</h5>
+                    <p>One-time import from Google, then manage separately.</p>
+                </div>
+            </div>
+
+            <h3 id="office-management">Office Management</h3>
+            <p><em>Available for Super Administrators only</em></p>
+
+            <p>Manage multiple offices or team locations:</p>
+
+            <ol>
+                <li>Navigate to Admin → Offices</li>
+                <li>Click "Add Office" to create new locations</li>
+                <li>Configure office details:
+                    <ul>
+                        <li>Office name and description</li>
+                        <li>Physical address</li>
+                        <li>Contact information</li>
+                        <li>Default settings</li>
+                    </ul>
+                </li>
+                <li>Assign users to offices</li>
+                <li>Set data access permissions</li>
+            </ol>
+
+            <h3 id="user-roles">User Roles</h3>
+            <p>Mobilize CRM supports different user roles with varying access levels:</p>
+
+            <div class="quick-ref-grid">
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-crown"></i>Super Admin</h5>
+                    <ul>
+                        <li>Full system access</li>
+                        <li>Manage all offices</li>
+                        <li>User management</li>
+                        <li>System configuration</li>
+                    </ul>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-user-tie"></i>Office Admin</h5>
+                    <ul>
+                        <li>Manage office users</li>
+                        <li>Access office data</li>
+                        <li>Configure office settings</li>
+                        <li>Generate office reports</li>
+                    </ul>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-user"></i>Standard User</h5>
+                    <ul>
+                        <li>Manage own contacts</li>
+                        <li>Create tasks</li>
+                        <li>Send communications</li>
+                        <li>View personal reports</li>
+                    </ul>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-eye"></i>Viewer</h5>
+                    <ul>
+                        <li>Read-only access</li>
+                        <li>View reports</li>
+                        <li>No editing capabilities</li>
+                        <li>Limited data access</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h4>Managing User Permissions</h4>
+            <ol>
+                <li>Go to Admin → User Management</li>
+                <li>Find the user to modify</li>
+                <li>Click "Edit Permissions"</li>
+                <li>Select appropriate role</li>
+                <li>Assign to office (if applicable)</li>
+                <li>Set specific data access rules</li>
+                <li>Save changes</li>
+            </ol>
+        </section>
+
+        <!-- Tips & Troubleshooting -->
+        <section class="guide-section" id="tips-troubleshooting">
+            <h2><i class="fas fa-tools me-2"></i>Tips & Troubleshooting</h2>
+            
+            <p>Get the most out of Mobilize CRM with these helpful tips and solutions to common issues.</p>
+
+            <h3 id="best-practices">Best Practices</h3>
+
+            <h4>Contact Management</h4>
+            <ul>
+                <li><strong>Regular Updates</strong> - Keep contact information current</li>
+                <li><strong>Detailed Notes</strong> - Record context from conversations</li>
+                <li><strong>Pipeline Discipline</strong> - Move contacts through stages systematically</li>
+                <li><strong>Relationship Mapping</strong> - Connect people to their churches</li>
+            </ul>
+
+            <h4>Task Management</h4>
+            <ul>
+                <li><strong>Set Realistic Deadlines</strong> - Allow adequate time for completion</li>
+                <li><strong>Use Priorities Wisely</strong> - Not everything can be high priority</li>
+                <li><strong>Regular Reviews</strong> - Weekly task planning sessions</li>
+                <li><strong>Follow-up Tasks</strong> - Create next steps during task completion</li>
+            </ul>
+
+            <h4>Communication Tracking</h4>
+            <ul>
+                <li><strong>Consistent Logging</strong> - Record all significant interactions</li>
+                <li><strong>Template Library</strong> - Build reusable email templates</li>
+                <li><strong>Response Tracking</strong> - Note response rates and engagement</li>
+                <li><strong>Follow-up Scheduling</strong> - Set automatic reminders</li>
+            </ul>
+
+            <h3 id="common-issues">Common Issues</h3>
+
+            <h4>Gmail Sync Problems</h4>
+            <div class="warning-box">
+                <span class="warning-icon"><i class="fas fa-exclamation-triangle"></i>Issue:</span>
+                Emails not syncing or missing from communication history.
+            </div>
+
+            <p><strong>Solutions:</strong></p>
+            <ol>
+                <li>Check Gmail connection in Settings</li>
+                <li>Re-authorize Google permissions if needed</li>
+                <li>Verify sync settings and frequency</li>
+                <li>Check for Gmail API quota limits</li>
+                <li>Contact support if issues persist</li>
+            </ol>
+
+            <h4>Contact Import Issues</h4>
+            <div class="warning-box">
+                <span class="warning-icon"><i class="fas fa-exclamation-triangle"></i>Issue:</span>
+                Google Contacts not importing or sync errors.
+            </div>
+
+            <p><strong>Solutions:</strong></p>
+            <ol>
+                <li>Ensure Google Contacts permission is granted</li>
+                <li>Check for duplicate contacts in Google</li>
+                <li>Verify contact format compatibility</li>
+                <li>Try manual import for problematic contacts</li>
+                <li>Use CSV import as alternative method</li>
+            </ol>
+
+            <h4>Performance Issues</h4>
+            <div class="warning-box">
+                <span class="warning-icon"><i class="fas fa-exclamation-triangle"></i>Issue:</span>
+                Slow loading times or unresponsive interface.
+            </div>
+
+            <p><strong>Solutions:</strong></p>
+            <ol>
+                <li>Clear browser cache and cookies</li>
+                <li>Disable browser extensions temporarily</li>
+                <li>Check internet connection stability</li>
+                <li>Use supported browsers (Chrome, Firefox, Safari)</li>
+                <li>Reduce number of dashboard widgets</li>
+            </ol>
+
+            <h3 id="keyboard-shortcuts">Keyboard Shortcuts</h3>
+            <p>Speed up your workflow with these helpful shortcuts:</p>
+
+            <div class="quick-ref-grid">
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-keyboard"></i>Navigation</h5>
+                    <ul>
+                        <li><kbd>Ctrl</kbd> + <kbd>D</kbd> - Dashboard</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>P</kbd> - People</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>C</kbd> - Churches</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>T</kbd> - Tasks</li>
+                    </ul>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-plus"></i>Quick Actions</h5>
+                    <ul>
+                        <li><kbd>Ctrl</kbd> + <kbd>N</kbd> - New (context-dependent)</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>S</kbd> - Save</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>F</kbd> - Search/Filter</li>
+                        <li><kbd>Esc</kbd> - Cancel/Close</li>
+                    </ul>
+                </div>
+                <div class="quick-ref-card">
+                    <h5><i class="fas fa-edit"></i>Editing</h5>
+                    <ul>
+                        <li><kbd>Tab</kbd> - Next field</li>
+                        <li><kbd>Shift</kbd> + <kbd>Tab</kbd> - Previous field</li>
+                        <li><kbd>Enter</kbd> - Submit form</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>Z</kbd> - Undo</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="tip-box">
+                <span class="tip-icon"><i class="fas fa-question-circle"></i>Need Help?</span>
+                If you encounter issues not covered in this guide, contact your system administrator or use the help system for additional support.
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- Back to Top Button -->
+<button class="back-to-top" id="backToTop">
+    <i class="fas fa-chevron-up"></i>
+</button>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Table of Contents functionality
+    const tocLinks = document.querySelectorAll('.toc-list a[data-section]');
+    const tocSidebar = document.getElementById('tocSidebar');
+    const tocToggle = document.getElementById('toggleToc');
+    const tocSearch = document.getElementById('tocSearch');
+    const backToTop = document.getElementById('backToTop');
+    const printBtn = document.getElementById('printGuide');
+    
+    // Smooth scrolling for TOC links
+    tocLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href').substring(1);
+            const targetElement = document.getElementById(targetId);
+            
+            if (targetElement) {
+                // Remove active class from all links
+                tocLinks.forEach(l => l.classList.remove('active'));
+                // Add active class to clicked link
+                this.classList.add('active');
+                
+                // Smooth scroll to target
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+                
+                // Hide TOC on mobile after selection
+                if (window.innerWidth < 992) {
+                    tocSidebar.classList.remove('show');
+                }
+            }
+        });
+    });
+    
+    // Toggle TOC on mobile
+    if (tocToggle) {
+        tocToggle.addEventListener('click', function() {
+            tocSidebar.classList.toggle('show');
+        });
+    }
+    
+    // Search functionality
+    if (tocSearch) {
+        tocSearch.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const allSections = document.querySelectorAll('.guide-section');
+            
+            // Clear existing highlights
+            document.querySelectorAll('.search-highlight').forEach(el => {
+                const parent = el.parentNode;
+                parent.replaceChild(document.createTextNode(el.textContent), el);
+                parent.normalize();
+            });
+            
+            if (searchTerm.length > 2) {
+                // Highlight search terms in content
+                allSections.forEach(section => {
+                    const walker = document.createTreeWalker(
+                        section,
+                        NodeFilter.SHOW_TEXT,
+                        null,
+                        false
+                    );
+                    
+                    const textNodes = [];
+                    let node;
+                    
+                    while (node = walker.nextNode()) {
+                        if (node.textContent.toLowerCase().includes(searchTerm)) {
+                            textNodes.push(node);
+                        }
+                    }
+                    
+                    textNodes.forEach(textNode => {
+                        const parent = textNode.parentNode;
+                        const text = textNode.textContent;
+                        const regex = new RegExp(`(${searchTerm})`, 'gi');
+                        
+                        if (regex.test(text)) {
+                            const highlightedHTML = text.replace(regex, '<span class="search-highlight">$1</span>');
+                            const wrapper = document.createElement('div');
+                            wrapper.innerHTML = highlightedHTML;
+                            
+                            while (wrapper.firstChild) {
+                                parent.insertBefore(wrapper.firstChild, textNode);
+                            }
+                            parent.removeChild(textNode);
+                        }
+                    });
+                });
+                
+                // Filter TOC based on search
+                tocLinks.forEach(link => {
+                    const linkText = link.textContent.toLowerCase();
+                    const listItem = link.closest('li');
+                    
+                    if (linkText.includes(searchTerm)) {
+                        listItem.style.display = 'block';
+                    } else {
+                        listItem.style.display = 'none';
+                    }
+                });
+            } else {
+                // Show all TOC items when search is cleared
+                document.querySelectorAll('.toc-list li').forEach(item => {
+                    item.style.display = 'block';
+                });
+            }
+        });
+    }
+    
+    // Scroll spy for TOC
+    function updateActiveTocLink() {
+        const sections = document.querySelectorAll('.guide-section');
+        const scrollPosition = window.scrollY + 150; // Offset for header
+        
+        let currentSection = null;
+        
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            const sectionBottom = sectionTop + section.offsetHeight;
+            
+            if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
+                currentSection = section.id;
+            }
+        });
+        
+        if (currentSection) {
+            tocLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${currentSection}`) {
+                    link.classList.add('active');
+                }
+            });
+        }
+    }
+    
+    // Back to top functionality
+    function toggleBackToTop() {
+        if (window.scrollY > 300) {
+            backToTop.classList.add('show');
+        } else {
+            backToTop.classList.remove('show');
+        }
+    }
+    
+    if (backToTop) {
+        backToTop.addEventListener('click', function() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+    }
+    
+    // Print functionality
+    if (printBtn) {
+        printBtn.addEventListener('click', function() {
+            window.print();
+        });
+    }
+    
+    // Scroll event listeners
+    let scrollTimeout;
+    window.addEventListener('scroll', function() {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(function() {
+            updateActiveTocLink();
+            toggleBackToTop();
+        }, 50);
+    });
+    
+    // Initial setup
+    updateActiveTocLink();
+    toggleBackToTop();
+    
+    // Handle window resize
+    window.addEventListener('resize', function() {
+        if (window.innerWidth >= 992) {
+            tocSidebar.classList.remove('show');
+        }
+    });
+});
+</script>
+{% endblock %}

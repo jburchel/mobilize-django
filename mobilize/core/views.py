@@ -1052,3 +1052,24 @@ def get_widget_layout_api(request):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
+def user_guide(request):
+    """
+    User guide view displaying comprehensive documentation for using Mobilize CRM.
+    
+    This view provides:
+    - Getting started instructions
+    - Feature explanations
+    - Best practices
+    - Troubleshooting tips
+    - Keyboard shortcuts
+    """
+    context = {
+        "user": request.user,
+        "user_role": getattr(request.user, "role", "standard_user"),
+        "page_title": "User Guide",
+    }
+    
+    return render(request, "core/user_guide.html", context)
