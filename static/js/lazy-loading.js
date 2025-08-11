@@ -3,9 +3,10 @@
  * Provides infinite scroll and dynamic data loading for better performance
  */
 
-class LazyLoader {
+ class LazyLoader {
     constructor(options) {
         this.tableBody = options.tableBody;
+        this.cardContainer = options.cardContainer || null;
         this.apiUrl = options.apiUrl;
         this.perPage = options.perPage || 25;
         this.currentPage = 1;
@@ -14,6 +15,9 @@ class LazyLoader {
         this.totalCount = 0;
         this.currentCount = 0;
         this.enableInfiniteScroll = options.enableInfiniteScroll !== false; // Default true
+        this.persistViewKey = options.persistViewKey || null;
+        const defaultRenderMode = options.renderMode || (window.matchMedia && window.matchMedia('(max-width: 767.98px)').matches ? 'card' : 'table');
+        this.renderMode = this.loadPersistedRenderMode(defaultRenderMode);
         this.searchParams = new URLSearchParams(window.location.search);
         
         // Apply initial filters if provided
@@ -43,6 +47,19 @@ class LazyLoader {
     }
     
     createLoadingIndicator() {
+        if (this.renderMode === 'card') {
+            const indicator = document.createElement('div');
+            indicator.id = 'loading-indicator';
+            indicator.className = 'text-center py-3';
+            indicator.innerHTML = `
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <span class="ms-2">Loading more...</span>
+            `;
+            indicator.style.display = 'none';
+            return indicator;
+        }
         const indicator = document.createElement('tr');
         indicator.id = 'loading-indicator';
         indicator.innerHTML = `
@@ -58,21 +75,15 @@ class LazyLoader {
     }
     
     initIntersectionObserver() {
-        // Create sentinel element at the bottom of the table
-        const sentinel = document.createElement('tr');
-        sentinel.id = 'load-more-sentinel';
-        sentinel.style.height = '1px';
-        this.tableBody.appendChild(sentinel);
-        
+        // Create sentinel element at the bottom
+        const sentinel = this.createSentinel();
         // Only set up observer if infinite scroll is enabled
         if (this.enableInfiniteScroll) {
-            // Set up intersection observer
             const observerOptions = {
                 root: null,
                 rootMargin: '100px',
                 threshold: 0.1
             };
-            
             this.observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting && !this.isLoading && this.hasMore) {
@@ -80,18 +91,29 @@ class LazyLoader {
                     }
                 });
             }, observerOptions);
-            
             this.observer.observe(sentinel);
         }
     }
     
     createSentinel() {
-        // Create sentinel element at the bottom of the table for manual pagination
-        const sentinel = document.createElement('tr');
-        sentinel.id = 'load-more-sentinel';
-        sentinel.style.height = '1px';
-        sentinel.style.display = 'none'; // Hide it for manual pagination
-        this.tableBody.appendChild(sentinel);
+        // Remove existing sentinel if any
+        const existing = (this.renderMode === 'card' ? (this.cardContainer && this.cardContainer.querySelector('#load-more-sentinel')) : (this.tableBody && this.tableBody.querySelector('#load-more-sentinel')));
+        if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+        let sentinel;
+        if (this.renderMode === 'card') {
+            sentinel = document.createElement('div');
+            sentinel.id = 'load-more-sentinel';
+            sentinel.style.height = '1px';
+            sentinel.style.display = this.enableInfiniteScroll ? '' : 'none';
+            if (this.cardContainer) this.cardContainer.appendChild(sentinel);
+        } else {
+            sentinel = document.createElement('tr');
+            sentinel.id = 'load-more-sentinel';
+            sentinel.style.height = '1px';
+            sentinel.style.display = this.enableInfiniteScroll ? '' : 'none';
+            if (this.tableBody) this.tableBody.appendChild(sentinel);
+        }
+        return sentinel;
     }
     
     initSearchHandlers() {
@@ -132,7 +154,7 @@ class LazyLoader {
             
             const data = await response.json();
             
-            // Render new rows
+            // Render new items
             this.renderRows(data.results);
             
             // Update pagination state
@@ -169,15 +191,25 @@ class LazyLoader {
     
     renderRows(items) {
         const fragment = document.createDocumentFragment();
-        
-        items.forEach(item => {
-            const row = this.createRow(item);
-            fragment.appendChild(row);
-        });
-        
-        // Insert before the sentinel
-        const sentinel = document.getElementById('load-more-sentinel');
-        this.tableBody.insertBefore(fragment, sentinel);
+        if (this.renderMode === 'card') {
+            items.forEach(item => {
+                const card = this.createCard(item);
+                fragment.appendChild(card);
+            });
+            const sentinel = this.cardContainer && this.cardContainer.querySelector('#load-more-sentinel');
+            if (this.cardContainer && sentinel) {
+                this.cardContainer.insertBefore(fragment, sentinel);
+            }
+        } else {
+            items.forEach(item => {
+                const row = this.createRow(item);
+                fragment.appendChild(row);
+            });
+            const sentinel = this.tableBody && this.tableBody.querySelector('#load-more-sentinel');
+            if (this.tableBody && sentinel) {
+                this.tableBody.insertBefore(fragment, sentinel);
+            }
+        }
         
         // Update current count based on items actually rendered
         this.currentCount += items.length;
@@ -207,6 +239,37 @@ class LazyLoader {
             <td>${this.getPriorityBadge(item.priority)}</td>
             <td>${this.getPipelineBadge(item.pipeline_stage)}</td>
             <td>${this.getActionButtons(item)}</td>
+        `;
+    }
+
+    createCard(item) {
+        const cardWrapper = document.createElement('div');
+        cardWrapper.className = 'col-12 col-md-6 col-lg-4';
+        cardWrapper.innerHTML = this.getCardTemplate(item);
+        return cardWrapper;
+    }
+
+    getCardTemplate(item) {
+        // Generic fallback card template; individual pages should override
+        return `
+            <div class="card list-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1"><a href="${item.detail_url}">${item.name || 'Item'}</a></h6>
+                            ${item.email ? `<div class="small text-muted">${item.email}</div>` : ''}
+                            ${item.phone ? `<div class="small text-muted">${item.phone}</div>` : ''}
+                        </div>
+                        <div>
+                            ${this.getPriorityBadge(item.priority || item.priority_display || '')}
+                        </div>
+                    </div>
+                    <div class="mt-2 d-flex justify-content-between align-items-center">
+                        <div>${this.getPipelineBadge(item.pipeline_stage)}</div>
+                        <div>${this.getActionButtons(item)}</div>
+                    </div>
+                </div>
+            </div>
         `;
     }
     
@@ -253,24 +316,44 @@ class LazyLoader {
     }
     
     resetAndLoad() {
-        // Clear existing rows (except header and sentinel)
-        const rows = this.tableBody.querySelectorAll('tr:not(#load-more-sentinel)');
-        rows.forEach(row => row.remove());
-        
+        // Clear existing items (except header and sentinel)
+        if (this.renderMode === 'card') {
+            if (this.cardContainer) {
+                const cards = this.cardContainer.querySelectorAll('.col-12');
+                cards.forEach(card => card.remove());
+            }
+        } else if (this.tableBody) {
+            const rows = this.tableBody.querySelectorAll('tr:not(#load-more-sentinel)');
+            rows.forEach(row => row.remove());
+        }
         // Reset pagination
         this.currentPage = 1;
         this.hasMore = true;
         this.totalCount = 0;
         this.currentCount = 0;
-        
         // Load first page
         this.loadMore();
     }
     
     showLoadingIndicator() {
+        // Ensure indicator matches current mode
+        if (this.loadingIndicator && this.loadingIndicator.tagName) {
+            const isCardIndicator = this.renderMode === 'card' && this.loadingIndicator.tagName.toLowerCase() !== 'tr';
+            const isTableIndicator = this.renderMode === 'table' && this.loadingIndicator.tagName.toLowerCase() === 'tr';
+            if (!isCardIndicator && !isTableIndicator) {
+                this.loadingIndicator.remove();
+                this.loadingIndicator = this.createLoadingIndicator();
+            }
+        }
         if (!this.loadingIndicator.parentNode) {
-            const sentinel = document.getElementById('load-more-sentinel');
-            this.tableBody.insertBefore(this.loadingIndicator, sentinel);
+            const sentinel = (this.renderMode === 'card')
+                ? (this.cardContainer && this.cardContainer.querySelector('#load-more-sentinel'))
+                : (this.tableBody && this.tableBody.querySelector('#load-more-sentinel'));
+            if (this.renderMode === 'card' && this.cardContainer && sentinel) {
+                this.cardContainer.insertBefore(this.loadingIndicator, sentinel);
+            } else if (this.tableBody && sentinel) {
+                this.tableBody.insertBefore(this.loadingIndicator, sentinel);
+            }
         }
         this.loadingIndicator.style.display = '';
     }
@@ -280,17 +363,23 @@ class LazyLoader {
     }
     
     showError(message) {
+        if (this.renderMode === 'card') {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'text-center text-danger py-3';
+            errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>${message}`;
+            const sentinel = this.cardContainer && this.cardContainer.querySelector('#load-more-sentinel');
+            if (this.cardContainer && sentinel) this.cardContainer.insertBefore(errorDiv, sentinel);
+            setTimeout(() => errorDiv.remove(), 5000);
+            return;
+        }
         const errorRow = document.createElement('tr');
         errorRow.innerHTML = `
             <td colspan="7" class="text-center text-danger py-4">
                 <i class="fas fa-exclamation-triangle me-2"></i>${message}
             </td>
         `;
-        
-        const sentinel = document.getElementById('load-more-sentinel');
-        this.tableBody.insertBefore(errorRow, sentinel);
-        
-        // Remove error after 5 seconds
+        const sentinel = this.tableBody && this.tableBody.querySelector('#load-more-sentinel');
+        if (this.tableBody && sentinel) this.tableBody.insertBefore(errorRow, sentinel);
         setTimeout(() => errorRow.remove(), 5000);
     }
     
@@ -365,6 +454,34 @@ class LazyLoader {
                 }
             }
         }
+    }
+
+    setRenderMode(mode) {
+        if (mode !== 'table' && mode !== 'card') return;
+        if (this.renderMode === mode) return;
+        this.renderMode = mode;
+        this.persistRenderMode();
+        // Recreate sentinel and indicator
+        this.createSentinel();
+        this.loadingIndicator && this.loadingIndicator.remove();
+        this.loadingIndicator = this.createLoadingIndicator();
+        // Reset and load into the appropriate container
+        this.resetAndLoad();
+    }
+
+    loadPersistedRenderMode(defaultMode) {
+        try {
+            if (!this.persistViewKey) return defaultMode;
+            const saved = localStorage.getItem(this.persistViewKey);
+            if (saved === 'table' || saved === 'card') return saved;
+        } catch (e) {}
+        return defaultMode;
+    }
+
+    persistRenderMode() {
+        try {
+            if (this.persistViewKey) localStorage.setItem(this.persistViewKey, this.renderMode);
+        } catch (e) {}
     }
 }
 

@@ -330,7 +330,17 @@
         </div>
 
         <!-- Task List with Dynamic Loading -->
-        <div class="table-responsive">
+        <div class="d-flex justify-content-end mb-2">
+            <div class="btn-group btn-group-sm" role="group" aria-label="View mode">
+                <button type="button" class="btn btn-outline-secondary" id="view-table-btn">
+                    <i class="fas fa-table"></i>
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="view-card-btn">
+                    <i class="fas fa-th-large"></i>
+                </button>
+            </div>
+        </div>
+        <div class="table-responsive" id="task-table-wrapper">
             <table id="tasks-table" class="table table-hover" data-sortable-table>
                 <thead>
                     <tr>
@@ -351,6 +361,7 @@
                 </tbody>
             </table>
         </div>
+        <div id="task-card-container" class="row g-3 d-none"></div>
         
         <!-- No Results Message -->
         <div id="no-results" class="text-center text-muted py-4" style="display: none;">
@@ -392,9 +403,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize lazy loader for task list
     const taskLoader = new LazyLoader({
         tableBody: document.getElementById('task-table-body'),
+        cardContainer: document.getElementById('task-card-container'),
         apiUrl: '{% url "tasks:task_list_api" %}',
         perPage: 25,
         enableInfiniteScroll: false,  // Disable auto-scroll for manual pagination
+        persistViewKey: 'task_list_view',
+        renderMode: 'table',
         filters: {
             search: '{{ search_query }}',
             status: '{{ current_status }}',
@@ -404,13 +418,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Add callback to reinitialize sorting after content loads
+    // Add callback to reinitialize sorting after content loads (table mode only)
     const originalLoadMore = taskLoader.loadMore.bind(taskLoader);
     taskLoader.loadMore = async function() {
         try {
             const result = await originalLoadMore();
-            // Reinitialize task sorting after content loads
-            if (window.initializeTaskSorting) {
+            if (window.initializeTaskSorting && taskLoader.renderMode === 'table') {
                 window.initializeTaskSorting();
             }
             return result;
@@ -491,6 +504,31 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
     };
+
+    // Card template for task items
+    taskLoader.getCardTemplate = function(item) {
+        return `
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1"><a href="${item.detail_url}">${item.title}</a></h6>
+                            ${item.description ? `<div class=\"small text-muted\">${item.description.substring(0, 100)}${item.description.length > 100 ? '...' : ''}</div>` : ''}
+                            ${item.contact_name ? `<div class=\"small text-muted\"><i class=\"${item.contact_icon} me-1\"></i>${item.contact_name}</div>` : ''}
+                        </div>
+                        <div>${this.getPriorityBadge(item.priority, item.priority_display)}</div>
+                    </div>
+                    <div class="mt-2 d-flex justify-content-between align-items-center">
+                        <div>${this.getStatusBadge(item.status, item.status_display)}</div>
+                        <div>${item.due_date ? item.due_date_formatted : '<span class="text-muted small">No due date</span>'}</div>
+                    </div>
+                    <div class="mt-2 d-flex justify-content-between align-items-center">
+                        <div class="small text-muted">${item.assigned_to_name || '-'}</div>
+                        <div>${this.getActionButtons(item)}</div>
+                    </div>
+                </div>
+            </div>`;
+    };
     
     // Set up pagination controls
     const loadMoreBtn = document.getElementById('load-more-btn');
@@ -504,6 +542,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // View mode toggle handling
+    const tableWrapper = document.getElementById('task-table-wrapper');
+    const cardContainer = document.getElementById('task-card-container');
+    const tableBtn = document.getElementById('view-table-btn');
+    const cardBtn = document.getElementById('view-card-btn');
+
+    function applyViewMode(mode) {
+        if (mode === 'card') {
+            tableWrapper.classList.add('d-none');
+            cardContainer.classList.remove('d-none');
+            taskLoader.setRenderMode('card');
+            cardBtn.classList.add('active');
+            tableBtn.classList.remove('active');
+        } else {
+            cardContainer.classList.add('d-none');
+            tableWrapper.classList.remove('d-none');
+            taskLoader.setRenderMode('table');
+            tableBtn.classList.add('active');
+            cardBtn.classList.remove('active');
+        }
+    }
+
+    tableBtn.addEventListener('click', () => applyViewMode('table'));
+    cardBtn.addEventListener('click', () => applyViewMode('card'));
+
+    applyViewMode(taskLoader.renderMode);
     // Per-page selector change handler
     perPageSelect.addEventListener('change', (e) => {
         const newPerPage = parseInt(e.target.value);
