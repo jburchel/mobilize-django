@@ -197,8 +197,12 @@
                 fragment.appendChild(card);
             });
             const sentinel = this.cardContainer && this.cardContainer.querySelector('#load-more-sentinel');
-            if (this.cardContainer && sentinel) {
-                this.cardContainer.insertBefore(fragment, sentinel);
+            if (this.cardContainer) {
+                if (sentinel) {
+                    this.cardContainer.insertBefore(fragment, sentinel);
+                } else {
+                    this.cardContainer.appendChild(fragment);
+                }
             }
         } else {
             items.forEach(item => {
@@ -206,8 +210,12 @@
                 fragment.appendChild(row);
             });
             const sentinel = this.tableBody && this.tableBody.querySelector('#load-more-sentinel');
-            if (this.tableBody && sentinel) {
-                this.tableBody.insertBefore(fragment, sentinel);
+            if (this.tableBody) {
+                if (sentinel) {
+                    this.tableBody.insertBefore(fragment, sentinel);
+                } else {
+                    this.tableBody.appendChild(fragment);
+                }
             }
         }
         
@@ -349,10 +357,18 @@
             const sentinel = (this.renderMode === 'card')
                 ? (this.cardContainer && this.cardContainer.querySelector('#load-more-sentinel'))
                 : (this.tableBody && this.tableBody.querySelector('#load-more-sentinel'));
-            if (this.renderMode === 'card' && this.cardContainer && sentinel) {
-                this.cardContainer.insertBefore(this.loadingIndicator, sentinel);
-            } else if (this.tableBody && sentinel) {
-                this.tableBody.insertBefore(this.loadingIndicator, sentinel);
+            if (this.renderMode === 'card' && this.cardContainer) {
+                if (sentinel) {
+                    this.cardContainer.insertBefore(this.loadingIndicator, sentinel);
+                } else {
+                    this.cardContainer.appendChild(this.loadingIndicator);
+                }
+            } else if (this.tableBody) {
+                if (sentinel) {
+                    this.tableBody.insertBefore(this.loadingIndicator, sentinel);
+                } else {
+                    this.tableBody.appendChild(this.loadingIndicator);
+                }
             }
         }
         this.loadingIndicator.style.display = '';
