@@ -801,7 +801,7 @@ document.addEventListener('DOMContentLoaded', function() {
     cardBtn.addEventListener('click', () => applyViewMode('card'));
 
     // Load initial data AFTER pagination controls are set up
-    console.log('About to call loadMore()...');
+    console.log('About to call initial load...');
     console.log('ChurchLoader state before loadMore:', {
         isLoading: churchLoader.isLoading,
         hasMore: churchLoader.hasMore,
@@ -810,7 +810,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     try {
         applyViewMode(churchLoader.renderMode);
-        churchLoader.loadMore();
+        churchLoader.resetAndLoad();
         console.log('loadMore() called successfully');
     } catch (error) {
         console.error('loadMore() failed:', error);

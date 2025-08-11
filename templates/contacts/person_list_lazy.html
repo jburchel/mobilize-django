@@ -463,8 +463,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Default: use card view on small screens, else use persisted/default
     applyViewMode(personLoader.renderMode);
-    // Load initial data AFTER pagination controls and view toggle are set up
-    personLoader.loadMore();
+    // Ensure an initial load regardless of current mode
+    personLoader.resetAndLoad();
     
     // Listen for loader updates to get accurate total count
     window.addEventListener('lazyLoaderUpdate', (event) => {
