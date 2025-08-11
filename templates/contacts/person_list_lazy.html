@@ -360,7 +360,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </td>
             <td>
                 ${item.phone ? 
-                    `<a href="#" onclick="handlePhoneClick('${item.phone}', ${item.id}, '${item.name.replace(/'/g, "\\'")}'" class="text-decoration-none">
+                    `<a href="#" onclick="handlePhoneClick('${item.phone}', ${item.id}, '${item.name.replace(/'/g, "\\'")}')" class="text-decoration-none">
                         <i class="fas fa-phone me-1"></i>${item.phone}
                     </a>` : '-'}
             </td>
