@@ -870,8 +870,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateTaskFilters() {
-        // Get the current form values
-        const searchQuery = searchInput ? searchInput.value : (searchMobile ? searchMobile.value : '');
+        // Get the current form values using the active/visible input (mobile vs desktop)
+        const searchQuery = (document.activeElement === searchMobile) ? searchMobile.value
+            : (document.activeElement === searchInput) ? searchInput.value
+            : (searchMobile && searchMobile.offsetParent !== null) ? searchMobile.value
+            : (searchInput && searchInput.offsetParent !== null) ? searchInput.value
+            : '';
         let status = '';
         let priority = '';
         let due = '';

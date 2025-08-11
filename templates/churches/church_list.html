@@ -839,8 +839,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update filters and reload data dynamically
     function updateFilters() {
-        // Get the active search input value
-        const searchQuery = searchInput ? searchInput.value : (searchMobile ? searchMobile.value : '');
+        // Get the active/visible search input value (mobile vs desktop)
+        const searchQuery = (document.activeElement === searchMobile) ? searchMobile.value
+            : (document.activeElement === searchInput) ? searchInput.value
+            : (searchMobile && searchMobile.offsetParent !== null) ? searchMobile.value
+            : (searchInput && searchInput.offsetParent !== null) ? searchInput.value
+            : '';
         const priority = prioritySelect ? prioritySelect.value : '';
         const pipelineStage = pipelineSelect ? pipelineSelect.value : '';
         

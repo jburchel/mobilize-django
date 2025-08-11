@@ -1269,8 +1269,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateCommFilters() {
-        // Get the active search input value
-        const searchQuery = searchInput ? searchInput.value : (searchMobile ? searchMobile.value : '');
+        // Get the active/visible search input value (mobile vs desktop)
+        const searchQuery = (document.activeElement === searchMobile) ? searchMobile.value
+            : (document.activeElement === searchInput) ? searchInput.value
+            : (searchMobile && searchMobile.offsetParent !== null) ? searchMobile.value
+            : (searchInput && searchInput.offsetParent !== null) ? searchInput.value
+            : '';
         let type = '';
         let direction = '';
         let status = '';
