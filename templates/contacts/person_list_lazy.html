@@ -254,17 +254,7 @@
     <div class="card-body">
 
         <!-- Data Table with Lazy Loading -->
-        <div class="d-flex justify-content-end mb-2">
-            <div class="btn-group btn-group-sm" role="group" aria-label="View mode">
-                <button type="button" class="btn btn-outline-secondary" id="view-table-btn">
-                    <i class="fas fa-table"></i>
-                </button>
-                <button type="button" class="btn btn-outline-secondary" id="view-card-btn">
-                    <i class="fas fa-th-large"></i>
-                </button>
-            </div>
-        </div>
-        <div class="table-responsive" id="person-table-wrapper">
+        <div class="table-responsive">
             <table id="people-table" class="table table-hover" data-sortable-table>
                 <thead>
                     <tr>
@@ -286,7 +276,6 @@
                 </tbody>
             </table>
         </div>
-        <div id="person-card-container" class="row g-3 d-none"></div>
         
         <!-- No Results Message -->
         <div id="no-results" class="text-center text-muted py-4" style="display: none;">
@@ -328,12 +317,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize lazy loader for person list
     const personLoader = new LazyLoader({
         tableBody: document.getElementById('person-table-body'),
-        cardContainer: document.getElementById('person-card-container'),
         apiUrl: '{% url "contacts:person_list_api" %}',
         perPage: 25,
         enableInfiniteScroll: false,  // Disable auto-scroll for manual pagination
-        persistViewKey: 'person_list_view',
-        renderMode: 'table',
         filters: {
             q: '{{ query }}',
             priority: '{{ priority }}',
@@ -360,34 +346,13 @@ document.addEventListener('DOMContentLoaded', function() {
             </td>
             <td>
                 ${item.phone ? 
-                    `<a href="#" onclick="handlePhoneClick('${item.phone}', ${item.id}, '${item.name.replace(/'/g, "\\'")}')" class="text-decoration-none">
+                    `<a href="#" onclick="handlePhoneClick('${item.phone}', ${item.id}, '${item.name.replace(/'/g, "\\'")}'" class="text-decoration-none">
                         <i class="fas fa-phone me-1"></i>${item.phone}
                     </a>` : '-'}
             </td>
             <td>${this.getPriorityBadge(item.priority_display || item.priority)}</td>
             <td>${this.getPipelineBadge(item.pipeline_stage)}</td>
             <td>${this.getActionButtons(item)}</td>
-        `;
-    };
-
-    personLoader.getCardTemplate = function(item) {
-        return `
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h6 class="mb-1"><a href="${item.detail_url}">${item.name}</a></h6>
-                            ${item.email ? `<div class="small text-muted"><i class=\"fas fa-envelope me-1\"></i>${item.email}</div>` : ''}
-                            ${item.phone ? `<div class="small text-muted"><i class=\"fas fa-phone me-1\"></i>${item.phone}</div>` : ''}
-                        </div>
-                        <div>${this.getPriorityBadge(item.priority_display || item.priority)}</div>
-                    </div>
-                    <div class="mt-2 d-flex justify-content-between align-items-center">
-                        <div>${this.getPipelineBadge(item.pipeline_stage)}</div>
-                        <div>${this.getActionButtons(item)}</div>
-                    </div>
-                </div>
-            </div>
         `;
     };
     
@@ -436,35 +401,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    // View mode toggle handling
-    const tableWrapper = document.getElementById('person-table-wrapper');
-    const cardContainer = document.getElementById('person-card-container');
-    const tableBtn = document.getElementById('view-table-btn');
-    const cardBtn = document.getElementById('view-card-btn');
-
-    function applyViewMode(mode) {
-        if (mode === 'card') {
-            tableWrapper.classList.add('d-none');
-            cardContainer.classList.remove('d-none');
-            personLoader.setRenderMode('card');
-            cardBtn.classList.add('active');
-            tableBtn.classList.remove('active');
-        } else {
-            cardContainer.classList.add('d-none');
-            tableWrapper.classList.remove('d-none');
-            personLoader.setRenderMode('table');
-            tableBtn.classList.add('active');
-            cardBtn.classList.remove('active');
-        }
-    }
-
-    tableBtn.addEventListener('click', () => applyViewMode('table'));
-    cardBtn.addEventListener('click', () => applyViewMode('card'));
-
-    // Default: use card view on small screens, else use persisted/default
-    applyViewMode(personLoader.renderMode);
-    // Ensure an initial load regardless of current mode
-    personLoader.resetAndLoad();
+    // Load initial data AFTER pagination controls are set up
+    personLoader.loadMore();
     
     // Listen for loader updates to get accurate total count
     window.addEventListener('lazyLoaderUpdate', (event) => {
