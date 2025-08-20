@@ -236,8 +236,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const bulkOpsBar = document.getElementById('bulk-operations');
     const selectedCount = document.getElementById('selected-count');
     
-    // Update bulk operations visibility and selected count
-    function updateBulkOperations() {
+    // Global function for updating bulk operations - works with dynamic content
+    window.updateBulkOperations = function() {
         const selected = document.querySelectorAll('.contact-checkbox:checked');
         const count = selected.length;
         
@@ -249,8 +249,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show/hide bulk operations bar
         if (bulkOpsBar) {
             if (count > 0) {
+                bulkOpsBar.style.display = 'block';
                 bulkOpsBar.classList.add('show');
             } else {
+                bulkOpsBar.style.display = 'none';
                 bulkOpsBar.classList.remove('show');
             }
         }
@@ -267,28 +269,31 @@ document.addEventListener('DOMContentLoaded', function() {
         if (userIds) userIds.value = ids;
         if (officeIds) officeIds.value = ids;
         
-        // Update select all checkbox state
-        const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
-        const noneChecked = Array.from(checkboxes).every(cb => !cb.checked);
+        // Update select all checkbox state - get fresh list of checkboxes each time
+        const allCheckboxes = document.querySelectorAll('.contact-checkbox');
+        const allChecked = allCheckboxes.length > 0 && Array.from(allCheckboxes).every(cb => cb.checked);
+        const noneChecked = Array.from(allCheckboxes).every(cb => !cb.checked);
         
         if (selectAll) {
             selectAll.checked = allChecked;
             selectAll.indeterminate = !allChecked && !noneChecked;
         }
-    }
+    };
     
-    // Select all functionality
+    // Select all functionality with event delegation for dynamic content
     if (selectAll) {
         selectAll.addEventListener('change', function() {
-            checkboxes.forEach(cb => cb.checked = this.checked);
-            updateBulkOperations();
+            // Get fresh list of checkboxes each time (handles lazy-loaded content)
+            const allCheckboxes = document.querySelectorAll('.contact-checkbox');
+            allCheckboxes.forEach(cb => cb.checked = this.checked);
+            window.updateBulkOperations();
         });
     }
     
-    // Individual checkbox functionality
+    // Event delegation for individual checkboxes (handles dynamic content)
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('contact-checkbox')) {
-            updateBulkOperations();
+            window.updateBulkOperations();
         }
     });
     
@@ -622,11 +627,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    // Override renderRows to add debugging
+    // Override renderRows to add debugging and ensure bulk operations work
     const originalRenderRows = churchLoader.renderRows.bind(churchLoader);
     churchLoader.renderRows = function(items) {
         console.log('DEBUG: renderRows called with', items.length, 'items');
-        return originalRenderRows(items);
+        const result = originalRenderRows(items);
+        
+        // The original renderRows should call updateBulkSelectionHandlers(),
+        // but we also call updateBulkOperations to sync the select-all state
+        if (window.updateBulkOperations) {
+            window.updateBulkOperations();
+        }
+        
+        return result;
     };
     
     // Override the row template for church-specific rendering
@@ -754,44 +767,8 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('loadMore() failed:', error);
     }
     
-    // Bulk operations management
-    const selectAll = document.getElementById('select-all');
-    const bulkOpsBar = document.getElementById('bulk-operations');
-    const selectedCount = document.getElementById('selected-count');
-    
-    window.updateBulkOperations = function() {
-        const checkboxes = document.querySelectorAll('.contact-checkbox');
-        const selected = document.querySelectorAll('.contact-checkbox:checked');
-        const count = selected.length;
-        
-        selectedCount.textContent = count;
-        if (count > 0) {
-            bulkOpsBar.classList.add('show');
-        } else {
-            bulkOpsBar.classList.remove('show');
-        }
-        
-        // Update hidden inputs for bulk operations
-        const ids = Array.from(selected).map(cb => cb.value).join(',');
-        document.getElementById('bulk-delete-ids').value = ids;
-        document.getElementById('bulk-priority-ids').value = ids;
-        document.getElementById('bulk-user-ids').value = ids;
-        document.getElementById('bulk-office-ids').value = ids;
-        
-        // Update select all checkbox state
-        const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
-        const noneChecked = Array.from(checkboxes).every(cb => !cb.checked);
-        
-        selectAll.checked = allChecked;
-        selectAll.indeterminate = !allChecked && !noneChecked;
-    };
-    
-    // Select all functionality
-    selectAll.addEventListener('change', function() {
-        const checkboxes = document.querySelectorAll('.contact-checkbox');
-        checkboxes.forEach(cb => cb.checked = this.checked);
-        updateBulkOperations();
-    });
+    // Note: Bulk operations management is handled in the main DOM loaded section above
+    // This avoids duplicate event listeners and ensures proper event delegation for lazy-loaded content
     
     // Handle bulk operation form submissions
     document.querySelectorAll('form select[name="priority"]').forEach(select => {
