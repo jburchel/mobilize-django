@@ -656,21 +656,25 @@ def remove_church_member(request, membership_id):
 def bulk_delete_churches(request):
     """
     Delete multiple churches at once.
+    Handles both 'contact_ids' (from template) and 'church_ids' (legacy) parameter names.
     """
-    church_ids = request.POST.getlist("church_ids")
+    # Try to get contact_ids first (current template format), then church_ids (legacy)
+    contact_ids = request.POST.getlist("contact_ids")
+    if not contact_ids:
+        contact_ids = request.POST.getlist("church_ids")
 
     # Handle comma-separated string from JavaScript
-    if len(church_ids) == 1 and "," in church_ids[0]:
-        church_ids = [cid.strip() for cid in church_ids[0].split(",") if cid.strip()]
-    elif not church_ids:
-        # Try to get as a single string
-        church_ids_str = request.POST.get("church_ids", "")
-        if church_ids_str:
-            church_ids = [
-                cid.strip() for cid in church_ids_str.split(",") if cid.strip()
+    if len(contact_ids) == 1 and "," in contact_ids[0]:
+        contact_ids = [cid.strip() for cid in contact_ids[0].split(",") if cid.strip()]
+    elif not contact_ids:
+        # Try to get as a single string - check both parameter names
+        contact_ids_str = request.POST.get("contact_ids", "") or request.POST.get("church_ids", "")
+        if contact_ids_str:
+            contact_ids = [
+                cid.strip() for cid in contact_ids_str.split(",") if cid.strip()
             ]
 
-    if not church_ids:
+    if not contact_ids:
         messages.error(request, "No churches selected for deletion")
         return redirect("churches:church_list")
 
@@ -678,9 +682,16 @@ def bulk_delete_churches(request):
         # Convert contact IDs to Church model IDs
         from mobilize.contacts.models import Contact
 
+        # Convert string IDs to integers and filter valid IDs
+        try:
+            contact_ids = [int(cid) for cid in contact_ids if cid and str(cid).strip()]
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid church IDs provided")
+            return redirect("churches:church_list")
+
         # Get the Church objects through their Contact relationship
         church_ids = Contact.objects.filter(
-            id__in=church_ids, type="church"
+            id__in=contact_ids, type="church"
         ).values_list("church_details__id", flat=True)
 
         # Get the churches to delete
@@ -707,22 +718,27 @@ def bulk_delete_churches(request):
 def bulk_update_church_priority(request):
     """
     Update priority for multiple churches at once.
+    Handles both 'contact_ids' (from template) and 'church_ids' (legacy) parameter names.
     """
-    church_ids = request.POST.getlist("church_ids")
+    # Try to get contact_ids first (current template format), then church_ids (legacy)
+    contact_ids = request.POST.getlist("contact_ids")
+    if not contact_ids:
+        contact_ids = request.POST.getlist("church_ids")
+    
     new_priority = request.POST.get("priority")
 
     # Handle comma-separated string from JavaScript
-    if len(church_ids) == 1 and "," in church_ids[0]:
-        church_ids = [cid.strip() for cid in church_ids[0].split(",") if cid.strip()]
-    elif not church_ids:
-        # Try to get as a single string
-        church_ids_str = request.POST.get("church_ids", "")
-        if church_ids_str:
-            church_ids = [
-                cid.strip() for cid in church_ids_str.split(",") if cid.strip()
+    if len(contact_ids) == 1 and "," in contact_ids[0]:
+        contact_ids = [cid.strip() for cid in contact_ids[0].split(",") if cid.strip()]
+    elif not contact_ids:
+        # Try to get as a single string - check both parameter names
+        contact_ids_str = request.POST.get("contact_ids", "") or request.POST.get("church_ids", "")
+        if contact_ids_str:
+            contact_ids = [
+                cid.strip() for cid in contact_ids_str.split(",") if cid.strip()
             ]
 
-    if not church_ids:
+    if not contact_ids:
         messages.error(request, "No churches selected for update")
         return redirect("churches:church_list")
 
@@ -734,7 +750,14 @@ def bulk_update_church_priority(request):
         # Get the churches to update - update through Contact model since that's where priority is stored
         from mobilize.contacts.models import Contact
 
-        contacts = Contact.objects.filter(id__in=church_ids, type="church")
+        # Convert string IDs to integers and filter valid IDs
+        try:
+            contact_ids = [int(cid) for cid in contact_ids if cid and str(cid).strip()]
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid church IDs provided")
+            return redirect("churches:church_list")
+
+        contacts = Contact.objects.filter(id__in=contact_ids, type="church")
         count = contacts.count()
 
         if count == 0:
@@ -768,22 +791,25 @@ def bulk_update_church_priority(request):
 def bulk_assign_church_user(request):
     """
     Assign multiple churches to a user at once.
+    Handles both 'contact_ids' (from template) and 'church_ids' (legacy) parameter names.
     """
-    # Handle both list format and comma-separated string
-    church_ids = request.POST.getlist("church_ids")
+    # Try to get contact_ids first (current template format), then church_ids (legacy)
+    contact_ids = request.POST.getlist("contact_ids")
+    if not contact_ids:
+        contact_ids = request.POST.getlist("church_ids")
 
     # If we got a list with one item that contains commas, it's a comma-separated string
-    if len(church_ids) == 1 and "," in church_ids[0]:
-        church_ids = [id.strip() for id in church_ids[0].split(",") if id.strip()]
-    elif not church_ids:
-        # Try to get as a single comma-separated string
-        church_ids_str = request.POST.get("church_ids", "")
-        if church_ids_str:
-            church_ids = [id.strip() for id in church_ids_str.split(",") if id.strip()]
+    if len(contact_ids) == 1 and "," in contact_ids[0]:
+        contact_ids = [id.strip() for id in contact_ids[0].split(",") if id.strip()]
+    elif not contact_ids:
+        # Try to get as a single comma-separated string - check both parameter names
+        contact_ids_str = request.POST.get("contact_ids", "") or request.POST.get("church_ids", "")
+        if contact_ids_str:
+            contact_ids = [id.strip() for id in contact_ids_str.split(",") if id.strip()]
 
     user_id = request.POST.get("user_id")
 
-    if not church_ids:
+    if not contact_ids:
         messages.error(request, "No churches selected for assignment")
         return redirect("churches:church_list")
 
@@ -798,10 +824,14 @@ def bulk_assign_church_user(request):
         user = get_object_or_404(User, id=user_id)
 
         # Convert string IDs to integers
-        church_ids = [int(id) for id in church_ids if id]
+        try:
+            contact_ids = [int(id) for id in contact_ids if id and str(id).strip()]
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid church IDs provided")
+            return redirect("churches:church_list")
 
         # Get the church contacts to update
-        contacts = Contact.objects.filter(id__in=church_ids, type="church")
+        contacts = Contact.objects.filter(id__in=contact_ids, type="church")
         count = contacts.count()
 
         if count == 0:
@@ -827,22 +857,25 @@ def bulk_assign_church_user(request):
 def bulk_assign_church_office(request):
     """
     Assign multiple churches to an office at once.
+    Handles both 'contact_ids' (from template) and 'church_ids' (legacy) parameter names.
     """
-    # Handle both list format and comma-separated string
-    church_ids = request.POST.getlist("church_ids")
+    # Try to get contact_ids first (current template format), then church_ids (legacy)
+    contact_ids = request.POST.getlist("contact_ids")
+    if not contact_ids:
+        contact_ids = request.POST.getlist("church_ids")
 
     # If we got a list with one item that contains commas, it's a comma-separated string
-    if len(church_ids) == 1 and "," in church_ids[0]:
-        church_ids = [id.strip() for id in church_ids[0].split(",") if id.strip()]
-    elif not church_ids:
-        # Try to get as a single comma-separated string
-        church_ids_str = request.POST.get("church_ids", "")
-        if church_ids_str:
-            church_ids = [id.strip() for id in church_ids_str.split(",") if id.strip()]
+    if len(contact_ids) == 1 and "," in contact_ids[0]:
+        contact_ids = [id.strip() for id in contact_ids[0].split(",") if id.strip()]
+    elif not contact_ids:
+        # Try to get as a single comma-separated string - check both parameter names
+        contact_ids_str = request.POST.get("contact_ids", "") or request.POST.get("church_ids", "")
+        if contact_ids_str:
+            contact_ids = [id.strip() for id in contact_ids_str.split(",") if id.strip()]
 
     office_id = request.POST.get("office_id")
 
-    if not church_ids:
+    if not contact_ids:
         messages.error(request, "No churches selected for assignment")
         return redirect("churches:church_list")
 
@@ -857,10 +890,14 @@ def bulk_assign_church_office(request):
         office = get_object_or_404(Office, id=office_id)
 
         # Convert string IDs to integers
-        church_ids = [int(id) for id in church_ids if id]
+        try:
+            contact_ids = [int(id) for id in contact_ids if id and str(id).strip()]
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid church IDs provided")
+            return redirect("churches:church_list")
 
         # Get the church contacts to update
-        contacts = Contact.objects.filter(id__in=church_ids, type="church")
+        contacts = Contact.objects.filter(id__in=contact_ids, type="church")
         count = contacts.count()
 
         if count == 0:
